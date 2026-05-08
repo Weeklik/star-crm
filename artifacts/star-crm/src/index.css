@@ -120,3 +120,8 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Hide Clerk development mode badge - targets stable data attribute */
+[data-localization-key="badge__devMode"] {
+  display: none !important;
+}

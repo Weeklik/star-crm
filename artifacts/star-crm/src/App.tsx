@@ -1,4 +1,4 @@
-import { ClerkProvider, SignIn, Show, useClerk } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, Redirect, useLocation, Router as WouterRouter } from 'wouter';
@@ -86,7 +86,32 @@ const clerkAppearance = {
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 dark">
-      <SignIn routing="path" path={`${basePath}/sign-in`} />
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        appearance={{
+          elements: {
+            footerAction: "hidden",
+          },
+        }}
+      />
+    </div>
+  );
+}
+
+function SetupPage() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 dark">
+      <div className="w-full max-w-md">
+        <p className="text-center text-xs text-muted-foreground mb-4 opacity-60">
+          Account setup — not linked in the app
+        </p>
+        <SignUp
+          routing="path"
+          path={`${basePath}/setup`}
+          signInUrl={`${basePath}/sign-in`}
+        />
+      </div>
     </div>
   );
 }
@@ -150,6 +175,7 @@ function ClerkProviderWithRoutes() {
       proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/setup`}
       localization={{
         signIn: {
           start: {
@@ -166,6 +192,7 @@ function ClerkProviderWithRoutes() {
         <Switch>
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
+          <Route path="/setup/*?" component={SetupPage} />
           <Route path="/dashboard">
             <ProtectedRoute component={Dashboard} />
           </Route>
