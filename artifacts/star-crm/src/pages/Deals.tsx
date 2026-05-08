@@ -12,6 +12,7 @@ import { Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Table,
   TableBody,
@@ -376,10 +377,9 @@ export default function Deals() {
             </div>
             <div className="space-y-1.5">
               <Label>Start Date *</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={form.dealStartDate}
-                onChange={(e) => set("dealStartDate", e.target.value)}
+                onChange={(v) => set("dealStartDate", v)}
               />
             </div>
             <div className="space-y-1.5">
@@ -444,18 +444,18 @@ export default function Deals() {
             </div>
             <div className="space-y-1.5">
               <Label>Earliest Closing Date</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={form.earliestClosingDate}
-                onChange={(e) => set("earliestClosingDate", e.target.value)}
+                onChange={(v) => set("earliestClosingDate", v)}
+                placeholder="Pick a date"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Latest Closing Date</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={form.latestClosingDate}
-                onChange={(e) => set("latestClosingDate", e.target.value)}
+                onChange={(v) => set("latestClosingDate", v)}
+                placeholder="Pick a date"
               />
             </div>
             <div className="sm:col-span-2 flex items-center gap-2">

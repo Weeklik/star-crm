@@ -4,8 +4,8 @@ import { format, subDays } from "date-fns";
 import { Loader2, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DatePicker } from "@/components/ui/date-picker";
 
 function CardSkeleton() {
   return <Skeleton className="h-24 w-full rounded-xl" />;
@@ -60,9 +60,9 @@ export default function Reports() {
           <p className="text-muted-foreground mt-1">Analytics and performance tracking.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-40" />
+          <DatePicker value={startDate} onChange={setStartDate} className="w-44" />
           <span className="text-muted-foreground">to</span>
-          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-40" />
+          <DatePicker value={endDate} onChange={setEndDate} className="w-44" />
           <Button variant="outline" size="icon" onClick={handleExportCSV} title="Export CSV">
             <FileSpreadsheet className="w-4 h-4" />
           </Button>
