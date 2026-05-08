@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Star CRM API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: deals
+    description: Sales deal operations
+  - name: users
+    description: User/salesperson management
+  - name: reports
+    description: Reports and analytics
 paths:
   /healthz:
     get:
@@ -24,6 +30,313 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /deals:
+    get:
+      operationId: listDeals
+      tags: [deals]
+      summary: List deals
+      description: List all deals. Owners see all deals; salespersons see their own.
+      parameters:
+        - name: salespersonId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by salesperson (owner only)
+        - name: stage
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: List of deals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+        "401":
+          description: Unauthorized
+
+    post:
+      operationId: createDeal
+      tags: [deals]
+      summary: Create a new deal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDealBody"
+      responses:
+        "201":
+          description: Created deal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
+  /deals/{id}:
+    get:
+      operationId: getDeal
+      tags: [deals]
+      summary: Get a deal by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "404":
+          description: Not found
+
+    patch:
+      operationId: updateDeal
+      tags: [deals]
+      summary: Update a deal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDealBody"
+      responses:
+        "200":
+          description: Updated deal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deal"
+        "404":
+          description: Not found
+
+    delete:
+      operationId: deleteDeal
+      tags: [deals]
+      summary: Delete a deal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all salespersons (owner only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile and role
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /users/{clerkId}/role:
+    patch:
+      operationId: updateUserRole
+      tags: [users]
+      summary: Update user role (owner only)
+      parameters:
+        - name: clerkId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRoleBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+
+  /reports/summary:
+    get:
+      operationId: getReportSummary
+      tags: [reports]
+      summary: Overall sales summary (pipeline totals, stage breakdown, VAT totals)
+      parameters:
+        - name: salespersonId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Summary report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSummary"
+
+  /reports/by-salesperson:
+    get:
+      operationId: getReportBySalesperson
+      tags: [reports]
+      summary: Per-salesperson breakdown (owner only)
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Per-salesperson stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalespersonReport"
+
+  /reports/weekly:
+    get:
+      operationId: getWeeklyReport
+      tags: [reports]
+      summary: Week-over-week report (owner only)
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 8
+          description: Number of past weeks to include
+        - name: salespersonId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Weekly breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeeklyReport"
+
+  /reports/stage-breakdown:
+    get:
+      operationId: getStageBreakdown
+      tags: [reports]
+      summary: Deals grouped by stage/status with counts and amounts
+      parameters:
+        - name: salespersonId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Stage breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StageBreakdown"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +347,302 @@ components:
       required:
         - status
 
+    Deal:
+      type: object
+      properties:
+        id:
+          type: integer
+        salespersonId:
+          type: string
+        salespersonName:
+          type: ["string", "null"]
+        dealStartDate:
+          type: string
+          format: date
+        name:
+          type: string
+        companyName:
+          type: string
+        productItem:
+          type: string
+        stage:
+          type: string
+          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        salesStatus:
+          type: string
+        vatApplicable:
+          type: boolean
+        agreedAmount:
+          type: number
+        receivedAmount:
+          type: number
+        outstandingAmount:
+          type: number
+        earliestClosingDate:
+          type: ["string", "null"]
+          format: date
+        latestClosingDate:
+          type: ["string", "null"]
+          format: date
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - salespersonId
+        - dealStartDate
+        - name
+        - companyName
+        - productItem
+        - stage
+        - progress
+        - salesStatus
+        - vatApplicable
+        - agreedAmount
+        - receivedAmount
+        - outstandingAmount
+        - createdAt
+        - updatedAt
+
+    CreateDealBody:
+      type: object
+      properties:
+        dealStartDate:
+          type: string
+          format: date
+        name:
+          type: string
+        companyName:
+          type: string
+        productItem:
+          type: string
+        stage:
+          type: string
+          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        salesStatus:
+          type: string
+        vatApplicable:
+          type: boolean
+        agreedAmount:
+          type: number
+        receivedAmount:
+          type: number
+        outstandingAmount:
+          type: number
+        earliestClosingDate:
+          type: ["string", "null"]
+          format: date
+        latestClosingDate:
+          type: ["string", "null"]
+          format: date
+        notes:
+          type: ["string", "null"]
+      required:
+        - dealStartDate
+        - name
+        - companyName
+        - productItem
+        - stage
+        - progress
+        - salesStatus
+        - vatApplicable
+        - agreedAmount
+        - receivedAmount
+        - outstandingAmount
+
+    UpdateDealBody:
+      type: object
+      properties:
+        dealStartDate:
+          type: string
+          format: date
+        name:
+          type: string
+        companyName:
+          type: string
+        productItem:
+          type: string
+        stage:
+          type: string
+          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        salesStatus:
+          type: string
+        vatApplicable:
+          type: boolean
+        agreedAmount:
+          type: number
+        receivedAmount:
+          type: number
+        outstandingAmount:
+          type: number
+        earliestClosingDate:
+          type: ["string", "null"]
+          format: date
+        latestClosingDate:
+          type: ["string", "null"]
+          format: date
+        notes:
+          type: ["string", "null"]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [owner, salesperson]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clerkId
+        - email
+        - role
+        - createdAt
+
+    UpdateUserRoleBody:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [owner, salesperson]
+      required:
+        - role
+
+    ReportSummary:
+      type: object
+      properties:
+        totalDeals:
+          type: integer
+        totalAgreedAmount:
+          type: number
+        totalReceivedAmount:
+          type: number
+        totalOutstandingAmount:
+          type: number
+        closedDeals:
+          type: integer
+        lostDeals:
+          type: integer
+        avgProgress:
+          type: number
+        vatApplicableCount:
+          type: integer
+      required:
+        - totalDeals
+        - totalAgreedAmount
+        - totalReceivedAmount
+        - totalOutstandingAmount
+        - closedDeals
+        - lostDeals
+        - avgProgress
+        - vatApplicableCount
+
+    SalespersonReport:
+      type: object
+      properties:
+        salespersonId:
+          type: string
+        salespersonName:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        totalDeals:
+          type: integer
+        totalAgreedAmount:
+          type: number
+        totalReceivedAmount:
+          type: number
+        totalOutstandingAmount:
+          type: number
+        closedDeals:
+          type: integer
+        lostDeals:
+          type: integer
+        avgProgress:
+          type: number
+      required:
+        - salespersonId
+        - totalDeals
+        - totalAgreedAmount
+        - totalReceivedAmount
+        - totalOutstandingAmount
+        - closedDeals
+        - lostDeals
+        - avgProgress
+
+    WeeklyReport:
+      type: object
+      properties:
+        weekLabel:
+          type: string
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        totalDeals:
+          type: integer
+        newDeals:
+          type: integer
+        closedDeals:
+          type: integer
+        totalAgreedAmount:
+          type: number
+        totalReceivedAmount:
+          type: number
+      required:
+        - weekLabel
+        - weekStart
+        - weekEnd
+        - totalDeals
+        - newDeals
+        - closedDeals
+        - totalAgreedAmount
+        - totalReceivedAmount
+
+    StageBreakdown:
+      type: object
+      properties:
+        stage:
+          type: string
+        count:
+          type: integer
+        totalAgreedAmount:
+          type: number
+        totalReceivedAmount:
+          type: number
+        totalOutstandingAmount:
+          type: number
+      required:
+        - stage
+        - count
+        - totalAgreedAmount
+        - totalReceivedAmount
+        - totalOutstandingAmount

@@ -1,19 +1,23 @@
-# [Project name]
+# Star CRM
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A professional CRM web portal for sales teams, with role-based access for owners and salespersons, full deal pipeline management, and rich reports with PDF/Excel export.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/star-crm run dev` — run the frontend (port 18321)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec (then manually fix `lib/api-zod/src/index.ts` to only have `export * from "./generated/api";`)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string (auto-provisioned)
+- Required env: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Clerk auth (auto-provisioned)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite + Tailwind v4 + shadcn/ui + Recharts + Wouter
+- Auth: Clerk (Replit-managed)
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,24 +26,45 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI contract (source of truth)
+- `lib/db/src/schema/` — Drizzle DB schema (`users.ts`, `deals.ts`)
+- `artifacts/api-server/src/routes/` — API route handlers
+- `artifacts/api-server/src/middlewares/` — Clerk proxy + requireAuth/requireOwner
+- `artifacts/star-crm/src/` — React frontend
+- `lib/api-client-react/src/generated/` — Generated React Query hooks (do not edit)
+- `lib/api-zod/src/generated/` — Generated Zod validation schemas (do not edit)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- First user to log in is assigned "owner" role; all subsequent users are "salesperson"
+- Role-based access is enforced both in API middleware and frontend routing
+- Deals are scoped to the logged-in salesperson; owners see all deals
+- Reports endpoints support date range + salesperson filters for flexible analysis
+- PDF export uses window.print(); Excel export generates CSV via blob download
+- Orval `schemas` option removed from zod config to prevent duplicate export conflicts; `lib/api-zod/src/index.ts` must only export from `./generated/api`
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Login-only portal (no self-signup; owner adds team members)
+- Owner dashboard: KPI summary, per-salesperson breakdown, all deals, week-wise reports
+- Salesperson dashboard: own pipeline KPIs, deal management table
+- Deal fields: Start Date, Name, Company, Product, Stage, Progress%, Sales Status, VAT, Agreed/Received/Outstanding Amounts, Closing Dates, Notes
+- Reports: Stage breakdown, weekly trends, per-salesperson comparison, date-filtered — all exportable as PDF/Excel
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- No signup option — login only
+- Stages: Quotation Sent, Order Closed, Order Confirmed, Order Lost
+- Owner sees all salesperson data and can change user roles
+- All reports must be downloadable as PDF and Excel
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After running codegen, always fix `lib/api-zod/src/index.ts` to only have `export * from "./generated/api";` — orval regenerates it with stale exports
+- The first user to authenticate via Clerk becomes the owner automatically
+- Seed data uses placeholder clerkIds (`seed_owner_001`, etc.) — real users come from Clerk auth
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `.local/skills/clerk-auth/references/setup-and-customization.md` for Clerk integration details
