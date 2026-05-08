@@ -202,60 +202,53 @@ router.get(
     const salespersonId = parsed.data.salespersonId;
 
     const now = new Date();
-    const weekData = [];
 
+    // Build week boundaries up front
+    const weekBuckets: Array<{ weekLabel: string; weekStart: string; weekEnd: string }> = [];
     for (let i = weeks - 1; i >= 0; i--) {
       const weekEnd = new Date(now);
       weekEnd.setDate(now.getDate() - i * 7);
-      weekEnd.setHours(23, 59, 59, 999);
-
       const weekStart = new Date(weekEnd);
       weekStart.setDate(weekEnd.getDate() - 6);
-      weekStart.setHours(0, 0, 0, 0);
-
-      const wStartStr = weekStart.toISOString().split("T")[0];
-      const wEndStr = weekEnd.toISOString().split("T")[0];
-
-      const conditions: SQL[] = [
-        gte(dealsTable.dealStartDate, wStartStr),
-        lte(dealsTable.dealStartDate, wEndStr),
-      ];
-
-      if (user.role !== "owner") {
-        conditions.push(eq(dealsTable.salespersonId, user.id));
-      } else if (salespersonId) {
-        conditions.push(eq(dealsTable.salespersonId, salespersonId));
-      }
-
-      const deals = await db
-        .select()
-        .from(dealsTable)
-        .where(and(...conditions));
-
-      const newDeals = deals.length;
-      const closedDeals = deals.filter(
-        (d) => d.stage === "Order Closed" || d.stage === "Order Confirmed",
-      ).length;
-      const totalAgreedAmount = deals.reduce(
-        (s, d) => s + parseFloat(d.agreedAmount ?? "0"),
-        0,
-      );
-      const totalReceivedAmount = deals.reduce(
-        (s, d) => s + parseFloat(d.receivedAmount ?? "0"),
-        0,
-      );
-
-      weekData.push({
+      weekBuckets.push({
         weekLabel: `W${weeks - i}`,
-        weekStart: wStartStr,
-        weekEnd: wEndStr,
-        totalDeals: newDeals,
-        newDeals,
-        closedDeals,
-        totalAgreedAmount,
-        totalReceivedAmount,
+        weekStart: weekStart.toISOString().split("T")[0],
+        weekEnd: weekEnd.toISOString().split("T")[0],
       });
     }
+
+    // Single query covering the entire range
+    const rangeStart = weekBuckets[0].weekStart;
+    const rangeEnd = weekBuckets[weekBuckets.length - 1].weekEnd;
+    const conditions: SQL[] = [
+      gte(dealsTable.dealStartDate, rangeStart),
+      lte(dealsTable.dealStartDate, rangeEnd),
+    ];
+    if (user.role !== "owner") {
+      conditions.push(eq(dealsTable.salespersonId, user.id));
+    } else if (salespersonId) {
+      conditions.push(eq(dealsTable.salespersonId, salespersonId));
+    }
+    const allDeals = await db.select().from(dealsTable).where(and(...conditions));
+
+    // Group in memory
+    const weekData = weekBuckets.map(({ weekLabel, weekStart, weekEnd }) => {
+      const deals = allDeals.filter(
+        (d) => d.dealStartDate >= weekStart && d.dealStartDate <= weekEnd,
+      );
+      return {
+        weekLabel,
+        weekStart,
+        weekEnd,
+        totalDeals: deals.length,
+        newDeals: deals.length,
+        closedDeals: deals.filter(
+          (d) => d.stage === "Order Closed" || d.stage === "Order Confirmed",
+        ).length,
+        totalAgreedAmount: deals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
+        totalReceivedAmount: deals.reduce((s, d) => s + parseFloat(d.receivedAmount ?? "0"), 0),
+      };
+    });
 
     res.json(GetWeeklyReportResponse.parse(weekData));
   },
