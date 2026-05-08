@@ -9,18 +9,17 @@ A professional CRM web portal for sales teams, with role-based access for owners
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec (then manually fix `lib/api-zod/src/index.ts` to only have `export * from "./generated/api";`)
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string (auto-provisioned)
-- Required env: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY` — Clerk auth (auto-provisioned)
+- Required env: `SESSION_SECRET` — Secret for express-session cookie signing
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Frontend: React + Vite + Tailwind v4 + shadcn/ui + Recharts + Wouter
-- Auth: Clerk (Replit-managed)
+- Auth: Custom email/password with express-session + bcryptjs
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
+- Validation: Zod, `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
@@ -36,10 +35,11 @@ A professional CRM web portal for sales teams, with role-based access for owners
 
 ## Architecture decisions
 
-- First user to log in is assigned "owner" role; all subsequent users are "salesperson"
-- Role-based access is enforced both in API middleware and frontend routing
-- Deals are scoped to the logged-in salesperson; owners see all deals
-- Reports endpoints support date range + salesperson filters for flexible analysis
+- Auth: POST /api/auth/login (email+password → session cookie), POST /api/auth/logout, GET /api/users/me
+- Sessions stored server-side via express-session; cookie is httpOnly, secure in production
+- Role-based access enforced in API middleware and frontend routing
+- Deals are scoped to the logged-in salesperson (by integer user id); owners see all deals
+- Reports endpoints support date range + salesperson id filters for flexible analysis
 - PDF export uses window.print(); Excel export generates CSV via blob download
 - Orval `schemas` option removed from zod config to prevent duplicate export conflicts; `lib/api-zod/src/index.ts` must only export from `./generated/api`
 

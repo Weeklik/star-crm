@@ -52,7 +52,7 @@ router.get("/deals", requireAuth, async (req, res): Promise<void> => {
   const conditions: SQL[] = [];
 
   if (user.role !== "owner") {
-    conditions.push(eq(dealsTable.salespersonId, user.clerkId));
+    conditions.push(eq(dealsTable.salespersonId, user.id));
   } else if (salespersonId) {
     conditions.push(eq(dealsTable.salespersonId, salespersonId));
   }
@@ -93,7 +93,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
   const [deal] = await db
     .insert(dealsTable)
     .values({
-      salespersonId: user.clerkId,
+      salespersonId: user.id,
       dealStartDate: data.dealStartDate as unknown as string,
       name: data.name,
       companyName: data.companyName,
@@ -133,7 +133,7 @@ router.get("/deals/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  if (user.role !== "owner" && deal.salespersonId !== user.clerkId) {
+  if (user.role !== "owner" && deal.salespersonId !== user.id) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -160,7 +160,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  if (user.role !== "owner" && existing.salespersonId !== user.clerkId) {
+  if (user.role !== "owner" && existing.salespersonId !== user.id) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -222,7 +222,7 @@ router.delete("/deals/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  if (user.role !== "owner" && existing.salespersonId !== user.clerkId) {
+  if (user.role !== "owner" && existing.salespersonId !== user.id) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

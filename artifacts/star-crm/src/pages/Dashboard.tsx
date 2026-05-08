@@ -6,11 +6,11 @@ import { format } from "date-fns";
 export default function Dashboard() {
   const { data: me, isLoading: meLoading } = useGetMe();
   const { data: summary, isLoading: summaryLoading } = useGetReportSummary(
-    me?.role === "salesperson" ? { salespersonId: me.clerkId } : undefined,
+    me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
     { query: { enabled: !!me } }
   );
   const { data: deals, isLoading: dealsLoading } = useListDeals(
-    me?.role === "salesperson" ? { salespersonId: me.clerkId } : undefined,
+    me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
     { query: { enabled: !!me } }
   );
 

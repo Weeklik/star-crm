@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lte, type SQL, sql } from "drizzle-orm";
+import { eq, and, gte, lte, type SQL } from "drizzle-orm";
 import { db, dealsTable, usersTable } from "@workspace/db";
 import { requireAuth, requireOwner } from "../middlewares/requireAuth";
 import {
@@ -18,13 +18,13 @@ const router: IRouter = Router();
 function buildDateConditions(
   startDate?: Date | string,
   endDate?: Date | string,
-  salespersonId?: string,
+  salespersonId?: number,
   userRole?: string,
-  userClerkId?: string,
+  userId?: number,
 ): SQL[] {
   const conditions: SQL[] = [];
   if (userRole !== "owner") {
-    conditions.push(eq(dealsTable.salespersonId, userClerkId!));
+    conditions.push(eq(dealsTable.salespersonId, userId!));
   } else if (salespersonId) {
     conditions.push(eq(dealsTable.salespersonId, salespersonId));
   }
@@ -56,7 +56,7 @@ router.get(
       endDate,
       salespersonId,
       user.role,
-      user.clerkId,
+      user.id,
     );
 
     const deals =
@@ -133,10 +133,12 @@ router.get(
             .where(and(...conditions))
         : await db.select().from(dealsTable);
 
-    const users = await db.select().from(usersTable);
-    const userMap = Object.fromEntries(users.map((u) => [u.clerkId, u]));
+    const users = await db
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .from(usersTable);
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
-    const byPerson: Record<string, any> = {};
+    const byPerson: Record<number, any> = {};
     for (const deal of deals) {
       const sid = deal.salespersonId;
       if (!byPerson[sid]) {
@@ -210,7 +212,7 @@ router.get(
       ];
 
       if (user.role !== "owner") {
-        conditions.push(eq(dealsTable.salespersonId, user.clerkId));
+        conditions.push(eq(dealsTable.salespersonId, user.id));
       } else if (salespersonId) {
         conditions.push(eq(dealsTable.salespersonId, salespersonId));
       }
@@ -266,7 +268,7 @@ router.get(
       endDate,
       salespersonId,
       user.role,
-      user.clerkId,
+      user.id,
     );
 
     const deals =

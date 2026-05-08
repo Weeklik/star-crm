@@ -20,7 +20,7 @@ export const DealStage = {
 
 export interface Deal {
   id: number;
-  salespersonId: string;
+  salespersonId: number;
   /** @nullable */
   salespersonName?: string | null;
   dealStartDate: string;
@@ -125,7 +125,6 @@ export const UserRole = {
 
 export interface User {
   id: number;
-  clerkId: string;
   email: string;
   /** @nullable */
   name?: string | null;
@@ -157,7 +156,7 @@ export interface ReportSummary {
 }
 
 export interface SalespersonReport {
-  salespersonId: string;
+  salespersonId: number;
   /** @nullable */
   salespersonName?: string | null;
   /** @nullable */
@@ -192,16 +191,16 @@ export interface StageBreakdown {
 
 export type ListDealsParams = {
   /**
-   * Filter by salesperson (owner only)
+   * Filter by salesperson ID (owner only)
    */
-  salespersonId?: string;
+  salespersonId?: number;
   stage?: string;
   startDate?: string;
   endDate?: string;
 };
 
 export type GetReportSummaryParams = {
-  salespersonId?: string;
+  salespersonId?: number;
   startDate?: string;
   endDate?: string;
 };
@@ -216,11 +215,11 @@ export type GetWeeklyReportParams = {
    * Number of past weeks to include
    */
   weeks?: number;
-  salespersonId?: string;
+  salespersonId?: number;
 };
 
 export type GetStageBreakdownParams = {
-  salespersonId?: string;
+  salespersonId?: number;
   startDate?: string;
   endDate?: string;
 };

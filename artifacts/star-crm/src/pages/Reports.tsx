@@ -15,7 +15,7 @@ export default function Reports() {
   const queryParams = { 
     startDate, 
     endDate,
-    ...(me?.role === "salesperson" ? { salespersonId: me.clerkId } : {})
+    ...(me?.role === "salesperson" ? { salespersonId: me.id } : {})
   };
 
   const { data: summary, isLoading: sLoading } = useGetReportSummary(queryParams, { query: { enabled: !!me } });

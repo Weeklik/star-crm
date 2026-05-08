@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 export default function Deals() {
   const { data: me } = useGetMe();
   const { data: deals, isLoading } = useListDeals(
-    me?.role === "salesperson" ? { salespersonId: me.clerkId } : undefined,
+    me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
     { query: { enabled: !!me } }
   );
   

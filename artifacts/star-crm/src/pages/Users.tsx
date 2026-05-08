@@ -12,9 +12,9 @@ export default function Users() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const handleRoleChange = (clerkId: string, newRole: "owner" | "salesperson") => {
+  const handleRoleChange = (id: number, newRole: "owner" | "salesperson") => {
     updateRole.mutate(
-      { clerkId, data: { role: newRole } },
+      { id, data: { role: newRole } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
@@ -57,7 +57,7 @@ export default function Users() {
                 <TableCell>
                   <Select 
                     defaultValue={user.role} 
-                    onValueChange={(val: "owner" | "salesperson") => handleRoleChange(user.clerkId, val)}
+                    onValueChange={(val: "owner" | "salesperson") => handleRoleChange(user.id, val)}
                     disabled={updateRole.isPending}
                   >
                     <SelectTrigger className="w-full h-8" data-testid={`select-role-${user.id}`}>

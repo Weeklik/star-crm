@@ -21,9 +21,9 @@ export const HealthCheckResponse = zod.object({
  */
 export const ListDealsQueryParams = zod.object({
   salespersonId: zod.coerce
-    .string()
+    .number()
     .optional()
-    .describe("Filter by salesperson (owner only)"),
+    .describe("Filter by salesperson ID (owner only)"),
   stage: zod.coerce.string().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
@@ -34,7 +34,7 @@ export const listDealsResponseProgressMax = 100;
 
 export const ListDealsResponseItem = zod.object({
   id: zod.number(),
-  salespersonId: zod.string(),
+  salespersonId: zod.number(),
   salespersonName: zod.string().nullish(),
   dealStartDate: zod.coerce.date(),
   name: zod.string(),
@@ -106,7 +106,7 @@ export const getDealResponseProgressMax = 100;
 
 export const GetDealResponse = zod.object({
   id: zod.number(),
-  salespersonId: zod.string(),
+  salespersonId: zod.number(),
   salespersonName: zod.string().nullish(),
   dealStartDate: zod.coerce.date(),
   name: zod.string(),
@@ -172,7 +172,7 @@ export const updateDealResponseProgressMax = 100;
 
 export const UpdateDealResponse = zod.object({
   id: zod.number(),
-  salespersonId: zod.string(),
+  salespersonId: zod.number(),
   salespersonName: zod.string().nullish(),
   dealStartDate: zod.coerce.date(),
   name: zod.string(),
@@ -212,7 +212,6 @@ export const DeleteDealParams = zod.object({
  */
 export const ListUsersResponseItem = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
   email: zod.string(),
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
@@ -225,7 +224,6 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem);
  */
 export const GetMeResponse = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
   email: zod.string(),
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
@@ -236,7 +234,7 @@ export const GetMeResponse = zod.object({
  * @summary Update user role (owner only)
  */
 export const UpdateUserRoleParams = zod.object({
-  clerkId: zod.coerce.string(),
+  id: zod.coerce.number(),
 });
 
 export const UpdateUserRoleBody = zod.object({
@@ -245,7 +243,6 @@ export const UpdateUserRoleBody = zod.object({
 
 export const UpdateUserRoleResponse = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
   email: zod.string(),
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
@@ -256,7 +253,7 @@ export const UpdateUserRoleResponse = zod.object({
  * @summary Overall sales summary (pipeline totals, stage breakdown, VAT totals)
  */
 export const GetReportSummaryQueryParams = zod.object({
-  salespersonId: zod.coerce.string().optional(),
+  salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
 });
@@ -281,7 +278,7 @@ export const GetReportBySalespersonQueryParams = zod.object({
 });
 
 export const GetReportBySalespersonResponseItem = zod.object({
-  salespersonId: zod.string(),
+  salespersonId: zod.number(),
   salespersonName: zod.string().nullish(),
   email: zod.string().nullish(),
   totalDeals: zod.number(),
@@ -306,7 +303,7 @@ export const GetWeeklyReportQueryParams = zod.object({
     .number()
     .default(getWeeklyReportQueryWeeksDefault)
     .describe("Number of past weeks to include"),
-  salespersonId: zod.coerce.string().optional(),
+  salespersonId: zod.coerce.number().optional(),
 });
 
 export const GetWeeklyReportResponseItem = zod.object({
@@ -325,7 +322,7 @@ export const GetWeeklyReportResponse = zod.array(GetWeeklyReportResponseItem);
  * @summary Deals grouped by stage/status with counts and amounts
  */
 export const GetStageBreakdownQueryParams = zod.object({
-  salespersonId: zod.coerce.string().optional(),
+  salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
 });

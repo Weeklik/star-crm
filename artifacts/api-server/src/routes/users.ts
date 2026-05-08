@@ -5,16 +5,17 @@ import { requireAuth, requireOwner } from "../middlewares/requireAuth";
 import {
   ListUsersResponse,
   GetMeResponse,
-  UpdateUserRoleParams,
   UpdateUserRoleBody,
   UpdateUserRoleResponse,
 } from "@workspace/api-zod";
+import { z } from "zod";
 
 const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
-  res.json(GetMeResponse.parse(user));
+  const { passwordHash: _, ...safeUser } = user;
+  res.json(GetMeResponse.parse(safeUser));
 });
 
 router.get(
@@ -22,19 +23,28 @@ router.get(
   requireAuth,
   requireOwner,
   async (_req, res): Promise<void> => {
-    const users = await db.select().from(usersTable).orderBy(usersTable.createdAt);
+    const users = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        name: usersTable.name,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt,
+      })
+      .from(usersTable)
+      .orderBy(usersTable.createdAt);
     res.json(ListUsersResponse.parse(users));
   },
 );
 
 router.patch(
-  "/users/:clerkId/role",
+  "/users/:id/role",
   requireAuth,
   requireOwner,
   async (req, res): Promise<void> => {
-    const params = UpdateUserRoleParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
+    const idParam = z.coerce.number().int().safeParse(req.params.id);
+    if (!idParam.success) {
+      res.status(400).json({ error: "Invalid user ID" });
       return;
     }
 
@@ -47,8 +57,14 @@ router.patch(
     const [updated] = await db
       .update(usersTable)
       .set({ role: body.data.role })
-      .where(eq(usersTable.clerkId, params.data.clerkId))
-      .returning();
+      .where(eq(usersTable.id, idParam.data))
+      .returning({
+        id: usersTable.id,
+        email: usersTable.email,
+        name: usersTable.name,
+        role: usersTable.role,
+        createdAt: usersTable.createdAt,
+      });
 
     if (!updated) {
       res.status(404).json({ error: "User not found" });

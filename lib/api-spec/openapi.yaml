@@ -42,8 +42,8 @@ paths:
           in: query
           required: false
           schema:
-            type: string
-          description: Filter by salesperson (owner only)
+            type: integer
+          description: Filter by salesperson ID (owner only)
         - name: stage
           in: query
           required: false
@@ -190,17 +190,17 @@ paths:
         "401":
           description: Unauthorized
 
-  /users/{clerkId}/role:
+  /users/{id}/role:
     patch:
       operationId: updateUserRole
       tags: [users]
       summary: Update user role (owner only)
       parameters:
-        - name: clerkId
+        - name: id
           in: path
           required: true
           schema:
-            type: string
+            type: integer
       requestBody:
         required: true
         content:
@@ -227,7 +227,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            type: integer
         - name: startDate
           in: query
           required: false
@@ -293,7 +293,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            type: integer
       responses:
         "200":
           description: Weekly breakdown
@@ -314,7 +314,7 @@ paths:
           in: query
           required: false
           schema:
-            type: string
+            type: integer
         - name: startDate
           in: query
           required: false
@@ -353,7 +353,7 @@ components:
         id:
           type: integer
         salespersonId:
-          type: string
+          type: integer
         salespersonName:
           type: ["string", "null"]
         dealStartDate:
@@ -506,8 +506,6 @@ components:
       properties:
         id:
           type: integer
-        clerkId:
-          type: string
         email:
           type: string
         name:
@@ -520,7 +518,6 @@ components:
           format: date-time
       required:
         - id
-        - clerkId
         - email
         - role
         - createdAt
@@ -567,7 +564,7 @@ components:
       type: object
       properties:
         salespersonId:
-          type: string
+          type: integer
         salespersonName:
           type: ["string", "null"]
         email:

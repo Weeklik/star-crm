@@ -679,16 +679,16 @@ export function useGetMe<
 /**
  * @summary Update user role (owner only)
  */
-export const getUpdateUserRoleUrl = (clerkId: string) => {
-  return `/api/users/${clerkId}/role`;
+export const getUpdateUserRoleUrl = (id: number) => {
+  return `/api/users/${id}/role`;
 };
 
 export const updateUserRole = async (
-  clerkId: string,
+  id: number,
   updateUserRoleBody: UpdateUserRoleBody,
   options?: RequestInit,
 ): Promise<User> => {
-  return customFetch<User>(getUpdateUserRoleUrl(clerkId), {
+  return customFetch<User>(getUpdateUserRoleUrl(id), {
     ...options,
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -703,14 +703,14 @@ export const getUpdateUserRoleMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateUserRole>>,
     TError,
-    { clerkId: string; data: BodyType<UpdateUserRoleBody> },
+    { id: number; data: BodyType<UpdateUserRoleBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof updateUserRole>>,
   TError,
-  { clerkId: string; data: BodyType<UpdateUserRoleBody> },
+  { id: number; data: BodyType<UpdateUserRoleBody> },
   TContext
 > => {
   const mutationKey = ["updateUserRole"];
@@ -724,11 +724,11 @@ export const getUpdateUserRoleMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof updateUserRole>>,
-    { clerkId: string; data: BodyType<UpdateUserRoleBody> }
+    { id: number; data: BodyType<UpdateUserRoleBody> }
   > = (props) => {
-    const { clerkId, data } = props ?? {};
+    const { id, data } = props ?? {};
 
-    return updateUserRole(clerkId, data, requestOptions);
+    return updateUserRole(id, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -750,14 +750,14 @@ export const useUpdateUserRole = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof updateUserRole>>,
     TError,
-    { clerkId: string; data: BodyType<UpdateUserRoleBody> },
+    { id: number; data: BodyType<UpdateUserRoleBody> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof updateUserRole>>,
   TError,
-  { clerkId: string; data: BodyType<UpdateUserRoleBody> },
+  { id: number; data: BodyType<UpdateUserRoleBody> },
   TContext
 > => {
   return useMutation(getUpdateUserRoleMutationOptions(options));
