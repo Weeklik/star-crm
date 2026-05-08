@@ -44,7 +44,12 @@ router.get(
   requireAuth,
   async (req, res): Promise<void> => {
     const user = (req as any).user;
-    const parsed = GetReportSummaryQueryParams.safeParse(req.query);
+    const rawQuery = {
+      ...req.query,
+      startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+      endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+    };
+    const parsed = GetReportSummaryQueryParams.safeParse(rawQuery);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
       return;
@@ -108,7 +113,12 @@ router.get(
   requireAuth,
   requireOwner,
   async (req, res): Promise<void> => {
-    const parsed = GetReportBySalespersonQueryParams.safeParse(req.query);
+    const rawQuery = {
+      ...req.query,
+      startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+      endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+    };
+    const parsed = GetReportBySalespersonQueryParams.safeParse(rawQuery);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
       return;
@@ -256,7 +266,12 @@ router.get(
   requireAuth,
   async (req, res): Promise<void> => {
     const user = (req as any).user;
-    const parsed = GetStageBreakdownQueryParams.safeParse(req.query);
+    const rawQuery = {
+      ...req.query,
+      startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+      endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+    };
+    const parsed = GetStageBreakdownQueryParams.safeParse(rawQuery);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
       return;
