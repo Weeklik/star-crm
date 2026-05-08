@@ -1,5 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2 } from "lucide-react";
+import { useState } from "react";
+import {
+  LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
+  ChevronDown, LayoutList, TableProperties, TrendingUp,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -8,19 +12,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, isLoading, logout } = useAuth();
 
-  const handleSignOut = async () => {
-    await logout();
-  };
+  const isReportsActive =
+    location === "/reports" ||
+    location.startsWith("/reports/");
 
-  const navItems = [
+  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+
+  const topItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/deals", label: "Deals", icon: Briefcase },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
   ];
 
-  if (user?.role === "owner") {
-    navItems.push({ href: "/users", label: "Users", icon: Users });
-  }
+  const reportsChildren = [
+    { href: "/reports", label: "Report Dashboard", icon: LayoutList },
+    { href: "/reports/summary-sales", label: "Summary Sales Report", icon: TableProperties },
+    { href: "/reports/sales-breakdown", label: "Sales Breakdown", icon: TrendingUp },
+  ];
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -36,7 +43,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="p-4 space-y-1">
-            {navItems.map((item) => {
+            {topItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.href || location.startsWith(`${item.href}/`);
               return (
@@ -51,6 +58,53 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
+
+            {/* Reports collapsible group */}
+            <div>
+              <button
+                onClick={() => setReportsOpen((o) => !o)}
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md transition-colors ${isReportsActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                data-testid="nav-reports"
+              >
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="w-5 h-5" />
+                  Reports
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${reportsOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {reportsOpen && (
+                <div className="mt-1 ml-4 space-y-0.5 border-l border-border pl-3">
+                  {reportsChildren.map((child) => {
+                    const Icon = child.icon;
+                    const isActive = location === child.href;
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {user?.role === "owner" && (
+              <Link
+                href="/users"
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location === "/users" ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                data-testid="nav-users"
+              >
+                <Users className="w-5 h-5" />
+                Users
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -75,7 +129,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             className="w-full justify-start text-muted-foreground hover:text-foreground"
-            onClick={handleSignOut}
+            onClick={logout}
             data-testid="btn-signout"
           >
             <LogOut className="w-4 h-4 mr-2" />

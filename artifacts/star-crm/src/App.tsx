@@ -10,6 +10,8 @@ import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Deals from "./pages/Deals";
 import Reports from "./pages/Reports";
+import SummarySalesReport from "./pages/SummarySalesReport";
+import SalesBreakdown from "./pages/SalesBreakdown";
 import Users from "./pages/Users";
 import Login from "./pages/Login";
 import NotFound from "./pages/not-found";
@@ -54,6 +56,12 @@ function AppRoutes() {
       </Route>
       <Route path="/deals">
         <ProtectedRoute component={Deals} />
+      </Route>
+      <Route path="/reports/summary-sales">
+        <ProtectedRoute component={SummarySalesReport} />
+      </Route>
+      <Route path="/reports/sales-breakdown">
+        <ProtectedRoute component={SalesBreakdown} />
       </Route>
       <Route path="/reports">
         <ProtectedRoute component={Reports} />

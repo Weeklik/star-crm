@@ -312,4 +312,201 @@ router.get(
   },
 );
 
+
+// ─── Summary Sales Report ─────────────────────────────────────────────────────
+router.get(
+  "/reports/summary-sales",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const user = (req as any).user;
+    const year = parseInt((req.query.year as string) || String(new Date().getFullYear()), 10);
+    const summaryStart = req.query.summaryStart as string | undefined;
+    const summaryEnd = req.query.summaryEnd as string | undefined;
+    const filterSalespersonId = req.query.salespersonId
+      ? parseInt(req.query.salespersonId as string, 10)
+      : undefined;
+
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year}-12-31`;
+
+    // Fetch all year deals
+    const yearConditions: SQL[] = [
+      gte(dealsTable.dealStartDate, yearStart),
+      lte(dealsTable.dealStartDate, yearEnd),
+    ];
+    if (user.role !== "owner") {
+      yearConditions.push(eq(dealsTable.salespersonId, user.id));
+    } else if (filterSalespersonId) {
+      yearConditions.push(eq(dealsTable.salespersonId, filterSalespersonId));
+    }
+    const yearDeals = await db
+      .select()
+      .from(dealsTable)
+      .where(and(...yearConditions));
+
+    // Fetch summary period deals
+    let summaryDeals: typeof yearDeals = [];
+    if (summaryStart && summaryEnd) {
+      const sumConditions: SQL[] = [
+        gte(dealsTable.dealStartDate, summaryStart),
+        lte(dealsTable.dealStartDate, summaryEnd),
+      ];
+      if (user.role !== "owner") {
+        sumConditions.push(eq(dealsTable.salespersonId, user.id));
+      } else if (filterSalespersonId) {
+        sumConditions.push(eq(dealsTable.salespersonId, filterSalespersonId));
+      }
+      summaryDeals = await db
+        .select()
+        .from(dealsTable)
+        .where(and(...sumConditions));
+    }
+
+    // Fetch all salespersons
+    const users = await db
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .from(usersTable);
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+
+    // Collect salesperson IDs from year deals
+    const spIds = [...new Set(yearDeals.map((d) => d.salespersonId))];
+
+    const result = spIds.map((spId) => {
+      const spDeals = yearDeals.filter((d) => d.salespersonId === spId);
+      const u = userMap[spId];
+
+      // Monthly totals (1-12)
+      const monthly: Record<number, number> = {};
+      for (let m = 1; m <= 12; m++) monthly[m] = 0;
+      for (const d of spDeals) {
+        const month = new Date(d.dealStartDate).getMonth() + 1;
+        monthly[month] += parseFloat(d.agreedAmount ?? "0");
+      }
+
+      const totalSales = spDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+      const activeMonths = Object.values(monthly).filter((v) => v > 0).length || 1;
+      const avgMonthlySales = totalSales / activeMonths;
+
+      // Summary period
+      const spSummary = summaryDeals.filter((d) => d.salespersonId === spId);
+      const summaryTotal = spSummary.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+      const summaryQuotation = spSummary
+        .filter((d) => d.stage === "Quotation Sent")
+        .reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+      const summaryOrderConfirmed = spSummary
+        .filter((d) => d.stage === "Order Confirmed")
+        .reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+
+      return {
+        salespersonId: spId,
+        name: u?.name ?? u?.email ?? `User ${spId}`,
+        totalSales,
+        avgMonthlySales,
+        monthly,
+        summaryTotal,
+        summaryQuotation,
+        summaryOrderConfirmed,
+      };
+    });
+
+    res.json(result);
+  },
+);
+
+// ─── Sales Breakdown (week × salesperson) ────────────────────────────────────
+router.get(
+  "/reports/sales-breakdown",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const user = (req as any).user;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    const filterSpId = req.query.salespersonId
+      ? parseInt(req.query.salespersonId as string, 10)
+      : undefined;
+
+    if (!startDate || !endDate) {
+      res.status(400).json({ error: "startDate and endDate are required" });
+      return;
+    }
+
+    // Build calendar-aligned weekly buckets
+    const start = new Date(startDate);
+    start.setDate(1); // align to first of month
+    const end = new Date(endDate);
+    end.setMonth(end.getMonth() + 1, 0); // last day of end month
+
+    const weeks: Array<{ weekLabel: string; weekStart: string; weekEnd: string }> = [];
+    const cursor = new Date(start);
+    let weekNum = 1;
+    let currentMonth = cursor.getMonth();
+
+    while (cursor <= end) {
+      const wStart = new Date(cursor);
+      const wEnd = new Date(cursor);
+      wEnd.setDate(wEnd.getDate() + 6);
+      if (wEnd > end) wEnd.setTime(end.getTime());
+
+      // Reset week number on month change
+      if (wStart.getMonth() !== currentMonth) {
+        currentMonth = wStart.getMonth();
+        weekNum = 1;
+      }
+
+      const monthName = wStart.toLocaleString("default", { month: "short" });
+      weeks.push({
+        weekLabel: `W${weekNum} ${monthName}`,
+        weekStart: wStart.toISOString().split("T")[0],
+        weekEnd: wEnd.toISOString().split("T")[0],
+      });
+
+      weekNum++;
+      cursor.setDate(cursor.getDate() + 7);
+    }
+
+    // Single query for all deals in range
+    const conditions: SQL[] = [
+      gte(dealsTable.dealStartDate, weeks[0].weekStart),
+      lte(dealsTable.dealStartDate, weeks[weeks.length - 1].weekEnd),
+    ];
+    if (user.role !== "owner") {
+      conditions.push(eq(dealsTable.salespersonId, user.id));
+    } else if (filterSpId) {
+      conditions.push(eq(dealsTable.salespersonId, filterSpId));
+    }
+    const allDeals = await db.select().from(dealsTable).where(and(...conditions));
+
+    // Fetch salespersons
+    const usersRows = await db
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .from(usersTable);
+    const relevantSpIds = user.role !== "owner"
+      ? [user.id]
+      : filterSpId
+      ? [filterSpId]
+      : [...new Set(allDeals.map((d) => d.salespersonId))];
+
+    const salespersons = usersRows
+      .filter((u) => relevantSpIds.includes(u.id))
+      .map((u) => ({ id: u.id, name: u.name ?? u.email ?? `User ${u.id}` }));
+
+    const weekData = weeks.map(({ weekLabel, weekStart, weekEnd }) => {
+      const weekDeals = allDeals.filter(
+        (d) => d.dealStartDate >= weekStart && d.dealStartDate <= weekEnd,
+      );
+      const byPerson: Record<number, number> = {};
+      for (const sp of salespersons) byPerson[sp.id] = 0;
+      for (const d of weekDeals) {
+        if (byPerson[d.salespersonId] !== undefined) {
+          byPerson[d.salespersonId] += parseFloat(d.agreedAmount ?? "0");
+        }
+      }
+      return { weekLabel, weekStart, weekEnd, byPerson };
+    });
+
+    res.json({ weeks: weekData, salespersons });
+  },
+);
+
 export default router;
+
