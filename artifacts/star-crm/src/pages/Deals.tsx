@@ -397,6 +397,7 @@ export default function Deals() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [stageFilter, setStageFilter] = useState<Stage | "">("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<DealFormState>(emptyForm());
@@ -426,9 +427,10 @@ export default function Deals() {
         d.companyName.toLowerCase().includes(q) ||
         d.name.toLowerCase().includes(q) ||
         d.productItem.toLowerCase().includes(q);
-      const matchesFrom = !dateFrom || dateStr >= dateFrom;
-      const matchesTo   = !dateTo   || dateStr <= dateTo;
-      return matchesSearch && matchesFrom && matchesTo;
+      const matchesFrom  = !dateFrom     || dateStr >= dateFrom;
+      const matchesTo    = !dateTo       || dateStr <= dateTo;
+      const matchesStage = !stageFilter  || d.stage === stageFilter;
+      return matchesSearch && matchesFrom && matchesTo && matchesStage;
     })
     .slice()
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -452,6 +454,7 @@ export default function Deals() {
 
   function onSearchChange(v: string) { setSearch(v); resetPage(); }
   function onDateFromChange(v: string) { setDateFrom(v); resetPage(); }
+  function onStageFilterChange(v: Stage | "") { setStageFilter(v); resetPage(); }
   function onDateToChange(v: string) { setDateTo(v); resetPage(); }
   function onPageSizeChange(v: number) { setPageSize(v); resetPage(); }
 
@@ -718,6 +721,18 @@ export default function Deals() {
             </button>
           )}
         </div>
+
+        {/* Stage filter */}
+        <select
+          value={stageFilter}
+          onChange={(e) => onStageFilterChange(e.target.value as Stage | "")}
+          className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
+        >
+          <option value="">All Stages</option>
+          {STAGES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
       {/* ── Stat boxes ── */}
