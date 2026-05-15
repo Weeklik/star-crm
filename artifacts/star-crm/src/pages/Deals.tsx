@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2,
   Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle,
+  Handshake, Wallet, Clock4, TrendingUp, CalendarRange,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
@@ -399,6 +400,8 @@ export default function Deals() {
   const deleteDeal = useDeleteDeal();
 
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<DealFormState>(emptyForm());
@@ -414,12 +417,31 @@ export default function Deals() {
   const [importPhase, setImportPhase] = useState<"review" | "confirm-duplicates">("review");
   const [forceAddSelected, setForceAddSelected] = useState<Set<number>>(new Set());
 
-  const filteredDeals = deals?.filter(
-    (d) =>
-      d.companyName.toLowerCase().includes(search.toLowerCase()) ||
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.productItem.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredDeals = deals?.filter((d) => {
+    const dateStr =
+      typeof d.dealStartDate === "string"
+        ? d.dealStartDate.split("T")[0]
+        : d.dealStartDate instanceof Date
+        ? d.dealStartDate.toISOString().split("T")[0]
+        : "";
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      d.companyName.toLowerCase().includes(q) ||
+      d.name.toLowerCase().includes(q) ||
+      d.productItem.toLowerCase().includes(q);
+    const matchesFrom = !dateFrom || dateStr >= dateFrom;
+    const matchesTo   = !dateTo   || dateStr <= dateTo;
+    return matchesSearch && matchesFrom && matchesTo;
+  });
+
+  const fmtCurrency = (n: number) =>
+    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+
+  const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)      || 0), 0) ?? 0;
+  const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)     || 0), 0) ?? 0;
+  const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount)  || 0), 0) ?? 0;
+  const stageCount = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
 
   function openAdd() {
     setEditingId(null);
@@ -626,8 +648,9 @@ export default function Deals() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 max-w-md">
-        <div className="relative flex-1">
+      {/* ── Filters ── */}
+      <div className="flex flex-wrap items-center gap-3 bg-card border border-border rounded-xl p-4">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search company, contact, or product..."
@@ -636,6 +659,110 @@ export default function Deals() {
             onChange={(e) => setSearch(e.target.value)}
             data-testid="input-search-deals"
           />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <CalendarRange className="w-4 h-4 text-muted-foreground" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            title="From date"
+          />
+          <span className="text-muted-foreground text-sm">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            title="To date"
+          />
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Stat boxes ── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* Total Deals */}
+        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Deals</span>
+            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <p className="text-3xl font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
+          <p className="text-xs text-muted-foreground">in current view</p>
+        </div>
+
+        {/* Agreed Amount */}
+        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1 border-l-4 border-l-blue-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agreed</span>
+            <Handshake className="w-4 h-4 text-blue-500" />
+          </div>
+          <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{fmtCurrency(statsAgreed)}</p>
+          <p className="text-xs text-muted-foreground">total agreed amount</p>
+        </div>
+
+        {/* Received Amount */}
+        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1 border-l-4 border-l-green-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Received</span>
+            <Wallet className="w-4 h-4 text-green-500" />
+          </div>
+          <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">{fmtCurrency(statsReceived)}</p>
+          <p className="text-xs text-muted-foreground">total received</p>
+        </div>
+
+        {/* Outstanding Amount */}
+        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1 border-l-4 border-l-orange-500">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Outstanding</span>
+            <Clock4 className="w-4 h-4 text-orange-500" />
+          </div>
+          <p className="text-2xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{fmtCurrency(statsOutstanding)}</p>
+          <p className="text-xs text-muted-foreground">pending collection</p>
+        </div>
+
+        {/* Pipeline Stages — spans 2 cols */}
+        <div className="col-span-2 bg-card border border-border rounded-xl p-4 flex flex-col gap-2">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pipeline Stages</span>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                <span className="text-xs text-muted-foreground">Quotation Sent</span>
+              </div>
+              <span className="text-sm font-bold tabular-nums">{stageCount("Quotation Sent")}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
+                <span className="text-xs text-muted-foreground">Order Confirmed</span>
+              </div>
+              <span className="text-sm font-bold tabular-nums">{stageCount("Order Confirmed")}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                <span className="text-xs text-muted-foreground">Order Closed</span>
+              </div>
+              <span className="text-sm font-bold tabular-nums">{stageCount("Order Closed")}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                <span className="text-xs text-muted-foreground">Order Lost</span>
+              </div>
+              <span className="text-sm font-bold tabular-nums">{stageCount("Order Lost")}</span>
+            </div>
+          </div>
         </div>
       </div>
 
