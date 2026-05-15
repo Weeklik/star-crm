@@ -770,6 +770,7 @@ export default function Deals() {
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary/50">
+              <TableHead>Start Date</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Product</TableHead>
@@ -782,13 +783,22 @@ export default function Deals() {
           <TableBody>
             {filteredDeals?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No deals found
                 </TableCell>
               </TableRow>
             ) : (
               filteredDeals?.map((deal) => (
                 <TableRow key={deal.id} data-testid={`row-deal-${deal.id}`}>
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                    {deal.dealStartDate
+                      ? new Date(
+                          typeof deal.dealStartDate === "string"
+                            ? deal.dealStartDate.split("T")[0] + "T00:00:00"
+                            : deal.dealStartDate
+                        ).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                      : "—"}
+                  </TableCell>
                   <TableCell className="font-medium">{deal.companyName}</TableCell>
                   <TableCell>{deal.name}</TableCell>
                   <TableCell className="text-muted-foreground">{deal.productItem}</TableCell>

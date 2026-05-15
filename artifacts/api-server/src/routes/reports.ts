@@ -457,14 +457,23 @@ router.get(
 
     while (cursor <= end) {
       const wStart = new Date(cursor);
-      const wEnd = new Date(cursor);
-      wEnd.setDate(wEnd.getDate() + 6);
-      if (wEnd > end) wEnd.setTime(end.getTime());
 
       if (wStart.getMonth() !== currentMonth) {
         currentMonth = wStart.getMonth();
         weekNum = 1;
       }
+
+      // End of the 7-day window
+      const sevenDayEnd = new Date(wStart);
+      sevenDayEnd.setDate(wStart.getDate() + 6);
+
+      // Last day of the current month — clip here so weeks never cross months
+      const monthEnd = new Date(wStart.getFullYear(), wStart.getMonth() + 1, 0);
+
+      // Week ends at the earliest of: 7 days, month end, or range end
+      const wEnd = new Date(
+        Math.min(sevenDayEnd.getTime(), monthEnd.getTime(), end.getTime()),
+      );
 
       weeks.push({
         monthName: wStart.toLocaleString("en-US", { month: "long" }),
@@ -475,7 +484,10 @@ router.get(
       });
 
       weekNum++;
-      cursor.setDate(cursor.getDate() + 7);
+      // Next cursor = day after this week ends
+      const next = new Date(wEnd);
+      next.setDate(wEnd.getDate() + 1);
+      cursor.setTime(next.getTime());
     }
 
     if (weeks.length === 0) {
