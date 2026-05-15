@@ -148,6 +148,17 @@ function toPayload(f: DealFormState) {
   };
 }
 
+function missingFields(row: ImportRow): Set<keyof DealFormState> {
+  const missing = new Set<keyof DealFormState>();
+  if (!row.dealStartDate) missing.add("dealStartDate");
+  if (!row.name?.trim()) missing.add("name");
+  if (!row.companyName?.trim()) missing.add("companyName");
+  if (!row.productItem?.trim()) missing.add("productItem");
+  if (!row.stage?.trim()) missing.add("stage");
+  if (!row.agreedAmount && row.agreedAmount !== 0) missing.add("agreedAmount");
+  return missing;
+}
+
 const getStageColor = (stage: string) => {
   switch (stage) {
     case "Quotation Sent": return "bg-blue-500/20 text-blue-500";
@@ -349,7 +360,7 @@ function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; skipped: numbe
 
   // Only drop rows where every meaningful field is blank (truly empty Excel rows)
   const rows = allParsed.filter(
-    (r) => r.name || r.companyName || r.productItem || r.agreedAmount > 0
+    (r) => r.name || r.companyName || r.productItem || r.agreedAmount > 0 || r.dealStartDate
   );
   const skipped = allParsed.length - rows.length;
 
@@ -1177,36 +1188,63 @@ export default function Deals() {
 
           {importPhase === "review" ? (
             <>
-              <p className="text-sm text-muted-foreground px-1">
-                Review the deals parsed from your file. All rows below will be imported. Click <strong>Import</strong> to proceed — duplicates will be flagged before any data is saved.
-              </p>
+              {(() => {
+                const invalidRows = importRows.filter((r) => missingFields(r).size > 0);
+                return (
+                  <div className="space-y-2 px-1">
+                    <p className="text-sm text-muted-foreground">
+                      Review the deals parsed from your file. All rows will be imported — rows with missing required fields are highlighted in red and will use defaults.
+                    </p>
+                    {invalidRows.length > 0 && (
+                      <div className="flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-xs text-destructive font-medium">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        {invalidRows.length} row{invalidRows.length !== 1 ? "s are" : " is"} missing required fields — highlighted below.
+                        Required: Start Date, Name, Company, Product, Stage, Agreed Amount.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="flex-1 overflow-auto mt-2 rounded-md border border-border">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/60 sticky top-0">
                     <tr>
                       <th className="px-2 py-2 text-left font-semibold">#</th>
-                      <th className="px-2 py-2 text-left font-semibold">Deal Name</th>
-                      <th className="px-2 py-2 text-left font-semibold">Company</th>
-                      <th className="px-2 py-2 text-left font-semibold">Product</th>
-                      <th className="px-2 py-2 text-left font-semibold">Stage</th>
-                      <th className="px-2 py-2 text-right font-semibold">Agreed</th>
-                      <th className="px-2 py-2 text-left font-semibold">Start Date</th>
+                      <th className="px-2 py-2 text-left font-semibold">Start Date <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-left font-semibold">Deal Name <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-left font-semibold">Company <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-left font-semibold">Product <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-left font-semibold">Stage <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-right font-semibold">Agreed <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-left font-semibold">Notes</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {importRows.map((row) => (
-                      <tr key={row._rowIndex} className="border-t border-border/40 hover:bg-muted/20">
-                        <td className="px-2 py-1.5 text-muted-foreground">{row._rowIndex}</td>
-                        <td className="px-2 py-1.5 font-medium">{row.name}</td>
-                        <td className="px-2 py-1.5">{row.companyName}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{row.productItem}</td>
-                        <td className="px-2 py-1.5">
-                          <Badge variant="outline" className={`text-[10px] border-0 ${getStageColor(row.stage)}`}>{row.stage}</Badge>
-                        </td>
-                        <td className="px-2 py-1.5 text-right">{formatCurrency(row.agreedAmount)}</td>
-                        <td className="px-2 py-1.5 text-muted-foreground">{row.dealStartDate}</td>
-                      </tr>
-                    ))}
+                    {importRows.map((row) => {
+                      const missing = missingFields(row);
+                      const hasIssue = missing.size > 0;
+                      const cell = (field: keyof DealFormState, content: React.ReactNode, extraClass = "") =>
+                        missing.has(field)
+                          ? <td className={`px-2 py-1.5 bg-destructive/10 text-destructive font-medium ${extraClass}`}>
+                              <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3 shrink-0" />missing</span>
+                            </td>
+                          : <td className={`px-2 py-1.5 ${extraClass}`}>{content}</td>;
+                      return (
+                        <tr key={row._rowIndex} className={`border-t border-border/40 ${hasIssue ? "bg-destructive/5" : "hover:bg-muted/20"}`}>
+                          <td className={`px-2 py-1.5 font-medium ${hasIssue ? "text-destructive" : "text-muted-foreground"}`}>{row._rowIndex}</td>
+                          {cell("dealStartDate", <span className="text-muted-foreground">{row.dealStartDate}</span>)}
+                          {cell("name", <span className="font-medium">{row.name}</span>)}
+                          {cell("companyName", row.companyName)}
+                          {cell("productItem", <span className="text-muted-foreground">{row.productItem}</span>)}
+                          {missing.has("stage")
+                            ? <td className="px-2 py-1.5 bg-destructive/10 text-destructive font-medium"><span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3 shrink-0" />missing</span></td>
+                            : <td className="px-2 py-1.5"><Badge variant="outline" className={`text-[10px] border-0 ${getStageColor(row.stage)}`}>{row.stage}</Badge></td>
+                          }
+                          {cell("agreedAmount", formatCurrency(row.agreedAmount), "text-right")}
+                          <td className="px-2 py-1.5 text-muted-foreground max-w-[120px] truncate">{row.notes}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
