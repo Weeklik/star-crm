@@ -92,7 +92,7 @@ export default function SummarySalesReport() {
     : "Summary Period";
 
   const handleExportCSV = () => {
-    let csv = "Summary Sales Report\n";
+    let csv = "Monthly Report\n";
     csv += `Name,Total Sales ${year},Avg Monthly Sales`;
     for (const m of MONTHS) csv += `,${m} ${year}`;
     if (hasSummary) csv += `,${summaryLabel} Sales,${summaryLabel} Quotation,${summaryLabel} Order Confirmed`;
@@ -119,7 +119,7 @@ export default function SummarySalesReport() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Summary Sales Report</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Monthly Report</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Year-to-date sales per salesperson with monthly breakdown.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -167,7 +167,7 @@ export default function SummarySalesReport() {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base print:text-center print:text-xl">Summary Sales Report {year}</CardTitle>
+          <CardTitle className="text-base print:text-center print:text-xl">Monthly Report {year}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (

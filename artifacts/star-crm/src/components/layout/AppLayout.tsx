@@ -25,8 +25,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const reportsChildren = [
-    { href: "/reports/summary-sales", label: "Summary Sales Report", icon: TableProperties },
-    { href: "/reports/sales-breakdown", label: "Sales Breakdown", icon: TrendingUp },
+    { href: "/reports/summary-sales", label: "Monthly Report", icon: TableProperties },
+    { href: "/reports/sales-breakdown", label: "Summary Report", icon: TrendingUp },
   ];
 
   return (

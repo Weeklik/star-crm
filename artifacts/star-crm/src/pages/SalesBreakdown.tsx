@@ -383,7 +383,7 @@ export default function SalesBreakdown() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sales Breakdown</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Summary Report</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             Weekly summary report by deal stage. Click any value to see the deals behind it.
           </p>
