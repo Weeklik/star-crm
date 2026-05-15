@@ -301,9 +301,9 @@ function buildColumnMap(sheetKeys: string[]): Record<string, string> {
   return map;
 }
 
-function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; detectedHeaders: string[] } {
+function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; skipped: number; detectedHeaders: string[] } {
   const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true });
-  if (json.length === 0) return { rows: [], detectedHeaders: [] };
+  if (json.length === 0) return { rows: [], skipped: 0, detectedHeaders: [] };
 
   const detectedHeaders = Object.keys(json[0]);
   const colMap = buildColumnMap(detectedHeaders);
@@ -315,35 +315,45 @@ function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; detectedHeader
   const str = (row: Record<string, unknown>, field: string): string =>
     String(get(row, field) ?? "").trim();
 
-  const rows = json
-    .map((row, idx) => {
-      const stageRaw = str(row, "stage");
-      const stage: Stage = stageRaw ? normaliseStage(stageRaw) : "Quotation Sent";
+  const allParsed = json.map((row, idx) => {
+    const stageRaw = str(row, "stage");
+    const stage: Stage = stageRaw ? normaliseStage(stageRaw) : "Quotation Sent";
 
-      const progressRaw = str(row, "progress");
-      const progress = Math.min(100, Math.max(0, parseFloat(progressRaw.replace(/[^0-9.]/g, "")) || 0));
+    const progressRaw = str(row, "progress");
+    const progressNum = parseFloat(progressRaw.replace(/[^0-9.]/g, "")) || 0;
+    // Normalise: Excel may store as fraction (0.2 = 20%) or whole number (20 = 20%)
+    const progress = Math.round(
+      progressNum > 0 && progressNum <= 1
+        ? progressNum * 100
+        : Math.min(100, Math.max(0, progressNum))
+    );
 
-      return {
-        _rowIndex: idx + 2,
-        name:              str(row, "name"),
-        companyName:       str(row, "companyName"),
-        productItem:       str(row, "productItem"),
-        dealStartDate:     parseExcelDate(get(row, "dealStartDate")) || new Date().toISOString().split("T")[0],
-        stage,
-        progress,
-        salesStatus:       "Active",
-        vatApplicable:     /^yes$/i.test(str(row, "vatApplicable")),
-        agreedAmount:      parseAmount(get(row, "agreedAmount")),
-        receivedAmount:    parseAmount(get(row, "receivedAmount")),
-        outstandingAmount: parseAmount(get(row, "outstandingAmount")),
-        earliestClosingDate: parseExcelDate(get(row, "earliestClosingDate")),
-        latestClosingDate:   parseExcelDate(get(row, "latestClosingDate")),
-        notes:             str(row, "notes"),
-      } as ImportRow;
-    })
-    .filter((r) => r.name && r.companyName);
+    return {
+      _rowIndex: idx + 2,
+      name:              str(row, "name"),
+      companyName:       str(row, "companyName"),
+      productItem:       str(row, "productItem"),
+      dealStartDate:     parseExcelDate(get(row, "dealStartDate")) || new Date().toISOString().split("T")[0],
+      stage,
+      progress,
+      salesStatus:       "Active",
+      vatApplicable:     /^yes$/i.test(str(row, "vatApplicable")),
+      agreedAmount:      parseAmount(get(row, "agreedAmount")),
+      receivedAmount:    parseAmount(get(row, "receivedAmount")),
+      outstandingAmount: parseAmount(get(row, "outstandingAmount")),
+      earliestClosingDate: parseExcelDate(get(row, "earliestClosingDate")),
+      latestClosingDate:   parseExcelDate(get(row, "latestClosingDate")),
+      notes:             str(row, "notes"),
+    } as ImportRow;
+  });
 
-  return { rows, detectedHeaders };
+  // Only drop rows where every meaningful field is blank (truly empty Excel rows)
+  const rows = allParsed.filter(
+    (r) => r.name || r.companyName || r.productItem || r.agreedAmount > 0
+  );
+  const skipped = allParsed.length - rows.length;
+
+  return { rows, skipped, detectedHeaders };
 }
 
 function downloadTemplate() {
@@ -409,6 +419,7 @@ export default function Deals() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importRows, setImportRows] = useState<ImportRow[]>([]);
   const [importDuplicates, setImportDuplicates] = useState<ImportRow[]>([]);
+  const [importSkipped, setImportSkipped] = useState(0);
   const [importingNew, setImportingNew] = useState(false);
   const [importPhase, setImportPhase] = useState<"review" | "confirm-duplicates">("review");
   const [forceAddSelected, setForceAddSelected] = useState<Set<number>>(new Set());
@@ -533,20 +544,21 @@ export default function Deals() {
         const data = new Uint8Array(ev.target!.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const { rows, detectedHeaders } = parseExcelRows(ws);
+        const { rows, skipped, detectedHeaders } = parseExcelRows(ws);
         if (rows.length === 0) {
           const headerPreview = detectedHeaders.length
             ? `Columns detected: ${detectedHeaders.slice(0, 6).join(", ")}${detectedHeaders.length > 6 ? ` … (+${detectedHeaders.length - 6} more)` : ""}.`
             : "No column headers detected.";
           toast({
             title: "No importable rows found",
-            description: `${headerPreview} The import needs at least a "Name" (or "Deal Name") and "Company Name" (or "Company") column with data. Download the template to see the expected format.`,
+            description: `${headerPreview} The import needs at least a "Name", "Company Name", "Product", or "Amount" column with data. Download the template to see the expected format.`,
             variant: "destructive",
             duration: 9000,
           });
           return;
         }
         setImportRows(rows);
+        setImportSkipped(skipped);
         setImportDuplicates([]);
         setForceAddSelected(new Set());
         setImportPhase("review");
@@ -614,7 +626,8 @@ export default function Deals() {
         // No duplicates — go straight to batched import with progress bar
         const count = await importDealsSequentially(importRows);
         await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
-        toast({ title: "Import complete", description: `${count} deal${count !== 1 ? "s" : ""} added.` });
+        const skippedMsg = importSkipped > 0 ? ` (${importSkipped} blank rows in file were skipped)` : "";
+        toast({ title: "Import complete", description: `${count} deal${count !== 1 ? "s" : ""} added.${skippedMsg}` });
         setImportDialogOpen(false);
         setImportProgress(null);
         setImportingNew(false);
@@ -1151,7 +1164,7 @@ export default function Deals() {
               {importPhase === "review" ? (
                 <>
                   <Upload className="w-5 h-5" />
-                  Review Import — {importRows.length} deal{importRows.length !== 1 ? "s" : ""} found
+                  Review Import — {importRows.length} deal{importRows.length !== 1 ? "s" : ""} found{importSkipped > 0 ? ` (${importSkipped} blank rows skipped)` : ""}
                 </>
               ) : (
                 <>

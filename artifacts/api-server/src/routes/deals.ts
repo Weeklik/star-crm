@@ -262,7 +262,13 @@ router.post("/deals/bulk", requireAuth, async (req, res): Promise<void> => {
   const validRows = toInsert.map((deal: any) => {
     const startDate = sanitiseDate(deal.dealStartDate) ?? todayStr;
     const stage = VALID_STAGES.includes(deal.stage) ? deal.stage : "Quotation Sent";
-    const progress = Math.min(100, Math.max(0, Number(deal.progress) || 0));
+    const rawProgress = Number(deal.progress) || 0;
+    // Normalise fraction (0.2 → 20) or whole number (20 → 20), then round to integer
+    const progress = Math.round(
+      rawProgress > 0 && rawProgress <= 1
+        ? rawProgress * 100
+        : Math.min(100, Math.max(0, rawProgress))
+    );
     const agreed = Number(deal.agreedAmount) || 0;
     const received = Number(deal.receivedAmount) || 0;
     const outstanding = Number(deal.outstandingAmount) || 0;
