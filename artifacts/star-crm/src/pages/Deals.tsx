@@ -728,7 +728,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Deals</span>
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
           </div>
-          <p className="text-3xl font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
+          <p className="text-sm font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
           <p className="text-xs text-muted-foreground">in current view</p>
         </div>
 
@@ -738,7 +738,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agreed</span>
             <Handshake className="w-4 h-4 text-blue-500" />
           </div>
-          <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{fmtCurrency(statsAgreed)}</p>
+          <p className="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">{fmtCurrency(statsAgreed)}</p>
           <p className="text-xs text-muted-foreground">total agreed amount</p>
         </div>
 
@@ -748,7 +748,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Received</span>
             <Wallet className="w-4 h-4 text-green-500" />
           </div>
-          <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">{fmtCurrency(statsReceived)}</p>
+          <p className="text-sm font-bold tabular-nums text-green-600 dark:text-green-400">{fmtCurrency(statsReceived)}</p>
           <p className="text-xs text-muted-foreground">total received</p>
         </div>
 
@@ -758,7 +758,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Outstanding</span>
             <Clock4 className="w-4 h-4 text-orange-500" />
           </div>
-          <p className="text-2xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{fmtCurrency(statsOutstanding)}</p>
+          <p className="text-sm font-bold tabular-nums text-orange-600 dark:text-orange-400">{fmtCurrency(statsOutstanding)}</p>
           <p className="text-xs text-muted-foreground">pending collection</p>
         </div>
 
