@@ -71,20 +71,19 @@ const STAGES: Stage[] = [
 
 // Excel template column headers (must stay in sync with parsing logic)
 const TEMPLATE_HEADERS = [
-  "Deal Name",
+  "Deal Start Date",
+  "Name",
   "Company Name",
   "Product / Item",
-  "Start Date (YYYY-MM-DD)",
-  "Stage",
-  "Progress (0-100)",
-  "Sales Status",
-  "VAT Applicable (yes/no)",
+  "Stage / Status",
+  "Progress %",
+  "VAT Applicable (Yes/No)",
   "Agreed Amount",
   "Received Amount",
   "Outstanding Amount",
-  "Earliest Closing Date (YYYY-MM-DD)",
-  "Latest Closing Date (YYYY-MM-DD)",
-  "Notes",
+  "Earliest Closing Date",
+  "Latest Closing Date",
+  "Notes / Comments",
 ];
 
 interface DealFormState {
@@ -164,72 +163,135 @@ const formatCurrency = (val: number) =>
     maximumFractionDigits: 0,
   }).format(val);
 
-/** Convert Excel serial date or string to YYYY-MM-DD */
+// Month abbreviation → 1-based index
+const MONTH_ABBR: Record<string, number> = {
+  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+};
+
+/**
+ * Convert any date value from Excel to YYYY-MM-DD.
+ * Handles:
+ *   - Excel serial number (e.g. 45000)
+ *   - "9-Jan-25"  / "9-Jan-2025"  (d-MMM-yy / d-MMM-yyyy)
+ *   - "YYYY-MM-DD"
+ *   - Any string parseable by Date()
+ * Returns "" for blank/unparseable values.
+ */
 function parseExcelDate(val: unknown): string {
-  if (!val) return new Date().toISOString().split("T")[0];
+  if (val === null || val === undefined || val === "") return "";
   if (typeof val === "number") {
-    // Excel serial date
     const date = XLSX.SSF.parse_date_code(val);
+    if (!date) return "";
     return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
   }
   const s = String(val).trim();
+  if (!s) return "";
+
+  // "9-Jan-25" or "9-Jan-2025"
+  const dmy = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const mon = MONTH_ABBR[dmy[2].toLowerCase()];
+    let yr = parseInt(dmy[3], 10);
+    if (yr < 100) yr += 2000;
+    if (mon && day) {
+      return `${yr}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+  }
+
+  // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Try parsing
+
+  // Fallback: let the JS Date parser try
   const d = new Date(s);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
-  return new Date().toISOString().split("T")[0];
+
+  return "";
+}
+
+/** Strip currency symbols / commas and return a number (0 if blank) */
+function parseAmount(val: unknown): number {
+  if (val === null || val === undefined || val === "") return 0;
+  if (typeof val === "number") return val;
+  const clean = String(val).replace(/[^0-9.-]/g, "");
+  return parseFloat(clean) || 0;
+}
+
+/** Normalise a stage string to one of our four valid values */
+function normaliseStage(raw: string): Stage {
+  const lower = raw.toLowerCase();
+  if (lower.includes("confirm")) return "Order Confirmed";
+  if (lower.includes("close") || lower.includes("closed")) return "Order Closed";
+  if (lower.includes("lost")) return "Order Lost";
+  return "Quotation Sent";
 }
 
 function parseExcelRows(ws: XLSX.WorkSheet): ImportRow[] {
-  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
-  return json.map((row, idx) => {
-    const get = (key: string) => String(row[key] ?? "").trim();
-    const getNum = (key: string) => parseFloat(String(row[key] ?? "0").replace(/[^0-9.-]/g, "")) || 0;
-    const stageRaw = get("Stage");
-    const stage = (STAGES as string[]).includes(stageRaw) ? (stageRaw as Stage) : "Quotation Sent";
+  // raw:true keeps cell values exactly as typed; we coerce everything ourselves
+  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true });
 
-    return {
-      _rowIndex: idx + 2,
-      name: get("Deal Name"),
-      companyName: get("Company Name"),
-      productItem: get("Product / Item"),
-      dealStartDate: parseExcelDate(row["Start Date (YYYY-MM-DD)"]),
-      stage,
-      progress: Math.min(100, Math.max(0, getNum("Progress (0-100)"))),
-      salesStatus: get("Sales Status") || "Active",
-      vatApplicable: /^yes$/i.test(get("VAT Applicable (yes/no)")),
-      agreedAmount: getNum("Agreed Amount"),
-      receivedAmount: getNum("Received Amount"),
-      outstandingAmount: getNum("Outstanding Amount"),
-      earliestClosingDate: parseExcelDate(row["Earliest Closing Date (YYYY-MM-DD)"]) === new Date().toISOString().split("T")[0] && !row["Earliest Closing Date (YYYY-MM-DD)"] ? "" : parseExcelDate(row["Earliest Closing Date (YYYY-MM-DD)"]),
-      latestClosingDate: parseExcelDate(row["Latest Closing Date (YYYY-MM-DD)"]) === new Date().toISOString().split("T")[0] && !row["Latest Closing Date (YYYY-MM-DD)"] ? "" : parseExcelDate(row["Latest Closing Date (YYYY-MM-DD)"]),
-      notes: get("Notes"),
-    } as ImportRow;
-  }).filter((r) => r.name && r.companyName);
+  return json
+    .map((row, idx) => {
+      const str = (key: string) => String(row[key] ?? "").trim();
+
+      const stageRaw = str("Stage / Status");
+      const stage: Stage = stageRaw ? normaliseStage(stageRaw) : "Quotation Sent";
+
+      const progressRaw = str("Progress %");
+      const progress = Math.min(100, Math.max(0, parseFloat(progressRaw.replace(/[^0-9.]/g, "")) || 0));
+
+      return {
+        _rowIndex: idx + 2,
+        name:              str("Name"),
+        companyName:       str("Company Name"),
+        productItem:       str("Product / Item"),
+        dealStartDate:     parseExcelDate(row["Deal Start Date"]) || new Date().toISOString().split("T")[0],
+        stage,
+        progress,
+        salesStatus:       "Active",                              // not in template, default
+        vatApplicable:     /^yes$/i.test(str("VAT Applicable (Yes/No)")),
+        agreedAmount:      parseAmount(row["Agreed Amount"]),
+        receivedAmount:    parseAmount(row["Received Amount"]),
+        outstandingAmount: parseAmount(row["Outstanding Amount"]),
+        earliestClosingDate: parseExcelDate(row["Earliest Closing Date"]),
+        latestClosingDate:   parseExcelDate(row["Latest Closing Date"]),
+        notes:             str("Notes / Comments"),
+      } as ImportRow;
+    })
+    .filter((r) => r.name && r.companyName);   // skip rows with no Name or Company
 }
 
 function downloadTemplate() {
   const wb = XLSX.utils.book_new();
-  // Sample data row
-  const sampleRow: Record<string, unknown> = {
-    "Deal Name": "Q3 Enterprise Renewal",
-    "Company Name": "Acme Corp",
-    "Product / Item": "SaaS Pro Plan",
-    "Start Date (YYYY-MM-DD)": new Date().toISOString().split("T")[0],
-    "Stage": "Quotation Sent",
-    "Progress (0-100)": 50,
-    "Sales Status": "Active",
-    "VAT Applicable (yes/no)": "no",
-    "Agreed Amount": 10000,
-    "Received Amount": 5000,
-    "Outstanding Amount": 5000,
-    "Earliest Closing Date (YYYY-MM-DD)": "",
-    "Latest Closing Date (YYYY-MM-DD)": "",
-    "Notes": "Example note",
+
+  const today = new Date();
+  const fmtSample = (d: Date) => {
+    const day = d.getDate();
+    const mon = d.toLocaleString("en-US", { month: "short" });
+    const yr  = String(d.getFullYear()).slice(-2);
+    return `${day}-${mon}-${yr}`;
   };
+  const todayStr = fmtSample(today);
+
+  const sampleRow: Record<string, string | number> = {
+    "Deal Start Date":          todayStr,
+    "Name":                     "Q3 Enterprise Renewal",
+    "Company Name":             "Acme Corp",
+    "Product / Item":           "SaaS Pro Plan",
+    "Stage / Status":           "Quotation Sent",
+    "Progress %":               "50",
+    "VAT Applicable (Yes/No)":  "No",
+    "Agreed Amount":            "10000",
+    "Received Amount":          "5000",
+    "Outstanding Amount":       "5000",
+    "Earliest Closing Date":    "",
+    "Latest Closing Date":      "",
+    "Notes / Comments":         "Example note",
+  };
+
   const ws = XLSX.utils.json_to_sheet([sampleRow], { header: TEMPLATE_HEADERS });
-  // Set column widths
-  ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(h.length, 16) }));
+  ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(h.length + 2, 18) }));
   XLSX.utils.book_append_sheet(wb, ws, "Deals");
   XLSX.writeFile(wb, "star-crm-deals-template.xlsx");
 }
