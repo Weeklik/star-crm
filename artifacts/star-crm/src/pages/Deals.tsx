@@ -227,39 +227,127 @@ function normaliseStage(raw: string): Stage {
   return "Quotation Sent";
 }
 
-function parseExcelRows(ws: XLSX.WorkSheet): ImportRow[] {
-  // raw:true keeps cell values exactly as typed; we coerce everything ourselves
+/** Normalise a column header for fuzzy matching: lowercase + collapse non-alphanumeric */
+function normHeader(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/**
+ * Maps every recognised normalised alias → internal field key.
+ * This lets us accept slight variations in column naming from user sheets.
+ */
+const FIELD_ALIASES: Record<string, string> = {
+  // Name
+  "name": "name", "deal name": "name", "contact name": "name",
+  "lead name": "name", "opportunity": "name", "opportunity name": "name",
+  // Company Name
+  "company name": "companyName", "company": "companyName",
+  "organization": "companyName", "organisation": "companyName",
+  "client": "companyName", "account": "companyName", "firm": "companyName",
+  // Product / Item
+  "product item": "productItem", "product": "productItem", "item": "productItem",
+  "service": "productItem", "product name": "productItem",
+  "product service": "productItem", "services": "productItem",
+  // Deal Start Date
+  "deal start date": "dealStartDate", "start date": "dealStartDate",
+  "date": "dealStartDate", "deal date": "dealStartDate",
+  "commencement date": "dealStartDate",
+  // Stage / Status
+  "stage status": "stage", "stage": "stage", "status": "stage",
+  "deal stage": "stage", "current stage": "stage",
+  // Progress %
+  "progress": "progress", "completion": "progress",
+  "progress percent": "progress", "completion percent": "progress",
+  // VAT
+  "vat applicable yes no": "vatApplicable", "vat applicable": "vatApplicable",
+  "vat": "vatApplicable", "vat yes no": "vatApplicable",
+  // Agreed Amount
+  "agreed amount": "agreedAmount", "agreed": "agreedAmount",
+  "deal value": "agreedAmount", "contract value": "agreedAmount",
+  "total amount": "agreedAmount", "agreed value": "agreedAmount",
+  "value": "agreedAmount",
+  // Received Amount
+  "received amount": "receivedAmount", "received": "receivedAmount",
+  "paid": "receivedAmount", "payment received": "receivedAmount",
+  "amount received": "receivedAmount", "down payment": "receivedAmount",
+  "paid amount": "receivedAmount",
+  // Outstanding Amount
+  "outstanding amount": "outstandingAmount", "outstanding": "outstandingAmount",
+  "balance": "outstandingAmount", "remaining": "outstandingAmount",
+  "amount due": "outstandingAmount", "pending amount": "outstandingAmount",
+  // Earliest Closing Date
+  "earliest closing date": "earliestClosingDate", "earliest closing": "earliestClosingDate",
+  "close date": "earliestClosingDate", "closing date": "earliestClosingDate",
+  "earliest date": "earliestClosingDate",
+  // Latest Closing Date
+  "latest closing date": "latestClosingDate", "latest closing": "latestClosingDate",
+  "end date": "latestClosingDate", "due date": "latestClosingDate",
+  "target date": "latestClosingDate", "latest date": "latestClosingDate",
+  // Notes
+  "notes comments": "notes", "notes": "notes", "comments": "notes",
+  "remarks": "notes", "description": "notes", "note": "notes",
+};
+
+/**
+ * Given the actual header keys present in the sheet, build a map of
+ *   internalFieldName → actualSheetKey
+ * using fuzzy alias matching.
+ */
+function buildColumnMap(sheetKeys: string[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const key of sheetKeys) {
+    const norm = normHeader(key);
+    const field = FIELD_ALIASES[norm];
+    if (field && !map[field]) {
+      map[field] = key;
+    }
+  }
+  return map;
+}
+
+function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; detectedHeaders: string[] } {
   const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true });
+  if (json.length === 0) return { rows: [], detectedHeaders: [] };
 
-  return json
+  const detectedHeaders = Object.keys(json[0]);
+  const colMap = buildColumnMap(detectedHeaders);
+
+  const get = (row: Record<string, unknown>, field: string): unknown => {
+    const key = colMap[field];
+    return key !== undefined ? row[key] : "";
+  };
+  const str = (row: Record<string, unknown>, field: string): string =>
+    String(get(row, field) ?? "").trim();
+
+  const rows = json
     .map((row, idx) => {
-      const str = (key: string) => String(row[key] ?? "").trim();
-
-      const stageRaw = str("Stage / Status");
+      const stageRaw = str(row, "stage");
       const stage: Stage = stageRaw ? normaliseStage(stageRaw) : "Quotation Sent";
 
-      const progressRaw = str("Progress %");
+      const progressRaw = str(row, "progress");
       const progress = Math.min(100, Math.max(0, parseFloat(progressRaw.replace(/[^0-9.]/g, "")) || 0));
 
       return {
         _rowIndex: idx + 2,
-        name:              str("Name"),
-        companyName:       str("Company Name"),
-        productItem:       str("Product / Item"),
-        dealStartDate:     parseExcelDate(row["Deal Start Date"]) || new Date().toISOString().split("T")[0],
+        name:              str(row, "name"),
+        companyName:       str(row, "companyName"),
+        productItem:       str(row, "productItem"),
+        dealStartDate:     parseExcelDate(get(row, "dealStartDate")) || new Date().toISOString().split("T")[0],
         stage,
         progress,
-        salesStatus:       "Active",                              // not in template, default
-        vatApplicable:     /^yes$/i.test(str("VAT Applicable (Yes/No)")),
-        agreedAmount:      parseAmount(row["Agreed Amount"]),
-        receivedAmount:    parseAmount(row["Received Amount"]),
-        outstandingAmount: parseAmount(row["Outstanding Amount"]),
-        earliestClosingDate: parseExcelDate(row["Earliest Closing Date"]),
-        latestClosingDate:   parseExcelDate(row["Latest Closing Date"]),
-        notes:             str("Notes / Comments"),
+        salesStatus:       "Active",
+        vatApplicable:     /^yes$/i.test(str(row, "vatApplicable")),
+        agreedAmount:      parseAmount(get(row, "agreedAmount")),
+        receivedAmount:    parseAmount(get(row, "receivedAmount")),
+        outstandingAmount: parseAmount(get(row, "outstandingAmount")),
+        earliestClosingDate: parseExcelDate(get(row, "earliestClosingDate")),
+        latestClosingDate:   parseExcelDate(get(row, "latestClosingDate")),
+        notes:             str(row, "notes"),
       } as ImportRow;
     })
-    .filter((r) => r.name && r.companyName);   // skip rows with no Name or Company
+    .filter((r) => r.name && r.companyName);
+
+  return { rows, detectedHeaders };
 }
 
 function downloadTemplate() {
@@ -412,9 +500,17 @@ export default function Deals() {
         const data = new Uint8Array(ev.target!.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = parseExcelRows(ws);
+        const { rows, detectedHeaders } = parseExcelRows(ws);
         if (rows.length === 0) {
-          toast({ title: "No valid rows found", description: "Make sure the file uses the template format.", variant: "destructive" });
+          const headerPreview = detectedHeaders.length
+            ? `Columns detected: ${detectedHeaders.slice(0, 6).join(", ")}${detectedHeaders.length > 6 ? ` … (+${detectedHeaders.length - 6} more)` : ""}.`
+            : "No column headers detected.";
+          toast({
+            title: "No importable rows found",
+            description: `${headerPreview} The import needs at least a "Name" (or "Deal Name") and "Company Name" (or "Company") column with data. Download the template to see the expected format.`,
+            variant: "destructive",
+            duration: 9000,
+          });
           return;
         }
         setImportRows(rows);
