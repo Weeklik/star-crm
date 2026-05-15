@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Deals from "./pages/Deals";
-import Reports from "./pages/Reports";
+
 import SummarySalesReport from "./pages/SummarySalesReport";
 import SalesBreakdown from "./pages/SalesBreakdown";
 import Users from "./pages/Users";
@@ -63,9 +63,7 @@ function AppRoutes() {
       <Route path="/reports/sales-breakdown">
         <ProtectedRoute component={SalesBreakdown} />
       </Route>
-      <Route path="/reports">
-        <ProtectedRoute component={Reports} />
-      </Route>
+
       <Route path="/users">
         <ProtectedRoute component={Users} ownerOnly />
       </Route>

@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
-  ChevronDown, LayoutList, TableProperties, TrendingUp, Sun, Moon,
+  ChevronDown, TableProperties, TrendingUp, Sun, Moon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -25,7 +25,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const reportsChildren = [
-    { href: "/reports", label: "Report Dashboard", icon: LayoutList },
     { href: "/reports/summary-sales", label: "Summary Sales Report", icon: TableProperties },
     { href: "/reports/sales-breakdown", label: "Sales Breakdown", icon: TrendingUp },
   ];
