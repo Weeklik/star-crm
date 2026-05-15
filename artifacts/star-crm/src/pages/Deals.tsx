@@ -411,6 +411,7 @@ export default function Deals() {
   const [importingNew, setImportingNew] = useState(false);
   const [importPhase, setImportPhase] = useState<"review" | "confirm-duplicates">("review");
   const [forceAddSelected, setForceAddSelected] = useState<Set<number>>(new Set());
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const filteredDeals = deals?.filter((d) => {
     const dateStr = String(d.dealStartDate).split("T")[0];
@@ -521,6 +522,7 @@ export default function Deals() {
         setImportDuplicates([]);
         setForceAddSelected(new Set());
         setImportPhase("review");
+        setImportProgress(null);
         setImportDialogOpen(true);
       } catch {
         toast({ title: "Failed to parse file", description: "Please use the downloaded Excel template.", variant: "destructive" });
@@ -530,52 +532,75 @@ export default function Deals() {
     e.target.value = "";
   }
 
+  // Insert deals one-by-one and track real-time progress
+  async function importDealsSequentially(rows: ImportRow[]): Promise<number> {
+    setImportProgress({ done: 0, total: rows.length });
+    let successCount = 0;
+    for (let i = 0; i < rows.length; i++) {
+      try {
+        const res = await fetch("/api/deals", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(toPayload(rows[i])),
+        });
+        if (res.ok) successCount++;
+      } catch {
+        // continue on individual failures
+      }
+      setImportProgress({ done: i + 1, total: rows.length });
+    }
+    return successCount;
+  }
+
   async function handleImport() {
     setImportingNew(true);
     try {
+      // First call: duplicate detection only (no inserts happen)
       const res = await fetch("/api/deals/bulk", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deals: importRows.map(toPayload), force: false }),
       });
       const json = await res.json();
       if (json.requiresConfirmation) {
+        // Switch to confirm-duplicates phase — no inserts yet
         setImportRows(json.newDeals ?? []);
         setImportDuplicates(json.duplicates ?? []);
         setForceAddSelected(new Set());
+        setImportProgress(null);
         setImportPhase("confirm-duplicates");
+        setImportingNew(false);
       } else {
-        const count = json.imported?.length ?? 0;
-        toast({ title: `Import complete`, description: `${count} deal${count !== 1 ? "s" : ""} added.` });
+        // No duplicates — insert one by one with progress
+        const count = await importDealsSequentially(importRows);
         await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
+        toast({ title: "Import complete", description: `${count} deal${count !== 1 ? "s" : ""} added.` });
         setImportDialogOpen(false);
+        setImportProgress(null);
+        setImportingNew(false);
       }
     } catch {
       toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
-    } finally {
+      setImportProgress(null);
       setImportingNew(false);
     }
   }
 
   async function handleConfirmDuplicates() {
-    // Build final list: all new + selected duplicates
     const forceDuplicates = importDuplicates.filter((r) => forceAddSelected.has(r._rowIndex));
     const allDeals = [...importRows, ...forceDuplicates];
-
     setImportingNew(true);
     try {
-      const res = await fetch("/api/deals/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deals: allDeals.map(toPayload), force: true }),
-      });
-      const json = await res.json();
-      const count = json.imported?.length ?? 0;
-      toast({ title: `Import complete`, description: `${count} deal${count !== 1 ? "s" : ""} added.` });
+      const count = await importDealsSequentially(allDeals);
       await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
+      toast({ title: "Import complete", description: `${count} deal${count !== 1 ? "s" : ""} added.` });
       setImportDialogOpen(false);
+      setImportProgress(null);
     } catch {
       toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
+      setImportProgress(null);
     } finally {
       setImportingNew(false);
     }
@@ -1065,11 +1090,28 @@ export default function Deals() {
                   </tbody>
                 </table>
               </div>
+              {importProgress && (
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Importing deals…</span>
+                    <span className="font-medium tabular-nums">{importProgress.done} / {importProgress.total}</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-200"
+                      style={{ width: `${Math.round((importProgress.done / importProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">
+                    {importProgress.total - importProgress.done} remaining
+                  </p>
+                </div>
+              )}
               <DialogFooter className="mt-2">
-                <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setImportDialogOpen(false)} disabled={importingNew}>Cancel</Button>
                 <Button onClick={handleImport} disabled={importingNew || importRows.length === 0}>
                   {importingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                  Import {importRows.length} Deal{importRows.length !== 1 ? "s" : ""}
+                  {importingNew ? "Importing…" : `Import ${importRows.length} Deal${importRows.length !== 1 ? "s" : ""}`}
                 </Button>
               </DialogFooter>
             </>
@@ -1142,11 +1184,30 @@ export default function Deals() {
                 </div>
               </div>
 
+              {importProgress && (
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Importing deals…</span>
+                    <span className="font-medium tabular-nums">{importProgress.done} / {importProgress.total}</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-200"
+                      style={{ width: `${Math.round((importProgress.done / importProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">
+                    {importProgress.total - importProgress.done} remaining
+                  </p>
+                </div>
+              )}
               <DialogFooter className="mt-2">
-                <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setImportDialogOpen(false)} disabled={importingNew}>Cancel</Button>
                 <Button onClick={handleConfirmDuplicates} disabled={importingNew}>
                   {importingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                  Import {importRows.length + forceAddSelected.size} Deal{(importRows.length + forceAddSelected.size) !== 1 ? "s" : ""}
+                  {importingNew
+                    ? "Importing…"
+                    : `Import ${importRows.length + forceAddSelected.size} Deal${(importRows.length + forceAddSelected.size) !== 1 ? "s" : ""}`}
                 </Button>
               </DialogFooter>
             </>
