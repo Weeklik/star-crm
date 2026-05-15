@@ -138,6 +138,22 @@ function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: stri
         fmtExport(w.totalSalesInProcess) || "",
       ]);
     }
+    // Monthly total row
+    const mOC  = group.rows.reduce((s, w) => s + w.orderClosedCount, 0);
+    const mOCA = group.rows.reduce((s, w) => s + w.orderClosedAmount, 0);
+    const mDP  = group.rows.reduce((s, w) => s + w.downPayment, 0);
+    const mPR  = group.rows.reduce((s, w) => s + w.totalPaymentReceipt, 0);
+    const mQC  = group.rows.reduce((s, w) => s + w.quotationSentCount, 0);
+    const mQA  = group.rows.reduce((s, w) => s + w.quotationSentAmount, 0);
+    const mCC  = group.rows.reduce((s, w) => s + w.orderConfirmedCount, 0);
+    const mCA  = group.rows.reduce((s, w) => s + w.orderConfirmedAmount, 0);
+    const mSIP = group.rows.reduce((s, w) => s + w.totalSalesInProcess, 0);
+    aoa.push([
+      `Total ${group.rows[0]?.monthName ?? group.monthLabel}`,
+      fmtCount(mOC) || "", fmtExport(mOCA) || "", fmtExport(mDP) || "", fmtExport(mPR) || "",
+      "",
+      fmtCount(mQC) || "", fmtExport(mQA) || "", fmtCount(mCC) || "", fmtExport(mCA) || "", fmtExport(mSIP) || "",
+    ]);
   }
 
   const totOC  = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
@@ -507,7 +523,17 @@ export default function SalesBreakdown() {
                     </td>
                   </tr>
                 ) : (
-                  groups.map(({ monthKey, monthLabel, rows }) => (
+                  groups.map(({ monthKey, monthLabel, rows }) => {
+                    const mOC  = rows.reduce((s, w) => s + w.orderClosedCount, 0);
+                    const mOCA = rows.reduce((s, w) => s + w.orderClosedAmount, 0);
+                    const mDP  = rows.reduce((s, w) => s + w.downPayment, 0);
+                    const mPR  = rows.reduce((s, w) => s + w.totalPaymentReceipt, 0);
+                    const mQC  = rows.reduce((s, w) => s + w.quotationSentCount, 0);
+                    const mQA  = rows.reduce((s, w) => s + w.quotationSentAmount, 0);
+                    const mCC  = rows.reduce((s, w) => s + w.orderConfirmedCount, 0);
+                    const mCA  = rows.reduce((s, w) => s + w.orderConfirmedAmount, 0);
+                    const mSIP = rows.reduce((s, w) => s + w.totalSalesInProcess, 0);
+                    return (
                     <>
                       {/* Month header row */}
                       <tr key={`month-${monthKey}`} className="bg-muted/30">
@@ -611,8 +637,26 @@ export default function SalesBreakdown() {
                           </td>
                         </tr>
                       ))}
+
+                      {/* Monthly total row */}
+                      <tr key={`total-${monthKey}`} className="bg-muted/50 border-t border-border font-semibold">
+                        <td className={`${tdBase} text-left text-xs font-bold`}>
+                          Total {rows[0]?.monthName}
+                        </td>
+                        <td className={`${tdBase} bg-green-700/25 font-bold`}>{fmtCount(mOC)}</td>
+                        <td className={`${tdBase} bg-green-700/25 font-bold`}>{fmt(mOCA)}</td>
+                        <td className={`${tdBase} bg-green-700/15 font-bold`}>{fmt(mDP)}</td>
+                        <td className={`${tdBase} bg-green-700/15 font-bold`}>{fmt(mPR)}</td>
+                        <td className="border border-border bg-muted/10" />
+                        <td className={`${tdBase} bg-yellow-600/20 font-bold`}>{fmtCount(mQC)}</td>
+                        <td className={`${tdBase} bg-yellow-600/20 font-bold`}>{fmt(mQA)}</td>
+                        <td className={`${tdBase} bg-blue-600/20 font-bold`}>{fmtCount(mCC)}</td>
+                        <td className={`${tdBase} bg-blue-600/20 font-bold`}>{fmt(mCA)}</td>
+                        <td className={`${tdBase} bg-yellow-600/15 font-bold`}>{fmt(mSIP)}</td>
+                      </tr>
                     </>
-                  ))
+                  );
+                  })
                 )}
               </tbody>
 
