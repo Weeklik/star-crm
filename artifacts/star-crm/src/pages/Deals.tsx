@@ -584,24 +584,29 @@ export default function Deals() {
   async function handleImport() {
     setImportingNew(true);
     try {
-      // First call: duplicate detection only (no inserts happen)
-      const res = await fetch("/api/deals/bulk", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deals: importRows.map(toPayload), force: false }),
+      // Client-side duplicate detection against already-loaded deals (no server round-trip)
+      const existingKeys = new Set(
+        (deals ?? []).map((d) =>
+          `${d.name.trim().toLowerCase()}|${d.companyName.trim().toLowerCase()}`
+        )
+      );
+      const newDeals: ImportRow[] = [];
+      const duplicates: ImportRow[] = [];
+      importRows.forEach((row) => {
+        const key = `${String(row.name ?? "").trim().toLowerCase()}|${String(row.companyName ?? "").trim().toLowerCase()}`;
+        (existingKeys.has(key) ? duplicates : newDeals).push(row);
       });
-      const json = await res.json();
-      if (json.requiresConfirmation) {
-        // Switch to confirm-duplicates phase — no inserts yet
-        setImportRows(json.newDeals ?? []);
-        setImportDuplicates(json.duplicates ?? []);
+
+      if (duplicates.length > 0) {
+        // Let user decide what to do with duplicates
+        setImportRows(newDeals);
+        setImportDuplicates(duplicates);
         setForceAddSelected(new Set());
         setImportProgress(null);
         setImportPhase("confirm-duplicates");
         setImportingNew(false);
       } else {
-        // No duplicates — insert one by one with progress
+        // No duplicates — go straight to batched import with progress bar
         const count = await importDealsSequentially(importRows);
         await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
         toast({ title: "Import complete", description: `${count} deal${count !== 1 ? "s" : ""} added.` });

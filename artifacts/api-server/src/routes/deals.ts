@@ -247,28 +247,34 @@ router.post("/deals/bulk", requireAuth, async (req, res): Promise<void> => {
   const toInsert = force ? [...newDeals, ...duplicates] : newDeals;
   const inserted: any[] = [];
 
-  for (const deal of toInsert) {
-    const parsed = CreateDealBody.safeParse(deal);
-    if (!parsed.success) continue;
-    const d = parsed.data;
-    const [row] = await db.insert(dealsTable).values({
-      salespersonId: user.id,
-      dealStartDate: d.dealStartDate as unknown as string,
-      name: d.name,
-      companyName: d.companyName,
-      productItem: d.productItem,
-      stage: d.stage,
-      progress: d.progress,
-      salesStatus: d.salesStatus,
-      vatApplicable: d.vatApplicable,
-      agreedAmount: String(d.agreedAmount),
-      receivedAmount: String(d.receivedAmount),
-      outstandingAmount: String(d.outstandingAmount),
-      earliestClosingDate: d.earliestClosingDate as unknown as string | undefined,
-      latestClosingDate: d.latestClosingDate as unknown as string | undefined,
-      notes: d.notes ?? null,
-    }).returning();
-    inserted.push(formatDeal(row));
+  // Build valid rows in one pass, then do a single batch INSERT (no per-row round trips)
+  const validRows = toInsert
+    .map((deal: any) => CreateDealBody.safeParse(deal))
+    .filter((r: any) => r.success)
+    .map((r: any) => {
+      const d = r.data;
+      return {
+        salespersonId: user.id,
+        dealStartDate: d.dealStartDate as unknown as string,
+        name: d.name,
+        companyName: d.companyName,
+        productItem: d.productItem,
+        stage: d.stage,
+        progress: d.progress,
+        salesStatus: d.salesStatus,
+        vatApplicable: d.vatApplicable,
+        agreedAmount: String(d.agreedAmount),
+        receivedAmount: String(d.receivedAmount),
+        outstandingAmount: String(d.outstandingAmount),
+        earliestClosingDate: d.earliestClosingDate as unknown as string | undefined,
+        latestClosingDate: d.latestClosingDate as unknown as string | undefined,
+        notes: d.notes ?? null,
+      };
+    });
+
+  if (validRows.length > 0) {
+    const rows = await db.insert(dealsTable).values(validRows).returning();
+    rows.forEach((row: any) => inserted.push(formatDeal(row)));
   }
 
   res.status(201).json({ requiresConfirmation: false, imported: inserted, duplicates: force ? [] : duplicates, newDeals: [] });
