@@ -433,7 +433,12 @@ export default function Deals() {
       return matchesSearch && matchesFrom && matchesTo && matchesStage;
     })
     .slice()
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .sort((a, b) => {
+      const da = a.dealStartDate ? new Date(a.dealStartDate).getTime() : 0;
+      const db2 = b.dealStartDate ? new Date(b.dealStartDate).getTime() : 0;
+      if (db2 !== da) return db2 - da;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));

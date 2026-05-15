@@ -247,30 +247,44 @@ router.post("/deals/bulk", requireAuth, async (req, res): Promise<void> => {
   const toInsert = force ? [...newDeals, ...duplicates] : newDeals;
   const inserted: any[] = [];
 
-  // Build valid rows in one pass, then do a single batch INSERT (no per-row round trips)
-  const validRows = toInsert
-    .map((deal: any) => CreateDealBody.safeParse(deal))
-    .filter((r: any) => r.success)
-    .map((r: any) => {
-      const d = r.data;
-      return {
-        salespersonId: user.id,
-        dealStartDate: d.dealStartDate as unknown as string,
-        name: d.name,
-        companyName: d.companyName,
-        productItem: d.productItem,
-        stage: d.stage,
-        progress: d.progress,
-        salesStatus: d.salesStatus,
-        vatApplicable: d.vatApplicable,
-        agreedAmount: String(d.agreedAmount),
-        receivedAmount: String(d.receivedAmount),
-        outstandingAmount: String(d.outstandingAmount),
-        earliestClosingDate: d.earliestClosingDate as unknown as string | undefined,
-        latestClosingDate: d.latestClosingDate as unknown as string | undefined,
-        notes: d.notes ?? null,
-      };
-    });
+  const VALID_STAGES = ["Quotation Sent", "Order Closed", "Order Confirmed", "Order Lost"] as const;
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  function sanitiseDate(val: unknown): string | undefined {
+    if (!val) return undefined;
+    const s = String(val).trim();
+    if (!s) return undefined;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? undefined : s;
+  }
+
+  // Sanitise every row — never silently drop, just apply safe defaults
+  const validRows = toInsert.map((deal: any) => {
+    const startDate = sanitiseDate(deal.dealStartDate) ?? todayStr;
+    const stage = VALID_STAGES.includes(deal.stage) ? deal.stage : "Quotation Sent";
+    const progress = Math.min(100, Math.max(0, Number(deal.progress) || 0));
+    const agreed = Number(deal.agreedAmount) || 0;
+    const received = Number(deal.receivedAmount) || 0;
+    const outstanding = Number(deal.outstandingAmount) || 0;
+
+    return {
+      salespersonId: user.id,
+      dealStartDate: startDate as unknown as string,
+      name: String(deal.name ?? "").trim() || "Untitled",
+      companyName: String(deal.companyName ?? "").trim() || "Unknown",
+      productItem: String(deal.productItem ?? "").trim(),
+      stage,
+      progress,
+      salesStatus: String(deal.salesStatus ?? "Active").trim() || "Active",
+      vatApplicable: deal.vatApplicable === true || deal.vatApplicable === "true",
+      agreedAmount: String(agreed),
+      receivedAmount: String(received),
+      outstandingAmount: String(outstanding),
+      earliestClosingDate: sanitiseDate(deal.earliestClosingDate) as unknown as string | undefined,
+      latestClosingDate: sanitiseDate(deal.latestClosingDate) as unknown as string | undefined,
+      notes: deal.notes ? String(deal.notes) : null,
+    };
+  });
 
   if (validRows.length > 0) {
     const rows = await db.insert(dealsTable).values(validRows).returning();
