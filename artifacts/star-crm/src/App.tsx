@@ -5,10 +5,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Deals from "./pages/Deals";
+import Profile from "./pages/Profile";
 
 import SummarySalesReport from "./pages/SummarySalesReport";
 import SalesBreakdown from "./pages/SalesBreakdown";
@@ -48,27 +50,31 @@ function SignInPage() {
 
 function AppRoutes() {
   return (
-    <Switch>
-      <Route path="/" component={HomeRedirect} />
-      <Route path="/sign-in" component={SignInPage} />
-      <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} />
-      </Route>
-      <Route path="/deals">
-        <ProtectedRoute component={Deals} />
-      </Route>
-      <Route path="/reports/summary-sales">
-        <ProtectedRoute component={SummarySalesReport} />
-      </Route>
-      <Route path="/reports/sales-breakdown">
-        <ProtectedRoute component={SalesBreakdown} />
-      </Route>
-
-      <Route path="/users">
-        <ProtectedRoute component={Users} ownerOnly />
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
+    <CurrencyProvider>
+      <Switch>
+        <Route path="/" component={HomeRedirect} />
+        <Route path="/sign-in" component={SignInPage} />
+        <Route path="/dashboard">
+          <ProtectedRoute component={Dashboard} />
+        </Route>
+        <Route path="/deals">
+          <ProtectedRoute component={Deals} />
+        </Route>
+        <Route path="/reports/summary-sales">
+          <ProtectedRoute component={SummarySalesReport} />
+        </Route>
+        <Route path="/reports/sales-breakdown">
+          <ProtectedRoute component={SalesBreakdown} />
+        </Route>
+        <Route path="/users">
+          <ProtectedRoute component={Users} ownerOnly />
+        </Route>
+        <Route path="/profile">
+          <ProtectedRoute component={Profile} />
+        </Route>
+        <Route component={NotFound} />
+      </Switch>
+    </CurrencyProvider>
   );
 }
 

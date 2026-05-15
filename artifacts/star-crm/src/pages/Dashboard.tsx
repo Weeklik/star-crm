@@ -2,6 +2,7 @@ import { useGetMe, useGetReportSummary, useListDeals } from "@workspace/api-clie
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, DollarSign, Briefcase, TrendingUp, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export default function Dashboard() {
   const { data: me, isLoading: meLoading } = useGetMe();
@@ -14,9 +15,7 @@ export default function Dashboard() {
     { query: { enabled: !!me } }
   );
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
-  };
+  const { formatAmount: formatCurrency } = useCurrency();
 
   if (meLoading || summaryLoading || dealsLoading) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;

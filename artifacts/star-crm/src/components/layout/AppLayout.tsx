@@ -2,11 +2,11 @@ import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
-  ChevronDown, TableProperties, TrendingUp, Sun, Moon,
+  ChevronDown, TableProperties, TrendingUp, Sun, Moon, UserCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -105,6 +105,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 Users
               </Link>
             )}
+
+            {/* Profile */}
+            <Link
+              href="/profile"
+              className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location === "/profile" ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+              data-testid="nav-profile"
+            >
+              <UserCircle className="w-5 h-5" />
+              Profile
+            </Link>
           </nav>
         </div>
 
@@ -139,14 +149,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* User info */}
+          {/* User info — clicking navigates to /profile */}
           {isLoading ? (
             <div className="flex items-center justify-center p-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="flex items-center gap-3 px-2">
-              <Avatar className="h-9 w-9">
+            <Link href="/profile" className="flex items-center gap-3 px-2 rounded-md hover:bg-secondary transition-colors py-1 cursor-pointer">
+              <Avatar className="h-9 w-9 shrink-0">
+                {user?.profilePicture && <AvatarImage src={user.profilePicture} alt={user.name ?? "Avatar"} />}
                 <AvatarFallback className="bg-primary/20 text-primary">
                   {user?.name?.charAt(0) ?? user?.email?.charAt(0) ?? "U"}
                 </AvatarFallback>
@@ -155,7 +166,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-medium truncate">{user?.name || user?.email}</p>
                 <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
               </div>
-            </div>
+            </Link>
           )}
 
           {/* Sign out */}

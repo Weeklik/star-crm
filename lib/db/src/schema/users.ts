@@ -8,6 +8,10 @@ export const usersTable = pgTable("users", {
   name: text("name"),
   passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("salesperson"),
+  profilePicture: text("profile_picture"),
+  dateOfJoining: text("date_of_joining"),
+  country: text("country"),
+  currency: text("currency").default("USD"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

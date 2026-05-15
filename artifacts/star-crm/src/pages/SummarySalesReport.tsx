@@ -1,4 +1,5 @@
 import { useGetMe } from "@workspace/api-client-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
@@ -32,10 +33,6 @@ interface UserOption {
   name: string | null;
 }
 
-function fmt(n: number) {
-  if (!n) return "-";
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
-}
 
 export default function SummarySalesReport() {
   const { data: me } = useGetMe();
@@ -48,6 +45,9 @@ export default function SummarySalesReport() {
   const [rows, setRows] = useState<SalespersonRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserOption[]>([]);
+
+  const { formatAmount } = useCurrency();
+  const fmt = (n: number) => (n ? formatAmount(n) : "-");
 
   // fetch users for owner filter
   useEffect(() => {

@@ -60,6 +60,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost";
 
@@ -157,12 +158,6 @@ const getStageColor = (stage: string) => {
   }
 };
 
-const formatCurrency = (val: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(val);
 
 // Month abbreviation → 1-based index
 const MONTH_ABBR: Record<string, number> = {
@@ -418,12 +413,7 @@ export default function Deals() {
   const [forceAddSelected, setForceAddSelected] = useState<Set<number>>(new Set());
 
   const filteredDeals = deals?.filter((d) => {
-    const dateStr =
-      typeof d.dealStartDate === "string"
-        ? d.dealStartDate.split("T")[0]
-        : d.dealStartDate instanceof Date
-        ? d.dealStartDate.toISOString().split("T")[0]
-        : "";
+    const dateStr = String(d.dealStartDate).split("T")[0];
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
@@ -435,8 +425,9 @@ export default function Deals() {
     return matchesSearch && matchesFrom && matchesTo;
   });
 
-  const fmtCurrency = (n: number) =>
-    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+  const { formatAmount } = useCurrency();
+  const fmtCurrency = formatAmount;
+  const formatCurrency = formatAmount;
 
   const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)      || 0), 0) ?? 0;
   const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)     || 0), 0) ?? 0;
@@ -452,10 +443,7 @@ export default function Deals() {
   function openEdit(deal: NonNullable<typeof deals>[number]) {
     setEditingId(deal.id);
     setForm({
-      dealStartDate:
-        deal.dealStartDate instanceof Date
-          ? deal.dealStartDate.toISOString().split("T")[0]
-          : String(deal.dealStartDate).split("T")[0],
+      dealStartDate: String(deal.dealStartDate).split("T")[0],
       name: deal.name,
       companyName: deal.companyName,
       productItem: deal.productItem,
@@ -466,16 +454,10 @@ export default function Deals() {
       agreedAmount: deal.agreedAmount,
       receivedAmount: deal.receivedAmount,
       outstandingAmount: deal.outstandingAmount,
-      earliestClosingDate:
-        deal.earliestClosingDate instanceof Date
-          ? deal.earliestClosingDate.toISOString().split("T")[0]
-          : deal.earliestClosingDate
+      earliestClosingDate: deal.earliestClosingDate
           ? String(deal.earliestClosingDate).split("T")[0]
           : "",
-      latestClosingDate:
-        deal.latestClosingDate instanceof Date
-          ? deal.latestClosingDate.toISOString().split("T")[0]
-          : deal.latestClosingDate
+      latestClosingDate: deal.latestClosingDate
           ? String(deal.latestClosingDate).split("T")[0]
           : "",
       notes: deal.notes ?? "",

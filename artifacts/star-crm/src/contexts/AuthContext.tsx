@@ -5,6 +5,10 @@ export interface AuthUser {
   email: string;
   name: string | null;
   role: "owner" | "salesperson";
+  profilePicture: string | null;
+  dateOfJoining: string | null;
+  country: string | null;
+  currency: string | null;
   createdAt: string;
 }
 
@@ -13,6 +17,7 @@ interface AuthState {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -20,6 +25,7 @@ const AuthContext = createContext<AuthState>({
   isLoading: true,
   login: async () => {},
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -28,13 +34,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetch(`${BASE}/api/users/me`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((u) => setUser(u ?? null))
-      .catch(() => setUser(null))
-      .finally(() => setIsLoading(false));
+  const fetchUser = useCallback(async () => {
+    try {
+      const r = await fetch(`${BASE}/api/users/me`, { credentials: "include" });
+      const u = r.ok ? await r.json() : null;
+      setUser(u ?? null);
+    } catch {
+      setUser(null);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUser().finally(() => setIsLoading(false));
+  }, [fetchUser]);
+
+  const refreshUser = useCallback(async () => {
+    await fetchUser();
+  }, [fetchUser]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${BASE}/api/auth/login`, {
@@ -60,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

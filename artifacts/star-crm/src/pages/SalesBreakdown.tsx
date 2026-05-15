@@ -1,4 +1,5 @@
 import { useGetMe } from "@workspace/api-client-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Loader2, FileSpreadsheet, Printer, X } from "lucide-react";
@@ -68,20 +69,14 @@ interface DrillDown {
   columnLabel: string; // Human-readable column name shown in modal title
 }
 
-function fmt(n: number) {
-  if (!n) return "";
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
-}
-
-function fmtAmt(s: string | null | undefined) {
-  const n = parseFloat(s ?? "0") || 0;
-  if (!n) return "—";
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
-}
-
 function fmtCount(n: number) {
   if (!n) return "";
   return String(n);
+}
+
+function fmtExport(n: number) {
+  if (!n) return "";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 }
 
 // Group consecutive weeks by month
@@ -132,15 +127,15 @@ function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: stri
       aoa.push([
         weekLabel,
         fmtCount(w.orderClosedCount) || "",
-        fmt(w.orderClosedAmount) || "",
-        fmt(w.downPayment) || "",
-        fmt(w.totalPaymentReceipt) || "",
+        fmtExport(w.orderClosedAmount) || "",
+        fmtExport(w.downPayment) || "",
+        fmtExport(w.totalPaymentReceipt) || "",
         "",
         fmtCount(w.quotationSentCount) || "",
-        fmt(w.quotationSentAmount) || "",
+        fmtExport(w.quotationSentAmount) || "",
         fmtCount(w.orderConfirmedCount) || "",
-        fmt(w.orderConfirmedAmount) || "",
-        fmt(w.totalSalesInProcess) || "",
+        fmtExport(w.orderConfirmedAmount) || "",
+        fmtExport(w.totalSalesInProcess) || "",
       ]);
     }
   }
@@ -157,9 +152,9 @@ function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: stri
 
   aoa.push([
     "TOTAL",
-    fmtCount(totOC), fmt(totOCA), fmt(totDP), fmt(totPR),
+    fmtCount(totOC), fmtExport(totOCA), fmtExport(totDP), fmtExport(totPR),
     "",
-    fmtCount(totQC), fmt(totQA), fmtCount(totCC), fmt(totCA), fmt(totSIP),
+    fmtCount(totQC), fmtExport(totQA), fmtCount(totCC), fmtExport(totCA), fmtExport(totSIP),
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -194,6 +189,12 @@ function DealDrillDownModal({
 }) {
   const [deals, setDeals] = useState<DealDetail[]>([]);
   const [loading, setLoading] = useState(false);
+  const { formatAmount } = useCurrency();
+  const fmt = (n: number) => (n ? formatAmount(n) : "");
+  const fmtAmt = (s: string | null | undefined) => {
+    const n = parseFloat(s ?? "0") || 0;
+    return n ? formatAmount(n) : "—";
+  };
 
   useEffect(() => {
     if (!drillDown) return;
@@ -320,6 +321,8 @@ export default function SalesBreakdown() {
   const [loading,     setLoading]     = useState(false);
   const [users,       setUsers]       = useState<UserOption[]>([]);
   const [drillDown,   setDrillDown]   = useState<DrillDown | null>(null);
+  const { formatAmount } = useCurrency();
+  const fmt = (n: number) => (n ? formatAmount(n) : "");
 
   useEffect(() => {
     if (me?.role === "owner") {
