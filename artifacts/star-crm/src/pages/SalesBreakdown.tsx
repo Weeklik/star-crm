@@ -244,6 +244,7 @@ function DealDrillDownModal({
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted/60">
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">#</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs whitespace-nowrap">Start Date</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Deal Name</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Company</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Product</th>
@@ -257,6 +258,15 @@ function DealDrillDownModal({
                 {deals.map((deal, i) => (
                   <tr key={deal.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
                     <td className="border border-border px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      {deal.dealStartDate
+                        ? new Date(
+                            (typeof deal.dealStartDate === "string"
+                              ? deal.dealStartDate.split("T")[0]
+                              : deal.dealStartDate) + "T00:00:00"
+                          ).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                        : "—"}
+                    </td>
                     <td className="border border-border px-3 py-2 text-xs font-medium max-w-[160px] truncate">{deal.name}</td>
                     <td className="border border-border px-3 py-2 text-xs max-w-[140px] truncate">{deal.companyName}</td>
                     <td className="border border-border px-3 py-2 text-xs max-w-[120px] truncate text-muted-foreground">{deal.productItem}</td>
@@ -278,7 +288,7 @@ function DealDrillDownModal({
               </tbody>
               <tfoot>
                 <tr className="bg-muted/50 font-semibold border-t-2 border-border">
-                  <td className="border border-border px-3 py-2 text-xs text-muted-foreground" colSpan={5}>
+                  <td className="border border-border px-3 py-2 text-xs text-muted-foreground" colSpan={6}>
                     Total ({deals.length} deal{deals.length !== 1 ? "s" : ""})
                   </td>
                   <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmt(totalAgreed)}</td>
