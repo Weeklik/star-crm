@@ -413,18 +413,30 @@ export default function Deals() {
   const [forceAddSelected, setForceAddSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
 
-  const filteredDeals = deals?.filter((d) => {
-    const dateStr = String(d.dealStartDate).split("T")[0];
-    const q = search.toLowerCase();
-    const matchesSearch =
-      !q ||
-      d.companyName.toLowerCase().includes(q) ||
-      d.name.toLowerCase().includes(q) ||
-      d.productItem.toLowerCase().includes(q);
-    const matchesFrom = !dateFrom || dateStr >= dateFrom;
-    const matchesTo   = !dateTo   || dateStr <= dateTo;
-    return matchesSearch && matchesFrom && matchesTo;
-  });
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  const filteredDeals = deals
+    ?.filter((d) => {
+      const dateStr = String(d.dealStartDate).split("T")[0];
+      const q = search.toLowerCase();
+      const matchesSearch =
+        !q ||
+        d.companyName.toLowerCase().includes(q) ||
+        d.name.toLowerCase().includes(q) ||
+        d.productItem.toLowerCase().includes(q);
+      const matchesFrom = !dateFrom || dateStr >= dateFrom;
+      const matchesTo   = !dateTo   || dateStr <= dateTo;
+      return matchesSearch && matchesFrom && matchesTo;
+    })
+    .slice()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const totalDeals = filteredDeals?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
+  const safePage   = Math.min(page, totalPages);
+  const pagedDeals = filteredDeals?.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const { formatAmount } = useCurrency();
   const fmtCurrency = formatAmount;
@@ -434,6 +446,14 @@ export default function Deals() {
   const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)     || 0), 0) ?? 0;
   const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount)  || 0), 0) ?? 0;
   const stageCount = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
+
+  // Reset to page 1 whenever filters or page size change
+  const resetPage = () => setPage(1);
+
+  function onSearchChange(v: string) { setSearch(v); resetPage(); }
+  function onDateFromChange(v: string) { setDateFrom(v); resetPage(); }
+  function onDateToChange(v: string) { setDateTo(v); resetPage(); }
+  function onPageSizeChange(v: number) { setPageSize(v); resetPage(); }
 
   function openAdd() {
     setEditingId(null);
@@ -532,23 +552,28 @@ export default function Deals() {
     e.target.value = "";
   }
 
-  // Insert deals one-by-one and track real-time progress
+  // Insert deals in batches of 50 (prevents timeouts on large imports)
+  const IMPORT_BATCH = 50;
   async function importDealsSequentially(rows: ImportRow[]): Promise<number> {
     setImportProgress({ done: 0, total: rows.length });
     let successCount = 0;
-    for (let i = 0; i < rows.length; i++) {
+    for (let start = 0; start < rows.length; start += IMPORT_BATCH) {
+      const batch = rows.slice(start, start + IMPORT_BATCH);
       try {
-        const res = await fetch("/api/deals", {
+        const res = await fetch("/api/deals/bulk", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(toPayload(rows[i])),
+          body: JSON.stringify({ deals: batch.map(toPayload), force: true }),
         });
-        if (res.ok) successCount++;
+        if (res.ok) {
+          const json = await res.json();
+          successCount += json.imported?.length ?? 0;
+        }
       } catch {
-        // continue on individual failures
+        // continue to next batch on failure
       }
-      setImportProgress({ done: i + 1, total: rows.length });
+      setImportProgress({ done: Math.min(start + IMPORT_BATCH, rows.length), total: rows.length });
     }
     return successCount;
   }
@@ -663,7 +688,7 @@ export default function Deals() {
             placeholder="Search company, contact, or product..."
             className="pl-9"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             data-testid="input-search-deals"
           />
         </div>
@@ -672,7 +697,7 @@ export default function Deals() {
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            onChange={(e) => onDateFromChange(e.target.value)}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             title="From date"
           />
@@ -680,13 +705,13 @@ export default function Deals() {
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            onChange={(e) => onDateToChange(e.target.value)}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             title="To date"
           />
           {(dateFrom || dateTo) && (
             <button
-              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              onClick={() => { onDateFromChange(""); onDateToChange(""); }}
               className="text-xs text-muted-foreground hover:text-foreground underline"
             >
               Clear
@@ -788,14 +813,14 @@ export default function Deals() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredDeals?.length === 0 ? (
+            {pagedDeals?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No deals found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredDeals?.map((deal) => (
+              pagedDeals?.map((deal) => (
                 <TableRow key={deal.id} data-testid={`row-deal-${deal.id}`}>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                     {deal.dealStartDate
@@ -861,6 +886,63 @@ export default function Deals() {
           </TableBody>
         </Table>
       </div>
+
+      {/* ── Pagination ── */}
+      {totalDeals > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Rows per page:</span>
+            {[50, 100, 200].map((n) => (
+              <button
+                key={n}
+                onClick={() => onPageSizeChange(n)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${pageSize === n ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/80"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 text-sm">
+            <span className="text-muted-foreground mr-2 tabular-nums">
+              {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, totalDeals)} of {totalDeals}
+            </span>
+            <button
+              onClick={() => setPage(1)}
+              disabled={safePage === 1}
+              className="px-2 py-1 rounded-md bg-secondary text-xs font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
+              title="First page"
+            >
+              «
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold tabular-nums">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
+            >
+              Next
+            </button>
+            <button
+              onClick={() => setPage(totalPages)}
+              disabled={safePage === totalPages}
+              className="px-2 py-1 rounded-md bg-secondary text-xs font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
+              title="Last page"
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
