@@ -321,22 +321,22 @@ export default function SalesBreakdown() {
                 <tr>
                   <th rowSpan={3} className={`${thBase} bg-muted/40 text-left min-w-[180px]`}>Months</th>
                   {/* Payment Receipt */}
-                  <th colSpan={4} className={`${thBase} bg-green-700/30 text-green-300`}>Payment Receipt</th>
+                  <th colSpan={4} className={`${thBase} bg-green-700/30 text-green-800 dark:text-green-300`}>Payment Receipt</th>
                   {/* Gap */}
                   <th className="border border-border w-4 bg-muted/10" />
                   {/* Sales in Process */}
-                  <th colSpan={5} className={`${thBase} bg-yellow-600/20 text-yellow-300`}>Sales in Process</th>
+                  <th colSpan={5} className={`${thBase} bg-yellow-500/20 text-yellow-800 dark:text-yellow-300`}>Sales in Process</th>
                 </tr>
 
                 {/* ── Row 3: Sub-section headers ── */}
                 <tr>
-                  <th colSpan={2} className={`${thBase} bg-green-700/20 text-green-400 italic`}>Order Closed ✓</th>
-                  <th className={`${thBase} bg-green-700/10`}>Down Payment Amount</th>
-                  <th className={`${thBase} bg-green-700/10`}>Total Amount</th>
+                  <th colSpan={2} className={`${thBase} bg-green-700/20 text-green-800 dark:text-green-400 italic`}>Order Closed ✓</th>
+                  <th className={`${thBase} bg-green-700/10 text-green-900 dark:text-foreground`}>Down Payment Amount</th>
+                  <th className={`${thBase} bg-green-700/10 text-green-900 dark:text-foreground`}>Total Amount</th>
                   <th className="border border-border bg-muted/10" />
-                  <th colSpan={2} className={`${thBase} bg-yellow-600/20 text-yellow-400 italic`}>Quotation Sent</th>
-                  <th colSpan={2} className={`${thBase} bg-blue-600/20 text-blue-400`}>Order Confirmed</th>
-                  <th className={`${thBase} bg-yellow-600/10`}>Total Amount</th>
+                  <th colSpan={2} className={`${thBase} bg-yellow-500/20 text-yellow-800 dark:text-yellow-400 italic`}>Quotation Sent</th>
+                  <th colSpan={2} className={`${thBase} bg-blue-600/20 text-blue-800 dark:text-blue-400`}>Order Confirmed</th>
+                  <th className={`${thBase} bg-yellow-500/10 text-yellow-900 dark:text-foreground`}>Total Amount</th>
                 </tr>
 
                 {/* ── Row 4: Column headers ── */}
