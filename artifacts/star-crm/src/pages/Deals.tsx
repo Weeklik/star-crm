@@ -6,9 +6,13 @@ import {
   useDeleteDeal,
   getListDealsQueryKey,
 } from "@workspace/api-client-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import {
+  Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2,
+  Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle,
+} from "lucide-react";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +58,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost";
 
@@ -62,6 +67,24 @@ const STAGES: Stage[] = [
   "Order Confirmed",
   "Order Closed",
   "Order Lost",
+];
+
+// Excel template column headers (must stay in sync with parsing logic)
+const TEMPLATE_HEADERS = [
+  "Deal Name",
+  "Company Name",
+  "Product / Item",
+  "Start Date (YYYY-MM-DD)",
+  "Stage",
+  "Progress (0-100)",
+  "Sales Status",
+  "VAT Applicable (yes/no)",
+  "Agreed Amount",
+  "Received Amount",
+  "Outstanding Amount",
+  "Earliest Closing Date (YYYY-MM-DD)",
+  "Latest Closing Date (YYYY-MM-DD)",
+  "Notes",
 ];
 
 interface DealFormState {
@@ -79,6 +102,13 @@ interface DealFormState {
   earliestClosingDate: string;
   latestClosingDate: string;
   notes: string;
+}
+
+interface ImportRow extends DealFormState {
+  _rowIndex: number;
+  _isDuplicate?: boolean;
+  _forceAdd?: boolean;
+  _error?: string;
 }
 
 const emptyForm = (): DealFormState => ({
@@ -134,9 +164,80 @@ const formatCurrency = (val: number) =>
     maximumFractionDigits: 0,
   }).format(val);
 
+/** Convert Excel serial date or string to YYYY-MM-DD */
+function parseExcelDate(val: unknown): string {
+  if (!val) return new Date().toISOString().split("T")[0];
+  if (typeof val === "number") {
+    // Excel serial date
+    const date = XLSX.SSF.parse_date_code(val);
+    return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+  }
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Try parsing
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+  return new Date().toISOString().split("T")[0];
+}
+
+function parseExcelRows(ws: XLSX.WorkSheet): ImportRow[] {
+  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
+  return json.map((row, idx) => {
+    const get = (key: string) => String(row[key] ?? "").trim();
+    const getNum = (key: string) => parseFloat(String(row[key] ?? "0").replace(/[^0-9.-]/g, "")) || 0;
+    const stageRaw = get("Stage");
+    const stage = (STAGES as string[]).includes(stageRaw) ? (stageRaw as Stage) : "Quotation Sent";
+
+    return {
+      _rowIndex: idx + 2,
+      name: get("Deal Name"),
+      companyName: get("Company Name"),
+      productItem: get("Product / Item"),
+      dealStartDate: parseExcelDate(row["Start Date (YYYY-MM-DD)"]),
+      stage,
+      progress: Math.min(100, Math.max(0, getNum("Progress (0-100)"))),
+      salesStatus: get("Sales Status") || "Active",
+      vatApplicable: /^yes$/i.test(get("VAT Applicable (yes/no)")),
+      agreedAmount: getNum("Agreed Amount"),
+      receivedAmount: getNum("Received Amount"),
+      outstandingAmount: getNum("Outstanding Amount"),
+      earliestClosingDate: parseExcelDate(row["Earliest Closing Date (YYYY-MM-DD)"]) === new Date().toISOString().split("T")[0] && !row["Earliest Closing Date (YYYY-MM-DD)"] ? "" : parseExcelDate(row["Earliest Closing Date (YYYY-MM-DD)"]),
+      latestClosingDate: parseExcelDate(row["Latest Closing Date (YYYY-MM-DD)"]) === new Date().toISOString().split("T")[0] && !row["Latest Closing Date (YYYY-MM-DD)"] ? "" : parseExcelDate(row["Latest Closing Date (YYYY-MM-DD)"]),
+      notes: get("Notes"),
+    } as ImportRow;
+  }).filter((r) => r.name && r.companyName);
+}
+
+function downloadTemplate() {
+  const wb = XLSX.utils.book_new();
+  // Sample data row
+  const sampleRow: Record<string, unknown> = {
+    "Deal Name": "Q3 Enterprise Renewal",
+    "Company Name": "Acme Corp",
+    "Product / Item": "SaaS Pro Plan",
+    "Start Date (YYYY-MM-DD)": new Date().toISOString().split("T")[0],
+    "Stage": "Quotation Sent",
+    "Progress (0-100)": 50,
+    "Sales Status": "Active",
+    "VAT Applicable (yes/no)": "no",
+    "Agreed Amount": 10000,
+    "Received Amount": 5000,
+    "Outstanding Amount": 5000,
+    "Earliest Closing Date (YYYY-MM-DD)": "",
+    "Latest Closing Date (YYYY-MM-DD)": "",
+    "Notes": "Example note",
+  };
+  const ws = XLSX.utils.json_to_sheet([sampleRow], { header: TEMPLATE_HEADERS });
+  // Set column widths
+  ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(h.length, 16) }));
+  XLSX.utils.book_append_sheet(wb, ws, "Deals");
+  XLSX.writeFile(wb, "star-crm-deals-template.xlsx");
+}
+
 export default function Deals() {
   const { data: me } = useGetMe();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: deals, isLoading } = useListDeals(
     me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
@@ -153,6 +254,15 @@ export default function Deals() {
   const [form, setForm] = useState<DealFormState>(emptyForm());
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Import state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
+  const [importDuplicates, setImportDuplicates] = useState<ImportRow[]>([]);
+  const [importingNew, setImportingNew] = useState(false);
+  const [importPhase, setImportPhase] = useState<"review" | "confirm-duplicates">("review");
+  const [forceAddSelected, setForceAddSelected] = useState<Set<number>>(new Set());
 
   const filteredDeals = deals?.filter(
     (d) =>
@@ -229,6 +339,95 @@ export default function Deals() {
     setDeleteId(null);
   }
 
+  // ── Import logic ──────────────────────────────────────────────────────────
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = new Uint8Array(ev.target!.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = parseExcelRows(ws);
+        if (rows.length === 0) {
+          toast({ title: "No valid rows found", description: "Make sure the file uses the template format.", variant: "destructive" });
+          return;
+        }
+        setImportRows(rows);
+        setImportDuplicates([]);
+        setForceAddSelected(new Set());
+        setImportPhase("review");
+        setImportDialogOpen(true);
+      } catch {
+        toast({ title: "Failed to parse file", description: "Please use the downloaded Excel template.", variant: "destructive" });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  }
+
+  async function handleImport() {
+    setImportingNew(true);
+    try {
+      const res = await fetch("/api/deals/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deals: importRows.map(toPayload), force: false }),
+      });
+      const json = await res.json();
+      if (json.requiresConfirmation) {
+        setImportRows(json.newDeals ?? []);
+        setImportDuplicates(json.duplicates ?? []);
+        setForceAddSelected(new Set());
+        setImportPhase("confirm-duplicates");
+      } else {
+        const count = json.imported?.length ?? 0;
+        toast({ title: `Import complete`, description: `${count} deal${count !== 1 ? "s" : ""} added.` });
+        await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
+        setImportDialogOpen(false);
+      }
+    } catch {
+      toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setImportingNew(false);
+    }
+  }
+
+  async function handleConfirmDuplicates() {
+    // Build final list: all new + selected duplicates
+    const forceDuplicates = importDuplicates.filter((r) => forceAddSelected.has(r._rowIndex));
+    const allDeals = [...importRows, ...forceDuplicates];
+
+    setImportingNew(true);
+    try {
+      const res = await fetch("/api/deals/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deals: allDeals.map(toPayload), force: true }),
+      });
+      const json = await res.json();
+      const count = json.imported?.length ?? 0;
+      toast({ title: `Import complete`, description: `${count} deal${count !== 1 ? "s" : ""} added.` });
+      await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
+      setImportDialogOpen(false);
+    } catch {
+      toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setImportingNew(false);
+    }
+  }
+
+  function toggleForceAdd(rowIndex: number) {
+    setForceAddSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowIndex)) next.delete(rowIndex);
+      else next.add(rowIndex);
+      return next;
+    });
+  }
+
   if (isLoading)
     return (
       <div className="flex items-center justify-center h-full">
@@ -245,10 +444,28 @@ export default function Deals() {
             Manage your active pipeline and closed won/lost orders.
           </p>
         </div>
-        <Button className="shrink-0" onClick={openAdd} data-testid="btn-add-deal">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Deal
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button variant="outline" onClick={downloadTemplate} title="Download Excel template">
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Template
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import Excel
+          </Button>
+          <Button className="shrink-0" onClick={openAdd} data-testid="btn-add-deal">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Deal
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 max-w-md">
@@ -516,6 +733,149 @@ export default function Deals() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Preview Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(o) => !o && setImportDialogOpen(false)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {importPhase === "review" ? (
+                <>
+                  <Upload className="w-5 h-5" />
+                  Review Import — {importRows.length} deal{importRows.length !== 1 ? "s" : ""} found
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                  Duplicate Deals Detected
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {importPhase === "review" ? (
+            <>
+              <p className="text-sm text-muted-foreground px-1">
+                Review the deals parsed from your file. All rows below will be imported. Click <strong>Import</strong> to proceed — duplicates will be flagged before any data is saved.
+              </p>
+              <div className="flex-1 overflow-auto mt-2 rounded-md border border-border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/60 sticky top-0">
+                    <tr>
+                      <th className="px-2 py-2 text-left font-semibold">#</th>
+                      <th className="px-2 py-2 text-left font-semibold">Deal Name</th>
+                      <th className="px-2 py-2 text-left font-semibold">Company</th>
+                      <th className="px-2 py-2 text-left font-semibold">Product</th>
+                      <th className="px-2 py-2 text-left font-semibold">Stage</th>
+                      <th className="px-2 py-2 text-right font-semibold">Agreed</th>
+                      <th className="px-2 py-2 text-left font-semibold">Start Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importRows.map((row) => (
+                      <tr key={row._rowIndex} className="border-t border-border/40 hover:bg-muted/20">
+                        <td className="px-2 py-1.5 text-muted-foreground">{row._rowIndex}</td>
+                        <td className="px-2 py-1.5 font-medium">{row.name}</td>
+                        <td className="px-2 py-1.5">{row.companyName}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{row.productItem}</td>
+                        <td className="px-2 py-1.5">
+                          <Badge variant="outline" className={`text-[10px] border-0 ${getStageColor(row.stage)}`}>{row.stage}</Badge>
+                        </td>
+                        <td className="px-2 py-1.5 text-right">{formatCurrency(row.agreedAmount)}</td>
+                        <td className="px-2 py-1.5 text-muted-foreground">{row.dealStartDate}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <DialogFooter className="mt-2">
+                <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleImport} disabled={importingNew || importRows.length === 0}>
+                  {importingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                  Import {importRows.length} Deal{importRows.length !== 1 ? "s" : ""}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              {/* Duplicate confirmation phase */}
+              <div className="space-y-3 flex-1 overflow-auto">
+                {importRows.length > 0 && (
+                  <div className="rounded-md border border-green-500/30 bg-green-500/5 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                      <span className="text-sm font-medium text-green-500">{importRows.length} new deal{importRows.length !== 1 ? "s" : ""} ready to import</span>
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead className="text-muted-foreground">
+                        <tr>
+                          <th className="text-left pb-1">Deal Name</th>
+                          <th className="text-left pb-1">Company</th>
+                          <th className="text-right pb-1">Agreed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importRows.map((r) => (
+                          <tr key={r._rowIndex} className="border-t border-green-500/10">
+                            <td className="py-1 font-medium">{r.name}</td>
+                            <td className="py-1">{r.companyName}</td>
+                            <td className="py-1 text-right">{formatCurrency(r.agreedAmount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
+                    <span className="text-sm font-medium text-yellow-500">
+                      {importDuplicates.length} duplicate{importDuplicates.length !== 1 ? "s" : ""} found — a deal with the same name and company already exists
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Check the box next to any duplicate you still want to add.
+                  </p>
+                  <table className="w-full text-xs">
+                    <thead className="text-muted-foreground">
+                      <tr>
+                        <th className="text-left pb-1 w-8">Add?</th>
+                        <th className="text-left pb-1">Deal Name</th>
+                        <th className="text-left pb-1">Company</th>
+                        <th className="text-right pb-1">Agreed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importDuplicates.map((r) => (
+                        <tr key={r._rowIndex} className="border-t border-yellow-500/10">
+                          <td className="py-1.5">
+                            <Checkbox
+                              checked={forceAddSelected.has(r._rowIndex)}
+                              onCheckedChange={() => toggleForceAdd(r._rowIndex)}
+                            />
+                          </td>
+                          <td className="py-1.5 font-medium">{r.name}</td>
+                          <td className="py-1.5">{r.companyName}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.agreedAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <DialogFooter className="mt-2">
+                <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleConfirmDuplicates} disabled={importingNew}>
+                  {importingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                  Import {importRows.length + forceAddSelected.size} Deal{(importRows.length + forceAddSelected.size) !== 1 ? "s" : ""}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

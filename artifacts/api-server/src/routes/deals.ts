@@ -203,6 +203,77 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   res.json(UpdateDealResponse.parse(formatDeal(updated)));
 });
 
+// ─── Bulk Import ─────────────────────────────────────────────────────────────
+router.post("/deals/bulk", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).user;
+  const body = req.body;
+
+  if (!Array.isArray(body.deals) || body.deals.length === 0) {
+    res.status(400).json({ error: "deals array is required" });
+    return;
+  }
+
+  const force: boolean = body.force === true;
+
+  // Fetch existing deals for this user to detect duplicates
+  const existing = user.role !== "owner"
+    ? await db.select().from(dealsTable).where(eq(dealsTable.salespersonId, user.id))
+    : await db.select().from(dealsTable);
+
+  // Duplicate key = normalised(name) + "|" + normalised(companyName)
+  const existingKeys = new Set(
+    existing.map((d) => `${d.name.trim().toLowerCase()}|${d.companyName.trim().toLowerCase()}`)
+  );
+
+  const newDeals: typeof body.deals = [];
+  const duplicates: typeof body.deals = [];
+
+  for (const deal of body.deals) {
+    const key = `${String(deal.name ?? "").trim().toLowerCase()}|${String(deal.companyName ?? "").trim().toLowerCase()}`;
+    if (existingKeys.has(key)) {
+      duplicates.push(deal);
+    } else {
+      newDeals.push(deal);
+    }
+  }
+
+  // If there are duplicates and force is not set, return for user confirmation
+  if (duplicates.length > 0 && !force) {
+    res.status(200).json({ requiresConfirmation: true, newDeals, duplicates, imported: [] });
+    return;
+  }
+
+  // Insert non-duplicates + forced duplicates
+  const toInsert = force ? [...newDeals, ...duplicates] : newDeals;
+  const inserted: any[] = [];
+
+  for (const deal of toInsert) {
+    const parsed = CreateDealBody.safeParse(deal);
+    if (!parsed.success) continue;
+    const d = parsed.data;
+    const [row] = await db.insert(dealsTable).values({
+      salespersonId: user.id,
+      dealStartDate: d.dealStartDate as unknown as string,
+      name: d.name,
+      companyName: d.companyName,
+      productItem: d.productItem,
+      stage: d.stage,
+      progress: d.progress,
+      salesStatus: d.salesStatus,
+      vatApplicable: d.vatApplicable,
+      agreedAmount: String(d.agreedAmount),
+      receivedAmount: String(d.receivedAmount),
+      outstandingAmount: String(d.outstandingAmount),
+      earliestClosingDate: d.earliestClosingDate as unknown as string | undefined,
+      latestClosingDate: d.latestClosingDate as unknown as string | undefined,
+      notes: d.notes ?? null,
+    }).returning();
+    inserted.push(formatDeal(row));
+  }
+
+  res.status(201).json({ requiresConfirmation: false, imported: inserted, duplicates: force ? [] : duplicates, newDeals: [] });
+});
+
 router.delete("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
