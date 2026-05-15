@@ -413,7 +413,7 @@ router.get(
   },
 );
 
-// ─── Sales Breakdown (week × salesperson) ────────────────────────────────────
+// ─── Sales Breakdown (week × stage) ──────────────────────────────────────────
 router.get(
   "/reports/sales-breakdown",
   requireAuth,
@@ -430,13 +430,27 @@ router.get(
       return;
     }
 
-    // Build calendar-aligned weekly buckets
-    const start = new Date(startDate);
-    start.setDate(1); // align to first of month
-    const end = new Date(endDate);
-    end.setMonth(end.getMonth() + 1, 0); // last day of end month
+    function ordinalSuffix(n: number): string {
+      if (n === 1) return "1st";
+      if (n === 2) return "2nd";
+      if (n === 3) return "3rd";
+      return `${n}th`;
+    }
 
-    const weeks: Array<{ weekLabel: string; weekStart: string; weekEnd: string }> = [];
+    // Build calendar-aligned weekly buckets (reset week counter per month)
+    const start = new Date(startDate);
+    start.setDate(1);
+    const end = new Date(endDate);
+    end.setMonth(end.getMonth() + 1, 0);
+
+    const weeks: Array<{
+      monthName: string;
+      monthYear: string;
+      weekOrdinal: string;
+      weekStart: string;
+      weekEnd: string;
+    }> = [];
+
     const cursor = new Date(start);
     let weekNum = 1;
     let currentMonth = cursor.getMonth();
@@ -447,15 +461,15 @@ router.get(
       wEnd.setDate(wEnd.getDate() + 6);
       if (wEnd > end) wEnd.setTime(end.getTime());
 
-      // Reset week number on month change
       if (wStart.getMonth() !== currentMonth) {
         currentMonth = wStart.getMonth();
         weekNum = 1;
       }
 
-      const monthName = wStart.toLocaleString("default", { month: "short" });
       weeks.push({
-        weekLabel: `W${weekNum} ${monthName}`,
+        monthName: wStart.toLocaleString("en-US", { month: "long" }),
+        monthYear: String(wStart.getFullYear()),
+        weekOrdinal: ordinalSuffix(weekNum),
         weekStart: wStart.toISOString().split("T")[0],
         weekEnd: wEnd.toISOString().split("T")[0],
       });
@@ -464,7 +478,12 @@ router.get(
       cursor.setDate(cursor.getDate() + 7);
     }
 
-    // Single query for all deals in range
+    if (weeks.length === 0) {
+      res.json({ weeks: [] });
+      return;
+    }
+
+    // Single query for all deals in the range
     const conditions: SQL[] = [
       gte(dealsTable.dealStartDate, weeks[0].weekStart),
       lte(dealsTable.dealStartDate, weeks[weeks.length - 1].weekEnd),
@@ -476,35 +495,47 @@ router.get(
     }
     const allDeals = await db.select().from(dealsTable).where(and(...conditions));
 
-    // Fetch salespersons
-    const usersRows = await db
-      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
-      .from(usersTable);
-    const relevantSpIds = user.role !== "owner"
-      ? [user.id]
-      : filterSpId
-      ? [filterSpId]
-      : [...new Set(allDeals.map((d) => d.salespersonId))];
-
-    const salespersons = usersRows
-      .filter((u) => relevantSpIds.includes(u.id))
-      .map((u) => ({ id: u.id, name: u.name ?? u.email ?? `User ${u.id}` }));
-
-    const weekData = weeks.map(({ weekLabel, weekStart, weekEnd }) => {
+    // Build per-week stage aggregates
+    const weekData = weeks.map(({ monthName, monthYear, weekOrdinal, weekStart, weekEnd }) => {
       const weekDeals = allDeals.filter(
         (d) => d.dealStartDate >= weekStart && d.dealStartDate <= weekEnd,
       );
-      const byPerson: Record<number, number> = {};
-      for (const sp of salespersons) byPerson[sp.id] = 0;
-      for (const d of weekDeals) {
-        if (byPerson[d.salespersonId] !== undefined) {
-          byPerson[d.salespersonId] += parseFloat(d.agreedAmount ?? "0");
-        }
-      }
-      return { weekLabel, weekStart, weekEnd, byPerson };
+
+      const closedDeals = weekDeals.filter((d) => d.stage === "Order Closed");
+      const orderClosedCount = closedDeals.length;
+      const orderClosedAmount = closedDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+      const downPayment = closedDeals.reduce((s, d) => s + parseFloat(d.receivedAmount ?? "0"), 0);
+      const totalPaymentReceipt = orderClosedAmount;
+
+      const quotationDeals = weekDeals.filter((d) => d.stage === "Quotation Sent");
+      const quotationSentCount = quotationDeals.length;
+      const quotationSentAmount = quotationDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+
+      const confirmedDeals = weekDeals.filter((d) => d.stage === "Order Confirmed");
+      const orderConfirmedCount = confirmedDeals.length;
+      const orderConfirmedAmount = confirmedDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+
+      const totalSalesInProcess = quotationSentAmount + orderConfirmedAmount;
+
+      return {
+        monthName,
+        monthYear,
+        weekOrdinal,
+        weekStart,
+        weekEnd,
+        orderClosedCount,
+        orderClosedAmount,
+        downPayment,
+        totalPaymentReceipt,
+        quotationSentCount,
+        quotationSentAmount,
+        orderConfirmedCount,
+        orderConfirmedAmount,
+        totalSalesInProcess,
+      };
     });
 
-    res.json({ weeks: weekData, salespersons });
+    res.json({ weeks: weekData });
   },
 );
 
