@@ -2,19 +2,20 @@ import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
-  ChevronDown, LayoutList, TableProperties, TrendingUp,
+  ChevronDown, LayoutList, TableProperties, TrendingUp, Sun, Moon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, isLoading, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const isReportsActive =
-    location === "/reports" ||
-    location.startsWith("/reports/");
+    location === "/reports" || location.startsWith("/reports/");
 
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
 
@@ -33,6 +34,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <aside className="w-64 border-r border-border bg-card flex flex-col justify-between">
         <div>
+          {/* Logo */}
           <div className="h-16 flex items-center px-6 border-b border-border">
             <div className="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-primary">
@@ -42,6 +44,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
+          {/* Nav */}
           <nav className="p-4 space-y-1">
             {topItems.map((item) => {
               const Icon = item.icon;
@@ -59,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               );
             })}
 
-            {/* Reports collapsible group */}
+            {/* Reports collapsible */}
             <div>
               <button
                 onClick={() => setReportsOpen((o) => !o)}
@@ -70,9 +73,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <BarChart3 className="w-5 h-5" />
                   Reports
                 </div>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${reportsOpen ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`w-4 h-4 transition-transform ${reportsOpen ? "rotate-180" : ""}`} />
               </button>
 
               {reportsOpen && (
@@ -108,13 +109,44 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        <div className="p-4 border-t border-border">
+        {/* Bottom section: theme + user + sign out */}
+        <div className="p-4 border-t border-border space-y-3">
+          {/* Theme toggle */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground px-1 mb-1.5">Appearance</p>
+            <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+              <button
+                onClick={() => setTheme("light")}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  theme === "light"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5" />
+                Light
+              </button>
+              <button
+                onClick={() => setTheme("dark")}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  theme === "dark"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5" />
+                Dark
+              </button>
+            </div>
+          </div>
+
+          {/* User info */}
           {isLoading ? (
             <div className="flex items-center justify-center p-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="flex items-center gap-3 px-2 mb-4">
+            <div className="flex items-center gap-3 px-2">
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary/20 text-primary">
                   {user?.name?.charAt(0) ?? user?.email?.charAt(0) ?? "U"}
@@ -126,6 +158,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           )}
+
+          {/* Sign out */}
           <Button
             variant="ghost"
             className="w-full justify-start text-muted-foreground hover:text-foreground"

@@ -1,10 +1,10 @@
 import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -75,21 +75,19 @@ function AppRoutes() {
 }
 
 function App() {
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
-
   return (
-    <TooltipProvider>
-      <WouterRouter base={basePath}>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </QueryClientProvider>
-      </WouterRouter>
-      <Toaster />
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <WouterRouter base={basePath}>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </QueryClientProvider>
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }
 
