@@ -539,5 +539,42 @@ router.get(
   },
 );
 
+// ─── Sales Breakdown drill-down: deals behind a specific week × stage cell ────
+router.get(
+  "/reports/sales-breakdown-deals",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const user = (req as any).user;
+    const { weekStart, weekEnd, stage, salespersonId } = req.query as Record<string, string>;
+
+    if (!weekStart || !weekEnd) {
+      res.status(400).json({ error: "weekStart and weekEnd are required" });
+      return;
+    }
+
+    const conditions: SQL[] = [
+      gte(dealsTable.dealStartDate, weekStart),
+      lte(dealsTable.dealStartDate, weekEnd),
+    ];
+
+    if (user.role !== "owner") {
+      conditions.push(eq(dealsTable.salespersonId, user.id));
+    } else if (salespersonId) {
+      conditions.push(eq(dealsTable.salespersonId, parseInt(salespersonId, 10)));
+    }
+
+    let deals = await db.select().from(dealsTable).where(and(...conditions));
+
+    // Filter by stage — "Sales in Process" means Quotation Sent + Order Confirmed
+    if (stage === "Sales in Process") {
+      deals = deals.filter((d) => d.stage === "Quotation Sent" || d.stage === "Order Confirmed");
+    } else if (stage) {
+      deals = deals.filter((d) => d.stage === stage);
+    }
+
+    res.json(deals);
+  },
+);
+
 export default router;
 

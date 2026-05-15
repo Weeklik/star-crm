@@ -1,7 +1,7 @@
 import { useGetMe } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { Loader2, FileSpreadsheet, Printer } from "lucide-react";
+import { Loader2, FileSpreadsheet, Printer, X } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -41,8 +47,35 @@ interface UserOption {
   name: string | null;
 }
 
+interface DealDetail {
+  id: number;
+  name: string;
+  companyName: string;
+  productItem: string;
+  stage: string;
+  agreedAmount: string | null;
+  receivedAmount: string | null;
+  outstandingAmount: string | null;
+  dealStartDate: string;
+  notes: string | null;
+}
+
+interface DrillDown {
+  weekLabel: string;
+  weekStart: string;
+  weekEnd: string;
+  stage: string;       // API stage param: "Order Closed" | "Quotation Sent" | "Order Confirmed" | "Sales in Process"
+  columnLabel: string; // Human-readable column name shown in modal title
+}
+
 function fmt(n: number) {
   if (!n) return "";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+}
+
+function fmtAmt(s: string | null | undefined) {
+  const n = parseFloat(s ?? "0") || 0;
+  if (!n) return "—";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 }
 
@@ -68,31 +101,22 @@ function groupByMonth(weeks: WeekRow[]): Array<{ monthKey: string; monthLabel: s
 
 function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: string, endMonth: string, endYear: string) {
   const wb = XLSX.utils.book_new();
-
-  // Build rows manually for exact formatting
   const aoa: unknown[][] = [];
 
-  // Row 1: Title
   aoa.push(["SUMMARY REPORT"]);
   aoa.push([]);
-
-  // Row 3: Section headers
   aoa.push([
     "Months",
-    "Payment Receipt", "", "", "",   // spans 4
-    "",                               // gap
-    "Sales in Process", "", "", "", "",  // spans 5
+    "Payment Receipt", "", "", "",
+    "",
+    "Sales in Process", "", "", "", "",
   ]);
-
-  // Row 4: Sub-section headers
   aoa.push([
     "",
     "Order Closed", "", "Down Payment Amount", "Total Amount",
     "",
     "Quotation Sent", "", "Order Confirmed", "", "Total Amount",
   ]);
-
-  // Row 5: Column headers
   aoa.push([
     "",
     "Total Orders", "Amount", "Amount", "Amount",
@@ -100,12 +124,9 @@ function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: stri
     "Total Quotations", "Amount", "Total Orders", "Amount", "Amount",
   ]);
 
-  // Data rows grouped by month
   const groups = groupByMonth(weeks);
   for (const group of groups) {
-    // Month header row
     aoa.push([group.monthLabel, "", "", "", "", "", "", "", "", "", ""]);
-
     for (const w of group.rows) {
       const weekLabel = `${w.monthName} ${w.weekOrdinal} Week`;
       aoa.push([
@@ -124,15 +145,14 @@ function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: stri
     }
   }
 
-  // Totals row
-  const totOC = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
+  const totOC  = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
   const totOCA = weeks.reduce((s, w) => s + w.orderClosedAmount, 0);
-  const totDP = weeks.reduce((s, w) => s + w.downPayment, 0);
-  const totPR = weeks.reduce((s, w) => s + w.totalPaymentReceipt, 0);
-  const totQC = weeks.reduce((s, w) => s + w.quotationSentCount, 0);
-  const totQA = weeks.reduce((s, w) => s + w.quotationSentAmount, 0);
-  const totCC = weeks.reduce((s, w) => s + w.orderConfirmedCount, 0);
-  const totCA = weeks.reduce((s, w) => s + w.orderConfirmedAmount, 0);
+  const totDP  = weeks.reduce((s, w) => s + w.downPayment, 0);
+  const totPR  = weeks.reduce((s, w) => s + w.totalPaymentReceipt, 0);
+  const totQC  = weeks.reduce((s, w) => s + w.quotationSentCount, 0);
+  const totQA  = weeks.reduce((s, w) => s + w.quotationSentAmount, 0);
+  const totCC  = weeks.reduce((s, w) => s + w.orderConfirmedCount, 0);
+  const totCA  = weeks.reduce((s, w) => s + w.orderConfirmedAmount, 0);
   const totSIP = weeks.reduce((s, w) => s + w.totalSalesInProcess, 0);
 
   aoa.push([
@@ -143,52 +163,153 @@ function handleExportExcel(weeks: WeekRow[], startMonth: string, startYear: stri
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-  // Merge cells for headers
   ws["!merges"] = [
-    // Title
     { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
-    // Section headers
-    { s: { r: 2, c: 1 }, e: { r: 2, c: 4 } },  // Payment Receipt
-    { s: { r: 2, c: 6 }, e: { r: 2, c: 10 } }, // Sales in Process
-    // Sub-section headers
-    { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },  // Order Closed
-    { s: { r: 3, c: 6 }, e: { r: 3, c: 7 } },  // Quotation Sent
-    { s: { r: 3, c: 8 }, e: { r: 3, c: 9 } },  // Order Confirmed
+    { s: { r: 2, c: 1 }, e: { r: 2, c: 4 } },
+    { s: { r: 2, c: 6 }, e: { r: 2, c: 10 } },
+    { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },
+    { s: { r: 3, c: 6 }, e: { r: 3, c: 7 } },
+    { s: { r: 3, c: 8 }, e: { r: 3, c: 9 } },
   ];
-
-  // Column widths
   ws["!cols"] = [
-    { wch: 24 }, // Months
-    { wch: 13 }, // Total Orders (OC)
-    { wch: 13 }, // Amount (OC)
-    { wch: 18 }, // Down Payment
-    { wch: 13 }, // Total Amount (PR)
-    { wch: 3 },  // Gap
-    { wch: 16 }, // Total Quotations
-    { wch: 13 }, // Amount (QS)
-    { wch: 13 }, // Total Orders (CC)
-    { wch: 13 }, // Amount (CC)
-    { wch: 13 }, // Total Amount (SIP)
+    { wch: 24 }, { wch: 13 }, { wch: 13 }, { wch: 18 }, { wch: 13 },
+    { wch: 3 },
+    { wch: 16 }, { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 13 },
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, "Summary Report");
   XLSX.writeFile(wb, `sales-breakdown-${startMonth}-${startYear}-to-${endMonth}-${endYear}.xlsx`);
 }
 
+// ── Drill-down modal ──────────────────────────────────────────────────────────
+
+function DealDrillDownModal({
+  drillDown,
+  filterSpId,
+  onClose,
+}: {
+  drillDown: DrillDown | null;
+  filterSpId: string;
+  onClose: () => void;
+}) {
+  const [deals, setDeals] = useState<DealDetail[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!drillDown) return;
+    setLoading(true);
+    const params = new URLSearchParams({
+      weekStart: drillDown.weekStart,
+      weekEnd: drillDown.weekEnd,
+      stage: drillDown.stage,
+    });
+    if (filterSpId && filterSpId !== "all") params.set("salespersonId", filterSpId);
+
+    fetch(`/api/reports/sales-breakdown-deals?${params}`)
+      .then((r) => r.json())
+      .then((d) => setDeals(Array.isArray(d) ? d : []))
+      .catch(() => setDeals([]))
+      .finally(() => setLoading(false));
+  }, [drillDown, filterSpId]);
+
+  const totalAgreed      = deals.reduce((s, d) => s + (parseFloat(d.agreedAmount ?? "0") || 0), 0);
+  const totalReceived    = deals.reduce((s, d) => s + (parseFloat(d.receivedAmount ?? "0") || 0), 0);
+  const totalOutstanding = deals.reduce((s, d) => s + (parseFloat(d.outstandingAmount ?? "0") || 0), 0);
+
+  return (
+    <Dialog open={!!drillDown} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="flex items-start justify-between gap-4">
+            <div>
+              <span className="text-base font-bold">{drillDown?.columnLabel}</span>
+              <p className="text-xs font-normal text-muted-foreground mt-0.5">
+                {drillDown?.weekLabel}
+              </p>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : deals.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              No deals found for this period and stage.
+            </div>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-muted/60">
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">#</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Deal Name</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Company</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Product</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Stage</th>
+                  <th className="border border-border px-3 py-2 text-right font-semibold text-xs">Agreed</th>
+                  <th className="border border-border px-3 py-2 text-right font-semibold text-xs">Received</th>
+                  <th className="border border-border px-3 py-2 text-right font-semibold text-xs">Outstanding</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deals.map((deal, i) => (
+                  <tr key={deal.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                    <td className="border border-border px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                    <td className="border border-border px-3 py-2 text-xs font-medium max-w-[160px] truncate">{deal.name}</td>
+                    <td className="border border-border px-3 py-2 text-xs max-w-[140px] truncate">{deal.companyName}</td>
+                    <td className="border border-border px-3 py-2 text-xs max-w-[120px] truncate text-muted-foreground">{deal.productItem}</td>
+                    <td className="border border-border px-3 py-2 text-xs">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap ${
+                        deal.stage === "Order Closed"     ? "bg-green-500/20 text-green-700 dark:text-green-400" :
+                        deal.stage === "Order Confirmed"  ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
+                        deal.stage === "Quotation Sent"   ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" :
+                        "bg-red-500/20 text-red-700 dark:text-red-400"
+                      }`}>
+                        {deal.stage}
+                      </span>
+                    </td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.agreedAmount)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.receivedAmount)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.outstandingAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 font-semibold border-t-2 border-border">
+                  <td className="border border-border px-3 py-2 text-xs text-muted-foreground" colSpan={5}>
+                    Total ({deals.length} deal{deals.length !== 1 ? "s" : ""})
+                  </td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmt(totalAgreed)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmt(totalReceived)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmt(totalOutstanding)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function SalesBreakdown() {
   const { data: me } = useGetMe();
   const now = new Date();
   const currentYear = now.getFullYear();
 
-  const [startYear, setStartYear] = useState(String(currentYear));
-  const [startMonth, setStartMonth] = useState(String(0));
-  const [endYear, setEndYear] = useState(String(currentYear));
-  const [endMonth, setEndMonth] = useState(String(now.getMonth()));
-  const [filterSpId, setFilterSpId] = useState<string>("all");
-  const [weeks, setWeeks] = useState<WeekRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<UserOption[]>([]);
+  const [startYear,   setStartYear]   = useState(String(currentYear));
+  const [startMonth,  setStartMonth]  = useState(String(0));
+  const [endYear,     setEndYear]     = useState(String(currentYear));
+  const [endMonth,    setEndMonth]    = useState(String(now.getMonth()));
+  const [filterSpId,  setFilterSpId]  = useState<string>("all");
+  const [weeks,       setWeeks]       = useState<WeekRow[]>([]);
+  const [loading,     setLoading]     = useState(false);
+  const [users,       setUsers]       = useState<UserOption[]>([]);
+  const [drillDown,   setDrillDown]   = useState<DrillDown | null>(null);
 
   useEffect(() => {
     if (me?.role === "owner") {
@@ -212,25 +333,37 @@ export default function SalesBreakdown() {
   }, [me, startYear, startMonth, endYear, endMonth, filterSpId]);
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
-  const groups = groupByMonth(weeks);
+  const groups      = groupByMonth(weeks);
 
-  // Grand totals
-  const totOC    = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
-  const totOCA   = weeks.reduce((s, w) => s + w.orderClosedAmount, 0);
-  const totDP    = weeks.reduce((s, w) => s + w.downPayment, 0);
-  const totPR    = weeks.reduce((s, w) => s + w.totalPaymentReceipt, 0);
-  const totQC    = weeks.reduce((s, w) => s + w.quotationSentCount, 0);
-  const totQA    = weeks.reduce((s, w) => s + w.quotationSentAmount, 0);
-  const totCC    = weeks.reduce((s, w) => s + w.orderConfirmedCount, 0);
-  const totCA    = weeks.reduce((s, w) => s + w.orderConfirmedAmount, 0);
-  const totSIP   = weeks.reduce((s, w) => s + w.totalSalesInProcess, 0);
+  const totOC  = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
+  const totOCA = weeks.reduce((s, w) => s + w.orderClosedAmount, 0);
+  const totDP  = weeks.reduce((s, w) => s + w.downPayment, 0);
+  const totPR  = weeks.reduce((s, w) => s + w.totalPaymentReceipt, 0);
+  const totQC  = weeks.reduce((s, w) => s + w.quotationSentCount, 0);
+  const totQA  = weeks.reduce((s, w) => s + w.quotationSentAmount, 0);
+  const totCC  = weeks.reduce((s, w) => s + w.orderConfirmedCount, 0);
+  const totCA  = weeks.reduce((s, w) => s + w.orderConfirmedAmount, 0);
+  const totSIP = weeks.reduce((s, w) => s + w.totalSalesInProcess, 0);
 
   const smLabel = MONTH_NAMES[parseInt(startMonth)];
   const emLabel = MONTH_NAMES[parseInt(endMonth)];
 
-  // Shared cell style classes
   const thBase = "border border-border text-center text-xs font-semibold px-2 py-1.5 whitespace-nowrap";
   const tdBase = "border border-border text-center text-xs px-2 py-1.5 whitespace-nowrap";
+
+  // Helper: open drill-down modal
+  function openDrill(w: WeekRow, stage: string, columnLabel: string) {
+    setDrillDown({
+      weekLabel: `${w.monthName} ${w.weekOrdinal} Week, ${w.monthYear}  (${w.weekStart} – ${w.weekEnd})`,
+      weekStart: w.weekStart,
+      weekEnd: w.weekEnd,
+      stage,
+      columnLabel,
+    });
+  }
+
+  // Clickable cell style
+  const clickable = "cursor-pointer hover:brightness-90 active:brightness-75 transition-all select-none";
 
   return (
     <div className="p-6 max-w-full mx-auto space-y-4">
@@ -238,7 +371,9 @@ export default function SalesBreakdown() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Sales Breakdown</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Weekly summary report by deal stage.</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Weekly summary report by deal stage. Click any value to see the deals behind it.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -310,25 +445,22 @@ export default function SalesBreakdown() {
           ) : (
             <table className="w-full border-collapse text-sm">
               <thead>
-                {/* ── Row 1: Title ── */}
+                {/* Row 1: Title */}
                 <tr>
                   <th colSpan={11} className="border border-border py-3 text-center text-base font-bold tracking-wide uppercase bg-muted/30">
                     SUMMARY REPORT
                   </th>
                 </tr>
 
-                {/* ── Row 2: Top section headers ── */}
+                {/* Row 2: Top section headers */}
                 <tr>
                   <th rowSpan={3} className={`${thBase} bg-muted/40 text-left min-w-[180px]`}>Months</th>
-                  {/* Payment Receipt */}
                   <th colSpan={4} className={`${thBase} bg-green-700/30 text-green-800 dark:text-green-300`}>Payment Receipt</th>
-                  {/* Gap */}
                   <th className="border border-border w-4 bg-muted/10" />
-                  {/* Sales in Process */}
                   <th colSpan={5} className={`${thBase} bg-yellow-500/20 text-yellow-800 dark:text-yellow-300`}>Sales in Process</th>
                 </tr>
 
-                {/* ── Row 3: Sub-section headers ── */}
+                {/* Row 3: Sub-section headers */}
                 <tr>
                   <th colSpan={2} className={`${thBase} bg-green-700/20 text-green-800 dark:text-green-400 italic`}>Order Closed ✓</th>
                   <th className={`${thBase} bg-green-700/10 text-green-900 dark:text-foreground`}>Down Payment Amount</th>
@@ -339,7 +471,7 @@ export default function SalesBreakdown() {
                   <th className={`${thBase} bg-yellow-500/10 text-yellow-900 dark:text-foreground`}>Total Amount</th>
                 </tr>
 
-                {/* ── Row 4: Column headers ── */}
+                {/* Row 4: Column headers */}
                 <tr>
                   <th className={`${thBase} bg-green-700/10`}>Total Orders</th>
                   <th className={`${thBase} bg-green-700/10`}>Amount</th>
@@ -366,10 +498,7 @@ export default function SalesBreakdown() {
                     <>
                       {/* Month header row */}
                       <tr key={`month-${monthKey}`} className="bg-muted/30">
-                        <td
-                          colSpan={11}
-                          className="border border-border px-3 py-1.5 font-bold text-sm"
-                        >
+                        <td colSpan={11} className="border border-border px-3 py-1.5 font-bold text-sm">
                           {monthLabel}
                         </td>
                       </tr>
@@ -378,36 +507,95 @@ export default function SalesBreakdown() {
                       {rows.map((w, wi) => (
                         <tr
                           key={w.weekStart}
-                          className={`hover:bg-muted/10 ${wi % 2 === 0 ? "" : "bg-muted/5"}`}
+                          className={`${wi % 2 === 0 ? "" : "bg-muted/5"}`}
                         >
-                          {/* Month label */}
                           <td className={`${tdBase} text-left font-medium`}>
                             {w.monthName} {w.weekOrdinal} Week
                           </td>
 
-                          {/* Order Closed */}
-                          <td className={`${tdBase} bg-green-900/10`}>{fmtCount(w.orderClosedCount)}</td>
-                          <td className={`${tdBase} bg-green-900/10`}>{fmt(w.orderClosedAmount)}</td>
+                          {/* Order Closed — count */}
+                          <td
+                            className={`${tdBase} bg-green-900/10 ${w.orderClosedCount ? clickable : ""}`}
+                            onClick={() => w.orderClosedCount && openDrill(w, "Order Closed", "Order Closed — No. of Orders")}
+                            title={w.orderClosedCount ? "Click to view deals" : undefined}
+                          >
+                            {fmtCount(w.orderClosedCount)}
+                          </td>
+
+                          {/* Order Closed — amount */}
+                          <td
+                            className={`${tdBase} bg-green-900/10 ${w.orderClosedAmount ? clickable : ""}`}
+                            onClick={() => w.orderClosedAmount && openDrill(w, "Order Closed", "Order Closed — Amount")}
+                            title={w.orderClosedAmount ? "Click to view deals" : undefined}
+                          >
+                            {fmt(w.orderClosedAmount)}
+                          </td>
 
                           {/* Down Payment */}
-                          <td className={`${tdBase} bg-green-900/5`}>{fmt(w.downPayment)}</td>
+                          <td
+                            className={`${tdBase} bg-green-900/5 ${w.downPayment ? clickable : ""}`}
+                            onClick={() => w.downPayment && openDrill(w, "Order Closed", "Order Closed — Down Payment")}
+                            title={w.downPayment ? "Click to view deals" : undefined}
+                          >
+                            {fmt(w.downPayment)}
+                          </td>
 
                           {/* Total Payment Receipt */}
-                          <td className={`${tdBase} bg-green-900/5 font-medium`}>{fmt(w.totalPaymentReceipt)}</td>
+                          <td
+                            className={`${tdBase} bg-green-900/5 font-medium ${w.totalPaymentReceipt ? clickable : ""}`}
+                            onClick={() => w.totalPaymentReceipt && openDrill(w, "Order Closed", "Payment Receipt — Total")}
+                            title={w.totalPaymentReceipt ? "Click to view deals" : undefined}
+                          >
+                            {fmt(w.totalPaymentReceipt)}
+                          </td>
 
                           {/* Gap */}
                           <td className="border border-border bg-muted/10" />
 
-                          {/* Quotation Sent */}
-                          <td className={`${tdBase} bg-yellow-900/10`}>{fmtCount(w.quotationSentCount)}</td>
-                          <td className={`${tdBase} bg-yellow-900/10`}>{fmt(w.quotationSentAmount)}</td>
+                          {/* Quotation Sent — count */}
+                          <td
+                            className={`${tdBase} bg-yellow-900/10 ${w.quotationSentCount ? clickable : ""}`}
+                            onClick={() => w.quotationSentCount && openDrill(w, "Quotation Sent", "Quotation Sent — No. of Quotations")}
+                            title={w.quotationSentCount ? "Click to view deals" : undefined}
+                          >
+                            {fmtCount(w.quotationSentCount)}
+                          </td>
 
-                          {/* Order Confirmed */}
-                          <td className={`${tdBase} bg-blue-900/10`}>{fmtCount(w.orderConfirmedCount)}</td>
-                          <td className={`${tdBase} bg-blue-900/10`}>{fmt(w.orderConfirmedAmount)}</td>
+                          {/* Quotation Sent — amount */}
+                          <td
+                            className={`${tdBase} bg-yellow-900/10 ${w.quotationSentAmount ? clickable : ""}`}
+                            onClick={() => w.quotationSentAmount && openDrill(w, "Quotation Sent", "Quotation Sent — Amount")}
+                            title={w.quotationSentAmount ? "Click to view deals" : undefined}
+                          >
+                            {fmt(w.quotationSentAmount)}
+                          </td>
+
+                          {/* Order Confirmed — count */}
+                          <td
+                            className={`${tdBase} bg-blue-900/10 ${w.orderConfirmedCount ? clickable : ""}`}
+                            onClick={() => w.orderConfirmedCount && openDrill(w, "Order Confirmed", "Order Confirmed — No. of Orders")}
+                            title={w.orderConfirmedCount ? "Click to view deals" : undefined}
+                          >
+                            {fmtCount(w.orderConfirmedCount)}
+                          </td>
+
+                          {/* Order Confirmed — amount */}
+                          <td
+                            className={`${tdBase} bg-blue-900/10 ${w.orderConfirmedAmount ? clickable : ""}`}
+                            onClick={() => w.orderConfirmedAmount && openDrill(w, "Order Confirmed", "Order Confirmed — Amount")}
+                            title={w.orderConfirmedAmount ? "Click to view deals" : undefined}
+                          >
+                            {fmt(w.orderConfirmedAmount)}
+                          </td>
 
                           {/* Total Sales in Process */}
-                          <td className={`${tdBase} bg-yellow-900/5 font-medium`}>{fmt(w.totalSalesInProcess)}</td>
+                          <td
+                            className={`${tdBase} bg-yellow-900/5 font-medium ${w.totalSalesInProcess ? clickable : ""}`}
+                            onClick={() => w.totalSalesInProcess && openDrill(w, "Sales in Process", "Sales in Process — Total")}
+                            title={w.totalSalesInProcess ? "Click to view deals" : undefined}
+                          >
+                            {fmt(w.totalSalesInProcess)}
+                          </td>
                         </tr>
                       ))}
                     </>
@@ -437,6 +625,13 @@ export default function SalesBreakdown() {
           )}
         </CardContent>
       </Card>
+
+      {/* Drill-down modal */}
+      <DealDrillDownModal
+        drillDown={drillDown}
+        filterSpId={filterSpId}
+        onClose={() => setDrillDown(null)}
+      />
     </div>
   );
 }
