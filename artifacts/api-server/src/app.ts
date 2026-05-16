@@ -74,7 +74,7 @@ const publicDir = publicDirCandidates.find(existsSync);
 if (publicDir) {
   logger.info({ publicDir }, "Serving frontend static files");
   app.use(express.static(publicDir));
-  app.get("*", (_req, res) => {
+  app.get(/(.*)/, (_req, res) => {
     res.sendFile(path.join(publicDir, "index.html"));
   });
 }
