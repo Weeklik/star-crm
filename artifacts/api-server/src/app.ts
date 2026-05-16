@@ -6,6 +6,8 @@ import connectPgSimple from "connect-pg-simple";
 import { pool } from "@workspace/db";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import path from "path";
+import { existsSync } from "fs";
 
 const PgSession = connectPgSimple(session);
 
@@ -61,5 +63,14 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Serve React frontend static files when built (production / Docker)
+const publicDir = path.resolve(process.cwd(), "public");
+if (existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(publicDir, "index.html"));
+  });
+}
 
 export default app;
