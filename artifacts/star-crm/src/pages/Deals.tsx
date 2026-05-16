@@ -588,6 +588,7 @@ export default function Deals() {
   async function importDealsSequentially(rows: ImportRow[]): Promise<number> {
     setImportProgress({ done: 0, total: rows.length });
     let successCount = 0;
+    let lastError: string | null = null;
     for (let start = 0; start < rows.length; start += IMPORT_BATCH) {
       const batch = rows.slice(start, start + IMPORT_BATCH);
       try {
@@ -597,14 +598,23 @@ export default function Deals() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ deals: batch.map(toPayload), force: true }),
         });
+        const json = await res.json().catch(() => null);
         if (res.ok) {
-          const json = await res.json();
-          successCount += json.imported?.length ?? 0;
+          successCount += json?.imported?.length ?? 0;
+        } else {
+          const msg = json?.error ?? `HTTP ${res.status}`;
+          console.error("[Import] Batch failed:", msg, json);
+          lastError = msg;
         }
-      } catch {
-        // continue to next batch on failure
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[Import] Batch exception:", msg);
+        lastError = msg;
       }
       setImportProgress({ done: Math.min(start + IMPORT_BATCH, rows.length), total: rows.length });
+    }
+    if (successCount === 0 && lastError) {
+      throw new Error(lastError);
     }
     return successCount;
   }
@@ -643,8 +653,9 @@ export default function Deals() {
         setImportProgress(null);
         setImportingNew(false);
       }
-    } catch {
-      toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Please try again.";
+      toast({ title: "Import failed", description: msg, variant: "destructive" });
       setImportProgress(null);
       setImportingNew(false);
     }
@@ -660,8 +671,9 @@ export default function Deals() {
       toast({ title: "Import complete", description: `${count} deal${count !== 1 ? "s" : ""} added.` });
       setImportDialogOpen(false);
       setImportProgress(null);
-    } catch {
-      toast({ title: "Import failed", description: "Please try again.", variant: "destructive" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Please try again.";
+      toast({ title: "Import failed", description: msg, variant: "destructive" });
       setImportProgress(null);
     } finally {
       setImportingNew(false);
