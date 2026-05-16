@@ -64,9 +64,15 @@ app.use(
 
 app.use("/api", router);
 
-// Serve React frontend static files when built (production / Docker)
-const publicDir = path.resolve(process.cwd(), "public");
-if (existsSync(publicDir)) {
+// Serve React frontend static files when built (production)
+// Check multiple locations: Docker copies to ./public, managed runtime builds to ./artifacts/star-crm/dist/public
+const publicDirCandidates = [
+  path.resolve(process.cwd(), "public"),
+  path.resolve(process.cwd(), "artifacts/star-crm/dist/public"),
+];
+const publicDir = publicDirCandidates.find(existsSync);
+if (publicDir) {
+  logger.info({ publicDir }, "Serving frontend static files");
   app.use(express.static(publicDir));
   app.get("*", (_req, res) => {
     res.sendFile(path.join(publicDir, "index.html"));
