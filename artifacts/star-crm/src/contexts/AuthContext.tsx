@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface AuthUser {
   id: number;
@@ -33,6 +34,7 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const fetchUser = useCallback(async () => {
     try {
@@ -64,16 +66,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.error || "Login failed");
     }
     const u = await res.json();
+    // Wipe any cached data from a previous session before setting the new user
+    queryClient.clear();
     setUser(u);
-  }, []);
+  }, [queryClient]);
 
   const logout = useCallback(async () => {
     await fetch(`${BASE}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => {});
+    // Clear all cached query data so the next user never sees stale data
+    queryClient.clear();
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
