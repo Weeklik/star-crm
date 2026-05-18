@@ -168,11 +168,13 @@ router.get(
       }
       const p = byPerson[sid];
       p.totalDeals++;
-      p.totalAgreedAmount += parseFloat(deal.agreedAmount ?? "0");
-      p.totalReceivedAmount += parseFloat(deal.receivedAmount ?? "0");
-      p.totalOutstandingAmount += parseFloat(deal.outstandingAmount ?? "0");
-      if (deal.stage === "Order Closed" || deal.stage === "Order Confirmed")
+      if (deal.stage === "Order Closed") {
+        p.totalAgreedAmount += parseFloat(deal.agreedAmount ?? "0");
+        p.totalReceivedAmount += parseFloat(deal.receivedAmount ?? "0");
+        p.totalOutstandingAmount += parseFloat(deal.outstandingAmount ?? "0");
         p.closedDeals++;
+      }
+      if (deal.stage === "Order Confirmed") p.closedDeals++;
       if (deal.stage === "Order Lost") p.lostDeals++;
       p.progressSum += deal.progress ?? 0;
     }
