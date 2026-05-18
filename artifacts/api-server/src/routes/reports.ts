@@ -374,6 +374,8 @@ router.get(
       const orderConfirmed = deals.filter((d) => d.stage === "Order Confirmed");
       const orderLost = deals.filter((d) => d.stage === "Order Lost");
       const closedDeals = orderClosed.length + orderConfirmed.length;
+      const lostDeals = orderLost.length;
+      const decidedDeals = closedDeals + lostDeals;
       const totalDeals = deals.length;
       return {
         weekLabel,
@@ -381,7 +383,7 @@ router.get(
         weekEnd,
         totalDeals,
         closedDeals,
-        winRate: totalDeals > 0 ? (closedDeals / totalDeals) * 100 : 0,
+        winRate: decidedDeals > 0 ? (closedDeals / decidedDeals) * 100 : 0,
         quotationSentAmount: quotationSent.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
         orderClosedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
         orderClosedReceivedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.receivedAmount ?? "0"), 0),
