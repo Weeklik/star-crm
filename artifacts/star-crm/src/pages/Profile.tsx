@@ -267,40 +267,63 @@ export default function Profile() {
 
       {/* Regional settings */}
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Regional Settings</h2>
-        <p className="text-xs text-muted-foreground -mt-2">
-          The selected currency will be shown on all amounts throughout the app.
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Regional Settings</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              The selected currency is shown on all amounts throughout the app.
+            </p>
+          </div>
+          {user?.role === "salesperson" && (
+            <span className="shrink-0 text-xs text-muted-foreground border border-border rounded px-2 py-1 bg-secondary/50">
+              Set by owner
+            </span>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="country">Country</Label>
-            <select
-              id="country"
-              value={country}
-              onChange={(e) => handleCountryChange(e.target.value)}
-              className={selectClass}
-            >
-              <option value="">— Select country —</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.name}</option>
-              ))}
-            </select>
+            {user?.role === "salesperson" ? (
+              <div className="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-1 text-sm items-center text-muted-foreground select-none">
+                {COUNTRIES.find((c) => c.code === country)?.name || country || "—"}
+              </div>
+            ) : (
+              <select
+                id="country"
+                value={country}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className={selectClass}
+              >
+                <option value="">— Select country —</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="currency">Currency</Label>
-            <select
-              id="currency"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className={selectClass}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">Auto-set by country, but you can change it.</p>
+            {user?.role === "salesperson" ? (
+              <div className="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-1 text-sm items-center text-muted-foreground select-none">
+                {currency || "—"}
+              </div>
+            ) : (
+              <>
+                <select
+                  id="currency"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className={selectClass}
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">Auto-set by country, but you can change it.</p>
+              </>
+            )}
           </div>
         </div>
       </div>
