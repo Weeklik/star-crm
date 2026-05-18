@@ -453,15 +453,16 @@ router.get(
       const spDeals = yearDeals.filter((d) => d.salespersonId === spId);
       const u = userMap[spId];
 
-      // Monthly totals (1-12)
+      // Monthly totals (1-12) — Order Closed only
+      const closedDealsForSp = spDeals.filter((d) => d.stage === "Order Closed");
       const monthly: Record<number, number> = {};
       for (let m = 1; m <= 12; m++) monthly[m] = 0;
-      for (const d of spDeals) {
+      for (const d of closedDealsForSp) {
         const month = new Date(d.dealStartDate).getMonth() + 1;
         monthly[month] += parseFloat(d.agreedAmount ?? "0");
       }
 
-      const totalSales = spDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+      const totalSales = closedDealsForSp.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
       const activeMonths = Object.values(monthly).filter((v) => v > 0).length || 1;
       const avgMonthlySales = totalSales / activeMonths;
 
