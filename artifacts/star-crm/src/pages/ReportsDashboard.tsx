@@ -457,7 +457,7 @@ export default function ReportsDashboard() {
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               {showPersonChart
-                ? "Agreed & received amounts by salesperson"
+                ? "Orders closed & received amounts by salesperson"
                 : "Agreed amount per deal stage"}
             </p>
           </CardHeader>
@@ -497,7 +497,7 @@ export default function ReportsDashboard() {
                       width={56}
                     />
                     <Tooltip content={<CustomBarTooltip />} />
-                    <Bar dataKey="agreed" name="Pipeline" fill="#a78bfa" radius={[0, 4, 4, 0]} maxBarSize={14}>
+                    <Bar dataKey="agreed" name="Orders Closed" fill="#a78bfa" radius={[0, 4, 4, 0]} maxBarSize={14}>
                       <LabelList
                         dataKey="agreed"
                         position="right"
