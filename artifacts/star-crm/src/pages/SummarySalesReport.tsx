@@ -221,7 +221,7 @@ export default function SummarySalesReport() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-subtle">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-muted/60 border-b border-border">
