@@ -236,7 +236,7 @@ export default function ReportsDashboard() {
               {p.name}
             </span>
             <span className="text-xs font-medium">
-              {p.name === "Win Rate"
+              {p.name === "Close Rate"
                 ? `${(p.value ?? 0).toFixed(1)}%`
                 : formatAmount(p.value ?? 0)}
             </span>
@@ -316,7 +316,7 @@ export default function ReportsDashboard() {
       iconColor: "text-amber-400",
     },
     {
-      label: "Win Rate",
+      label: "Close Rate",
       value: `${winRate}%`,
       sub: `${summary?.closedDeals ?? 0} closed`,
       icon: Target,
@@ -572,7 +572,7 @@ export default function ReportsDashboard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Weekly Sales Comparison</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Order Closed amounts vs Received amounts · win rate trend (%)
+            Order Closed amounts vs Received amounts · close rate trend (%)
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -665,7 +665,7 @@ export default function ReportsDashboard() {
                   yAxisId="rate"
                   type="monotone"
                   dataKey="winRate"
-                  name="Win Rate"
+                  name="Close Rate"
                   stroke="#60a5fa"
                   strokeWidth={2.5}
                   dot={{ fill: "#60a5fa", r: 4, strokeWidth: 2, stroke: "hsl(var(--card))" }}

@@ -373,17 +373,19 @@ router.get(
       const orderClosed = deals.filter((d) => d.stage === "Order Closed");
       const orderConfirmed = deals.filter((d) => d.stage === "Order Confirmed");
       const orderLost = deals.filter((d) => d.stage === "Order Lost");
-      const closedDeals = orderClosed.length + orderConfirmed.length;
-      const lostDeals = orderLost.length;
-      const decidedDeals = closedDeals + lostDeals;
+      const closedDeals = orderClosed.length;
+      const confirmedDeals = orderConfirmed.length;
+      const quotationDeals = quotationSent.length;
       const totalDeals = deals.length;
+      // Close rate: closed ÷ (closed + open quotations) — measures conversion of pipeline to closed
+      const closeRateDenominator = closedDeals + quotationDeals;
       return {
         weekLabel,
         weekStart,
         weekEnd,
         totalDeals,
         closedDeals,
-        winRate: decidedDeals > 0 ? (closedDeals / decidedDeals) * 100 : 0,
+        winRate: closeRateDenominator > 0 ? (closedDeals / closeRateDenominator) * 100 : 0,
         quotationSentAmount: quotationSent.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
         orderClosedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
         orderClosedReceivedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.receivedAmount ?? "0"), 0),
