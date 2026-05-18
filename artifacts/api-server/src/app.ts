@@ -19,6 +19,10 @@ declare module "express-session" {
 
 const app: Express = express();
 
+// Trust the reverse proxy (AWS App Runner, etc.) so that secure session cookies
+// are set correctly when SSL is terminated at the load balancer level.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
