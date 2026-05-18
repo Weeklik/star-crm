@@ -237,9 +237,7 @@ export default function ReportsDashboard() {
               {p.name}
             </span>
             <span className="text-xs font-medium">
-              {p.name === "Closed Orders"
-                ? `${p.value ?? 0} orders`
-                : formatAmount(p.value ?? 0)}
+              {formatAmount(p.value ?? 0)}
             </span>
           </div>
         ))}
@@ -573,7 +571,7 @@ export default function ReportsDashboard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Weekly Sales Comparison</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Order Closed amounts vs Received amounts · closed orders trend (count)
+            Order Closed amounts vs Received amounts · trend follows Order Closed
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -607,14 +605,6 @@ export default function ReportsDashboard() {
                   axisLine={false}
                   tickLine={false}
                   width={48}
-                />
-                <YAxis
-                  yAxisId="rate"
-                  orientation="right"
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={36}
                 />
                 <Tooltip content={<CustomWeeklyTooltip />} />
                 <Legend
@@ -661,14 +651,15 @@ export default function ReportsDashboard() {
                 </Bar>
 
                 <Line
-                  yAxisId="rate"
+                  yAxisId="amount"
                   type="monotone"
-                  dataKey="closedDeals"
-                  name="Closed Orders"
+                  dataKey="orderClosedAmount"
+                  name="Trend"
                   stroke="#60a5fa"
                   strokeWidth={2.5}
                   dot={{ fill: "#60a5fa", r: 4, strokeWidth: 2, stroke: "hsl(var(--card))" }}
                   activeDot={{ r: 6, strokeWidth: 2, stroke: "hsl(var(--card))" }}
+                  legendType="none"
                 />
               </ComposedChart>
             </ResponsiveContainer>
