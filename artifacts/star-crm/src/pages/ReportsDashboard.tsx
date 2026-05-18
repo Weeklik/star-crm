@@ -43,6 +43,7 @@ interface SummaryData {
   closedDeals: number;
   lostDeals: number;
   avgProgress: number;
+  quotationSentCount: number;
 }
 
 interface StageItem {
@@ -195,8 +196,8 @@ export default function ReportsDashboard() {
   }
 
   const winRate =
-    summary && summary.totalDeals > 0
-      ? Math.round((summary.closedDeals / summary.totalDeals) * 100)
+    summary && summary.quotationSentCount > 0
+      ? Math.round((summary.closedDeals / summary.quotationSentCount) * 100)
       : 0;
 
   const pieData = stageData
@@ -236,8 +237,8 @@ export default function ReportsDashboard() {
               {p.name}
             </span>
             <span className="text-xs font-medium">
-              {p.name === "Close Rate"
-                ? `${(p.value ?? 0).toFixed(1)}%`
+              {p.name === "Closed Orders"
+                ? `${p.value ?? 0} orders`
                 : formatAmount(p.value ?? 0)}
             </span>
           </div>
@@ -572,7 +573,7 @@ export default function ReportsDashboard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Weekly Sales Comparison</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Order Closed amounts vs Received amounts · close rate trend (%)
+            Order Closed amounts vs Received amounts · closed orders trend (count)
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -610,12 +611,10 @@ export default function ReportsDashboard() {
                 <YAxis
                   yAxisId="rate"
                   orientation="right"
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}%`}
                   tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                   axisLine={false}
                   tickLine={false}
-                  width={40}
+                  width={36}
                 />
                 <Tooltip content={<CustomWeeklyTooltip />} />
                 <Legend
@@ -664,8 +663,8 @@ export default function ReportsDashboard() {
                 <Line
                   yAxisId="rate"
                   type="monotone"
-                  dataKey="winRate"
-                  name="Close Rate"
+                  dataKey="closedDeals"
+                  name="Closed Orders"
                   stroke="#60a5fa"
                   strokeWidth={2.5}
                   dot={{ fill: "#60a5fa", r: 4, strokeWidth: 2, stroke: "hsl(var(--card))" }}

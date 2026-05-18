@@ -87,6 +87,7 @@ router.get(
     );
     const closedDeals = deals.filter((d) => d.stage === "Order Closed" || d.stage === "Order Confirmed").length;
     const lostDeals = deals.filter((d) => d.stage === "Order Lost").length;
+    const quotationSentCount = deals.filter((d) => d.stage === "Quotation Sent").length;
     const avgProgress =
       totalDeals > 0
         ? deals.reduce((s, d) => s + (d.progress ?? 0), 0) / totalDeals
@@ -103,6 +104,7 @@ router.get(
         lostDeals,
         avgProgress,
         vatApplicableCount,
+        quotationSentCount,
       }),
     );
   },

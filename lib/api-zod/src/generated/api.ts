@@ -269,6 +269,7 @@ export const GetReportSummaryResponse = zod.object({
   lostDeals: zod.number(),
   avgProgress: zod.number(),
   vatApplicableCount: zod.number(),
+  quotationSentCount: zod.number(),
 });
 
 /**
