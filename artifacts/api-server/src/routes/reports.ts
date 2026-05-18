@@ -384,6 +384,7 @@ router.get(
         winRate: totalDeals > 0 ? (closedDeals / totalDeals) * 100 : 0,
         quotationSentAmount: quotationSent.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
         orderClosedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
+        orderClosedReceivedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.receivedAmount ?? "0"), 0),
         orderConfirmedAmount: orderConfirmed.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
         orderLostAmount: orderLost.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
       };

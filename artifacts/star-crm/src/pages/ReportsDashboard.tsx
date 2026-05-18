@@ -61,6 +61,7 @@ interface WeeklyItem {
   winRate: number;
   quotationSentAmount: number;
   orderClosedAmount: number;
+  orderClosedReceivedAmount: number;
   orderConfirmedAmount: number;
   orderLostAmount: number;
 }
@@ -571,7 +572,7 @@ export default function ReportsDashboard() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Weekly Sales Comparison</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Quotation Sent vs Order Closed amounts · win rate trend (%)
+            Order Closed amounts vs Received amounts · win rate trend (%)
           </p>
         </CardHeader>
         <CardContent className="pt-0">
@@ -628,26 +629,9 @@ export default function ReportsDashboard() {
 
                 <Bar
                   yAxisId="amount"
-                  dataKey="quotationSentAmount"
-                  name="Quotation Sent"
-                  fill="#a78bfa"
-                  fillOpacity={0.85}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={52}
-                >
-                  <LabelList
-                    dataKey="quotationSentAmount"
-                    position="top"
-                    formatter={fmtK}
-                    style={{ fontSize: 10, fill: "#a78bfa", fontWeight: 600 }}
-                  />
-                </Bar>
-
-                <Bar
-                  yAxisId="amount"
                   dataKey="orderClosedAmount"
                   name="Order Closed"
-                  fill="#fbbf24"
+                  fill="#a78bfa"
                   fillOpacity={0.85}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={52}
@@ -656,7 +640,24 @@ export default function ReportsDashboard() {
                     dataKey="orderClosedAmount"
                     position="top"
                     formatter={fmtK}
-                    style={{ fontSize: 10, fill: "#ca8a04", fontWeight: 600 }}
+                    style={{ fontSize: 10, fill: "#a78bfa", fontWeight: 600 }}
+                  />
+                </Bar>
+
+                <Bar
+                  yAxisId="amount"
+                  dataKey="orderClosedReceivedAmount"
+                  name="Received"
+                  fill="#34d399"
+                  fillOpacity={0.85}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={52}
+                >
+                  <LabelList
+                    dataKey="orderClosedReceivedAmount"
+                    position="top"
+                    formatter={fmtK}
+                    style={{ fontSize: 10, fill: "#059669", fontWeight: 600 }}
                   />
                 </Bar>
 
