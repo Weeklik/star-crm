@@ -313,6 +313,84 @@ router.get(
 );
 
 
+// ─── Weekly Stage Breakdown (for Reports Dashboard) ───────────────────────────
+router.get(
+  "/reports/weekly-stage-breakdown",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const user = (req as any).user;
+    const salespersonId = req.query.salespersonId
+      ? parseInt(req.query.salespersonId as string, 10)
+      : undefined;
+    const startDate = (req.query.startDate as string) || undefined;
+    const endDate = (req.query.endDate as string) || undefined;
+
+    const now = new Date();
+    const rangeEndStr = endDate ?? now.toISOString().split("T")[0];
+    const rangeStartStr = startDate ?? (() => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 55);
+      return d.toISOString().split("T")[0];
+    })();
+
+    // Build week buckets backwards from rangeEnd
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const weekBuckets: Array<{ weekLabel: string; weekStart: string; weekEnd: string }> = [];
+    let cursor = new Date(rangeEndStr);
+    const rangeStartDate = new Date(rangeStartStr);
+
+    while (cursor >= rangeStartDate) {
+      const wEnd = new Date(cursor);
+      const wStart = new Date(cursor);
+      wStart.setDate(wStart.getDate() - 6);
+      if (wStart < rangeStartDate) wStart.setTime(rangeStartDate.getTime());
+      const wStartStr = wStart.toISOString().split("T")[0];
+      const wEndStr = wEnd.toISOString().split("T")[0];
+      const label = `${wStart.getDate()}-${wEnd.getDate()} ${MONTHS[wEnd.getMonth()]}`;
+      weekBuckets.unshift({ weekLabel: label, weekStart: wStartStr, weekEnd: wEndStr });
+      cursor = new Date(wStart);
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    const conditions: SQL[] = [
+      gte(dealsTable.dealStartDate, rangeStartStr),
+      lte(dealsTable.dealStartDate, rangeEndStr),
+    ];
+    if (user.role !== "owner") {
+      conditions.push(eq(dealsTable.salespersonId, user.id));
+    } else if (salespersonId) {
+      conditions.push(eq(dealsTable.salespersonId, salespersonId));
+    }
+    const allDeals = await db.select().from(dealsTable).where(and(...conditions));
+
+    const result = weekBuckets.map(({ weekLabel, weekStart, weekEnd }) => {
+      const deals = allDeals.filter(
+        (d) => d.dealStartDate >= weekStart && d.dealStartDate <= weekEnd,
+      );
+      const quotationSent = deals.filter((d) => d.stage === "Quotation Sent");
+      const orderClosed = deals.filter((d) => d.stage === "Order Closed");
+      const orderConfirmed = deals.filter((d) => d.stage === "Order Confirmed");
+      const orderLost = deals.filter((d) => d.stage === "Order Lost");
+      const closedDeals = orderClosed.length + orderConfirmed.length;
+      const totalDeals = deals.length;
+      return {
+        weekLabel,
+        weekStart,
+        weekEnd,
+        totalDeals,
+        closedDeals,
+        winRate: totalDeals > 0 ? (closedDeals / totalDeals) * 100 : 0,
+        quotationSentAmount: quotationSent.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
+        orderClosedAmount: orderClosed.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
+        orderConfirmedAmount: orderConfirmed.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
+        orderLostAmount: orderLost.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0),
+      };
+    });
+
+    res.json(result);
+  },
+);
+
 // ─── Summary Sales Report ─────────────────────────────────────────────────────
 router.get(
   "/reports/summary-sales",
