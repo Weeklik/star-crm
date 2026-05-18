@@ -73,6 +73,8 @@ router.get(
         name: usersTable.name,
         role: usersTable.role,
         createdAt: usersTable.createdAt,
+        country: usersTable.country,
+        currency: usersTable.currency,
       })
       .from(usersTable)
       .orderBy(usersTable.createdAt);

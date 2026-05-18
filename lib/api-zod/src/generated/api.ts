@@ -216,6 +216,8 @@ export const ListUsersResponseItem = zod.object({
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
   createdAt: zod.coerce.date(),
+  country: zod.string().nullish(),
+  currency: zod.string().nullish(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
 
