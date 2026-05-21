@@ -53,7 +53,7 @@ export function OwnerControlsBar() {
               <SelectItem key={r} value={r}>{r}</SelectItem>
             ))}
             {regions.length === 0 && (
-              <div className="px-3 py-2 text-xs text-muted-foreground">No regions set on deals yet</div>
+              <div className="px-3 py-2 text-xs text-muted-foreground">No salesperson countries set yet</div>
             )}
           </SelectContent>
         </Select>

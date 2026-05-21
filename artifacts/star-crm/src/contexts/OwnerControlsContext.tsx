@@ -1,6 +1,98 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 
+/**
+ * Map of country names / codes / common variants → default currency code.
+ * Used to auto-select the display currency when a region is chosen.
+ */
+export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
+  // United Arab Emirates
+  "United Arab Emirates": "AED", "UAE": "AED", "AE": "AED", "Emirates": "AED",
+  // Saudi Arabia
+  "Saudi Arabia": "SAR", "KSA": "SAR", "SA": "SAR",
+  // Kuwait
+  "Kuwait": "KWD", "KW": "KWD",
+  // Qatar
+  "Qatar": "QAR", "QA": "QAR",
+  // Bahrain
+  "Bahrain": "BHD", "BH": "BHD",
+  // Oman
+  "Oman": "OMR", "OM": "OMR",
+  // Egypt
+  "Egypt": "EGP", "EG": "EGP",
+  // India
+  "India": "INR", "IN": "INR",
+  // Pakistan
+  "Pakistan": "PKR", "PK": "PKR",
+  // Bangladesh
+  "Bangladesh": "BDT", "BD": "BDT",
+  // United Kingdom
+  "United Kingdom": "GBP", "UK": "GBP", "GB": "GBP", "Britain": "GBP", "England": "GBP",
+  // United States
+  "United States": "USD", "USA": "USD", "US": "USD", "America": "USD",
+  // Euro zone
+  "Germany": "EUR", "DE": "EUR",
+  "France": "EUR", "FR": "EUR",
+  "Italy": "EUR", "IT": "EUR",
+  "Spain": "EUR", "ES": "EUR",
+  "Netherlands": "EUR", "NL": "EUR",
+  "Belgium": "EUR", "BE": "EUR",
+  "Portugal": "EUR", "PT": "EUR",
+  "Austria": "EUR", "AT": "EUR",
+  "Ireland": "EUR", "IE": "EUR",
+  "Greece": "EUR", "GR": "EUR",
+  "Finland": "EUR", "FI": "EUR",
+  "Europe": "EUR", "EU": "EUR",
+  // Japan
+  "Japan": "JPY", "JP": "JPY",
+  // China
+  "China": "CNY", "CN": "CNY", "PRC": "CNY",
+  // Canada
+  "Canada": "CAD", "CA": "CAD",
+  // Australia
+  "Australia": "AUD", "AU": "AUD",
+  // Switzerland
+  "Switzerland": "CHF", "CH": "CHF",
+  // Singapore
+  "Singapore": "SGD", "SG": "SGD",
+  // Hong Kong
+  "Hong Kong": "HKD", "HK": "HKD",
+  // Malaysia
+  "Malaysia": "MYR", "MY": "MYR",
+  // Thailand
+  "Thailand": "THB", "TH": "THB",
+  // Philippines
+  "Philippines": "PHP", "PH": "PHP",
+  // Indonesia
+  "Indonesia": "IDR", "ID": "IDR",
+  // South Korea
+  "South Korea": "KRW", "Korea": "KRW", "KR": "KRW",
+  // Nigeria
+  "Nigeria": "NGN", "NG": "NGN",
+  // South Africa
+  "South Africa": "ZAR", "ZA": "ZAR",
+  // Turkey
+  "Turkey": "TRY", "Türkiye": "TRY", "TR": "TRY",
+  // Mexico
+  "Mexico": "MXN", "MX": "MXN",
+  // Brazil
+  "Brazil": "BRL", "BR": "BRL",
+  // Sweden
+  "Sweden": "SEK", "SE": "SEK",
+  // Norway
+  "Norway": "NOK", "NO": "NOK",
+  // Denmark
+  "Denmark": "DKK", "DK": "DKK",
+  // Poland
+  "Poland": "PLN", "PL": "PLN",
+  // Czech Republic
+  "Czech Republic": "CZK", "Czechia": "CZK", "CZ": "CZK",
+  // Hungary
+  "Hungary": "HUF", "HU": "HUF",
+  // Russia
+  "Russia": "RUB", "RU": "RUB",
+};
+
 export const CURRENCIES: { code: string; name: string }[] = [
   { code: "USD", name: "US Dollar" },
   { code: "EUR", name: "Euro" },
@@ -95,7 +187,7 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   const { user } = useAuth();
   const baseCurrency = user?.currency ?? "USD";
 
-  const [selectedRegion, setSelectedRegion] = useState("all");
+  const [selectedRegion, setSelectedRegionState] = useState("all");
   const [regions, setRegions] = useState<string[]>([]);
   const [selectedCurrency, setSelectedCurrencyState] = useState(baseCurrency);
   const [conversionRate, setConversionRateState] = useState(1);
@@ -110,6 +202,18 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
       .then((data: string[]) => setRegions(data))
       .catch(() => {});
   }, [user?.role]);
+
+  // Auto-set display currency when region changes
+  const setSelectedRegion = useCallback((r: string) => {
+    setSelectedRegionState(r);
+    if (r !== "all") {
+      const mapped = COUNTRY_CURRENCY_MAP[r];
+      if (mapped) {
+        setSelectedCurrencyState(mapped);
+        setRateEdited(false);
+      }
+    }
+  }, []);
 
   const fetchRate = useCallback(async (base: string, target: string) => {
     if (base === target) {
