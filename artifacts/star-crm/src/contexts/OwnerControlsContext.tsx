@@ -91,6 +91,24 @@ export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
   "Hungary": "HUF", "HU": "HUF",
   // Russia
   "Russia": "RUB", "RU": "RUB",
+  // Kenya
+  "Kenya": "KES", "KE": "KES",
+  // Israel
+  "Israel": "ILS", "IL": "ILS",
+  // Sri Lanka
+  "Sri Lanka": "LKR", "LK": "LKR",
+  // New Zealand
+  "New Zealand": "NZD", "NZ": "NZD",
+  // Taiwan
+  "Taiwan": "TWD", "TW": "TWD",
+  // Vietnam
+  "Vietnam": "VND", "VN": "VND",
+  // Argentina
+  "Argentina": "ARS", "AR": "ARS",
+  // Chile
+  "Chile": "CLP", "CL": "CLP",
+  // Colombia
+  "Colombia": "COP", "CO": "COP",
 };
 
 export const CURRENCIES: { code: string; name: string }[] = [
@@ -124,6 +142,15 @@ export const CURRENCIES: { code: string; name: string }[] = [
   { code: "MXN", name: "Mexican Peso" },
   { code: "BRL", name: "Brazilian Real" },
   { code: "KRW", name: "South Korean Won" },
+  { code: "KES", name: "Kenyan Shilling" },
+  { code: "ILS", name: "Israeli Shekel" },
+  { code: "LKR", name: "Sri Lankan Rupee" },
+  { code: "NZD", name: "New Zealand Dollar" },
+  { code: "TWD", name: "Taiwan Dollar" },
+  { code: "VND", name: "Vietnamese Dong" },
+  { code: "ARS", name: "Argentine Peso" },
+  { code: "CLP", name: "Chilean Peso" },
+  { code: "COP", name: "Colombian Peso" },
   { code: "SEK", name: "Swedish Krona" },
   { code: "NOK", name: "Norwegian Krone" },
   { code: "DKK", name: "Danish Krone" },
