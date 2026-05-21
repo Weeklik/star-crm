@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useOwnerControls, CURRENCIES } from "@/contexts/OwnerControlsContext";
+import { useOwnerControls, CURRENCIES, type RegionOption } from "@/contexts/OwnerControlsContext";
 
 export function OwnerControlsBar() {
   const {
@@ -49,8 +49,10 @@ export function OwnerControlsBar() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Regions</SelectItem>
-            {regions.map((r) => (
-              <SelectItem key={r} value={r}>{r}</SelectItem>
+            {regions.map((r: RegionOption) => (
+              <SelectItem key={r.country} value={r.country}>
+                {r.country}{r.currency ? ` (${r.currency})` : ""}
+              </SelectItem>
             ))}
             {regions.length === 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground">No salesperson countries set yet</div>

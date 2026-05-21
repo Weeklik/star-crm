@@ -39,15 +39,19 @@ router.get("/lookup", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
+  // Use DISTINCT ON (country) to get one row per country, including that salesperson's currency
   const rows = await db
-    .selectDistinct({ country: usersTable.country })
+    .selectDistinctOn([usersTable.country], {
+      country: usersTable.country,
+      currency: usersTable.currency,
+    })
     .from(usersTable)
     .where(and(eq(usersTable.role, "salesperson"), isNotNull(usersTable.country)));
 
   const regions = rows
-    .map((r) => r.country)
-    .filter((r): r is string => !!r && r.trim().length > 0)
-    .sort();
+    .filter((r): r is { country: string; currency: string | null } => !!r.country?.trim())
+    .map((r) => ({ country: r.country as string, currency: r.currency ?? null }))
+    .sort((a, b) => a.country.localeCompare(b.country));
 
   res.json(regions);
 });

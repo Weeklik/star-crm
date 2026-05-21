@@ -133,10 +133,15 @@ export const CURRENCIES: { code: string; name: string }[] = [
   { code: "RUB", name: "Russian Ruble" },
 ];
 
+export interface RegionOption {
+  country: string;
+  currency: string | null;
+}
+
 interface OwnerControlsContextValue {
   selectedRegion: string;
   setSelectedRegion: (r: string) => void;
-  regions: string[];
+  regions: RegionOption[];
 
   baseCurrency: string;
   selectedCurrency: string;
@@ -154,7 +159,7 @@ interface OwnerControlsContextValue {
 const OwnerControlsContext = createContext<OwnerControlsContextValue>({
   selectedRegion: "all",
   setSelectedRegion: () => {},
-  regions: [],
+  regions: [] as RegionOption[],
   baseCurrency: "USD",
   selectedCurrency: "USD",
   setSelectedCurrency: () => {},
@@ -188,32 +193,36 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   const baseCurrency = user?.currency ?? "USD";
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
-  const [regions, setRegions] = useState<string[]>([]);
+  const [regions, setRegions] = useState<RegionOption[]>([]);
   const [selectedCurrency, setSelectedCurrencyState] = useState(baseCurrency);
   const [conversionRate, setConversionRateState] = useState(1);
   const [rateLoading, setRateLoading] = useState(false);
   const [rateEdited, setRateEdited] = useState(false);
 
-  // Fetch distinct regions from API
+  // Fetch distinct regions (with currencies) from API
   useEffect(() => {
     if (user?.role !== "owner") return;
     fetch("/api/lookup/regions", { credentials: "include" })
       .then((r) => r.json())
-      .then((data: string[]) => setRegions(data))
+      .then((data: RegionOption[]) => setRegions(data))
       .catch(() => {});
   }, [user?.role]);
 
-  // Auto-set display currency when region changes
+  // Auto-set display currency when region changes.
+  // Priority: 1) salesperson's profile currency, 2) static country→currency map.
   const setSelectedRegion = useCallback((r: string) => {
     setSelectedRegionState(r);
     if (r !== "all") {
-      const mapped = COUNTRY_CURRENCY_MAP[r];
-      if (mapped) {
-        setSelectedCurrencyState(mapped);
+      const regionObj = regions.find((ro) => ro.country === r);
+      const currency =
+        regionObj?.currency ||        // from salesperson profile
+        COUNTRY_CURRENCY_MAP[r];      // static fallback
+      if (currency) {
+        setSelectedCurrencyState(currency);
         setRateEdited(false);
       }
     }
-  }, []);
+  }, [regions]);
 
   const fetchRate = useCallback(async (base: string, target: string) => {
     if (base === target) {
