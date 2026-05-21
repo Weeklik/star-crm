@@ -1060,8 +1060,12 @@ export default function Deals() {
               <Select
                 value={form.stage}
                 onValueChange={(v) => {
-                  set("stage", v as Stage);
-                  if (v !== "Order Lost") set("lostReason", "");
+                  const stage = v as Stage;
+                  set("stage", stage);
+                  if (stage === "Quotation Sent") set("progress", 20);
+                  else if (stage === "Order Confirmed") set("progress", 90);
+                  else if (stage === "Order Closed") set("progress", 100);
+                  if (stage !== "Order Lost") set("lostReason", "");
                 }}
               >
                 <SelectTrigger>
