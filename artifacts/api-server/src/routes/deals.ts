@@ -111,6 +111,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       companyName: data.companyName,
       productItem: data.productItem,
       stage: data.stage,
+      dealType: data.dealType ?? "New Deal",
       progress: data.progress,
       salesStatus: data.salesStatus,
       vatApplicable: data.vatApplicable,
@@ -195,6 +196,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if (d.companyName !== undefined) updateData.companyName = d.companyName;
   if (d.productItem !== undefined) updateData.productItem = d.productItem;
   if (d.stage !== undefined) updateData.stage = d.stage;
+  if (d.dealType !== undefined) updateData.dealType = d.dealType;
   if (d.progress !== undefined) updateData.progress = d.progress;
   if (d.salesStatus !== undefined) updateData.salesStatus = d.salesStatus;
   if (d.vatApplicable !== undefined) updateData.vatApplicable = d.vatApplicable;

@@ -102,6 +102,7 @@ interface DealFormState {
   companyName: string;
   productItem: string;
   stage: Stage;
+  dealType: "New Deal" | "Recurring" | "Dealer";
   progress: number;
   salesStatus: string;
   vatApplicable: boolean;
@@ -127,6 +128,7 @@ const emptyForm = (): DealFormState => ({
   companyName: "",
   productItem: "",
   stage: "Quotation Sent",
+  dealType: "New Deal",
   progress: 0,
   salesStatus: "Active",
   vatApplicable: false,
@@ -146,6 +148,7 @@ function toPayload(f: DealFormState) {
     companyName: f.companyName,
     productItem: f.productItem,
     stage: f.stage,
+    dealType: f.dealType,
     progress: Number(f.progress),
     salesStatus: f.salesStatus,
     vatApplicable: f.vatApplicable,
@@ -510,6 +513,7 @@ export default function Deals() {
       companyName: deal.companyName,
       productItem: deal.productItem,
       stage: deal.stage as Stage,
+      dealType: (deal.dealType as "New Deal" | "Recurring" | "Dealer") ?? "New Deal",
       progress: deal.progress,
       salesStatus: deal.salesStatus,
       vatApplicable: deal.vatApplicable,
@@ -1108,6 +1112,25 @@ export default function Deals() {
                 </Select>
               </div>
             )}
+            <div className="space-y-1.5">
+              <Label>
+                Deal Type
+                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <Select
+                value={form.dealType}
+                onValueChange={(v) => set("dealType", v as "New Deal" | "Recurring" | "Dealer")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New Deal">New Deal</SelectItem>
+                  <SelectItem value="Recurring">Recurring</SelectItem>
+                  <SelectItem value="Dealer">Dealer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <Label>Sales Status</Label>
               <Input
