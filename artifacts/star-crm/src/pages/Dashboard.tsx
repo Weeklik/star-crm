@@ -1,8 +1,49 @@
 import { useGetMe, useGetReportSummary, useListDeals } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, DollarSign, Briefcase, TrendingUp, AlertCircle } from "lucide-react";
+import { Loader2, Briefcase, CheckCircle2, TrendingUp, Wallet, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useCurrency } from "@/contexts/CurrencyContext";
+
+interface KpiCardProps {
+  title: string;
+  count?: number;
+  countLabel?: string;
+  amount: string;
+  amountLabel?: string;
+  icon: React.ElementType;
+  iconColor: string;
+  accentColor: string;
+  singleValue?: boolean;
+}
+
+function KpiCard({ title, count, countLabel, amount, amountLabel, icon: Icon, iconColor, accentColor, singleValue }: KpiCardProps) {
+  return (
+    <Card className="bg-card border-border/60">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-5">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className={`p-1.5 rounded-md ${accentColor}`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} />
+        </div>
+      </CardHeader>
+      <CardContent className="px-5 pb-4">
+        {singleValue ? (
+          <div className={`text-2xl font-bold ${iconColor}`}>{amount}</div>
+        ) : (
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <div className="text-2xl font-bold">{count ?? 0}</div>
+              {countLabel && <p className="text-xs text-muted-foreground mt-0.5">{countLabel}</p>}
+            </div>
+            <div className="text-right">
+              <div className={`text-base font-semibold ${iconColor}`}>{amount}</div>
+              {amountLabel && <p className="text-xs text-muted-foreground mt-0.5">{amountLabel}</p>}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
   const { data: me, isLoading: meLoading } = useGetMe();
@@ -15,7 +56,7 @@ export default function Dashboard() {
     { query: { enabled: !!me } }
   );
 
-  const { formatAmount: formatCurrency } = useCurrency();
+  const { formatAmount } = useCurrency();
 
   if (meLoading || summaryLoading || dealsLoading) {
     return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -30,50 +71,56 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">Welcome back, {me?.name || me?.email}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Deals</CardTitle>
-            <Briefcase className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="kpi-total-deals">{summary?.totalDeals || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active in pipeline</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pipeline Value</CardTitle>
-            <DollarSign className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="kpi-pipeline-value">{formatCurrency(summary?.totalAgreedAmount || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total agreed amount</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Received</CardTitle>
-            <TrendingUp className="w-4 h-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500" data-testid="kpi-received">{formatCurrency(summary?.totalReceivedAmount || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Revenue secured</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding</CardTitle>
-            <AlertCircle className="w-4 h-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive" data-testid="kpi-outstanding">{formatCurrency(summary?.totalOutstandingAmount || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Pending collection</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        <KpiCard
+          title="Total Deals"
+          count={summary?.totalDeals ?? 0}
+          countLabel="in pipeline"
+          amount={formatAmount(summary?.totalAgreedAmount ?? 0)}
+          amountLabel="total value"
+          icon={Briefcase}
+          iconColor="text-primary"
+          accentColor="bg-primary/10"
+        />
+        <KpiCard
+          title="Confirmed Orders"
+          count={summary?.confirmedDeals ?? 0}
+          countLabel="orders confirmed"
+          amount={formatAmount(summary?.confirmedAmount ?? 0)}
+          amountLabel="confirmed value"
+          icon={CheckCircle2}
+          iconColor="text-blue-400"
+          accentColor="bg-blue-500/10"
+        />
+        <KpiCard
+          title="Closed Orders"
+          count={summary?.closedDeals ?? 0}
+          countLabel="orders closed"
+          amount={formatAmount(summary?.closedAmount ?? 0)}
+          amountLabel="closed value"
+          icon={TrendingUp}
+          iconColor="text-emerald-400"
+          accentColor="bg-emerald-500/10"
+        />
+        <KpiCard
+          title="Received Amount"
+          amount={formatAmount(summary?.totalReceivedAmount ?? 0)}
+          amountLabel="revenue secured"
+          icon={Wallet}
+          iconColor="text-violet-400"
+          accentColor="bg-violet-500/10"
+          singleValue
+        />
+        <KpiCard
+          title="Lost Orders"
+          count={summary?.lostDeals ?? 0}
+          countLabel="orders lost"
+          amount={formatAmount(summary?.lostAmount ?? 0)}
+          amountLabel="lost value"
+          icon={XCircle}
+          iconColor="text-destructive"
+          accentColor="bg-destructive/10"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -83,7 +130,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {recentDeals.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentDeals.map(deal => (
                   <div key={deal.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
@@ -91,7 +138,7 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">{deal.name} &middot; {deal.productItem}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">{formatCurrency(deal.agreedAmount)}</p>
+                      <p className="font-bold">{formatAmount(deal.agreedAmount)}</p>
                       <p className="text-xs text-muted-foreground">{format(new Date(deal.createdAt), 'MMM d, yyyy')}</p>
                     </div>
                   </div>
@@ -102,7 +149,7 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Pipeline Health</CardTitle>
@@ -119,11 +166,15 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="pt-4 flex justify-between items-center border-t border-border">
-                <span className="text-sm text-muted-foreground">Won Deals</span>
-                <span className="font-bold text-green-500">{summary?.closedDeals || 0}</span>
+                <span className="text-sm text-muted-foreground">Closed Orders</span>
+                <span className="font-bold text-emerald-400">{summary?.closedDeals || 0}</span>
               </div>
               <div className="flex justify-between items-center border-t border-border pt-4">
-                <span className="text-sm text-muted-foreground">Lost Deals</span>
+                <span className="text-sm text-muted-foreground">Confirmed Orders</span>
+                <span className="font-bold text-blue-400">{summary?.confirmedDeals || 0}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-border pt-4">
+                <span className="text-sm text-muted-foreground">Lost Orders</span>
                 <span className="font-bold text-destructive">{summary?.lostDeals || 0}</span>
               </div>
             </div>

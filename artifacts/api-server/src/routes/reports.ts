@@ -85,8 +85,15 @@ router.get(
       (s, d) => s + parseFloat(d.outstandingAmount ?? "0"),
       0,
     );
-    const closedDeals = deals.filter((d) => d.stage === "Order Closed" || d.stage === "Order Confirmed").length;
-    const lostDeals = deals.filter((d) => d.stage === "Order Lost").length;
+    const closedDealsList = deals.filter((d) => d.stage === "Order Closed");
+    const closedDeals = closedDealsList.length;
+    const closedAmount = closedDealsList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+    const confirmedDealsList = deals.filter((d) => d.stage === "Order Confirmed");
+    const confirmedDeals = confirmedDealsList.length;
+    const confirmedAmount = confirmedDealsList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+    const lostDealsList = deals.filter((d) => d.stage === "Order Lost");
+    const lostDeals = lostDealsList.length;
+    const lostAmount = lostDealsList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
     const quotationSentCount = deals.filter((d) => d.stage === "Quotation Sent").length;
     const avgProgress =
       totalDeals > 0
@@ -101,7 +108,11 @@ router.get(
         totalReceivedAmount,
         totalOutstandingAmount,
         closedDeals,
+        closedAmount,
+        confirmedDeals,
+        confirmedAmount,
         lostDeals,
+        lostAmount,
         avgProgress,
         vatApplicableCount,
         quotationSentCount,

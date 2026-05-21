@@ -41,7 +41,11 @@ interface SummaryData {
   totalReceivedAmount: number;
   totalOutstandingAmount: number;
   closedDeals: number;
+  closedAmount: number;
+  confirmedDeals: number;
+  confirmedAmount: number;
   lostDeals: number;
+  lostAmount: number;
   avgProgress: number;
   quotationSentCount: number;
 }
