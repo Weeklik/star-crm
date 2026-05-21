@@ -3,12 +3,13 @@ import { useListUsers, useUpdateUserRole, getListUsersQueryKey } from "@workspac
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetMe } from "@workspace/api-client-react";
 import {
-  Loader2, Shield, Trash2, Pencil, Globe, DollarSign, AlertTriangle,
+  Loader2, Shield, Trash2, Pencil, Globe, DollarSign, AlertTriangle, UserPlus, Eye, EyeOff,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -100,6 +101,44 @@ export default function Users() {
   const updateRole = useUpdateUserRole();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Add salesperson dialog
+  const [addOpen, setAddOpen] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addPassword, setAddPassword] = useState("");
+  const [addShowPw, setAddShowPw] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+
+  function resetAdd() {
+    setAddName("");
+    setAddEmail("");
+    setAddPassword("");
+    setAddShowPw(false);
+  }
+
+  async function handleAddSalesperson() {
+    if (!addName.trim() || !addEmail.trim() || addPassword.length < 6) return;
+    setAddSaving(true);
+    try {
+      const res = await fetch(`${BASE}/api/users`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: addName.trim(), email: addEmail.trim(), password: addPassword }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Failed to create user");
+      queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      toast({ title: "Salesperson added", description: `${addName.trim()} can now sign in with their credentials.` });
+      setAddOpen(false);
+      resetAdd();
+    } catch (e: any) {
+      toast({ title: "Failed to add", description: e.message, variant: "destructive" });
+    } finally {
+      setAddSaving(false);
+    }
+  }
 
   // Edit profile dialog
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
@@ -200,9 +239,15 @@ export default function Users() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
-        <p className="text-muted-foreground mt-1">Manage user access, roles, and regional settings.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
+          <p className="text-muted-foreground mt-1">Manage user access, roles, and regional settings.</p>
+        </div>
+        <Button onClick={() => { resetAdd(); setAddOpen(true); }} className="shrink-0">
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add Salesperson
+        </Button>
       </div>
 
       <div className="border border-border rounded-lg bg-card overflow-hidden">
@@ -296,6 +341,86 @@ export default function Users() {
           </TableBody>
         </Table>
       </div>
+
+      {/* ── Add Salesperson Dialog ── */}
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setAddOpen(false); resetAdd(); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Add Salesperson
+            </DialogTitle>
+            <DialogDescription>
+              Create a new salesperson account. They can log in immediately with the credentials you set.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="add-name">Full Name</Label>
+              <Input
+                id="add-name"
+                placeholder="e.g. Jane Smith"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                disabled={addSaving}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="add-email">Email Address</Label>
+              <Input
+                id="add-email"
+                type="email"
+                placeholder="jane@example.com"
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                disabled={addSaving}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="add-password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="add-password"
+                  type={addShowPw ? "text" : "password"}
+                  placeholder="Minimum 6 characters"
+                  value={addPassword}
+                  onChange={(e) => setAddPassword(e.target.value)}
+                  disabled={addSaving}
+                  className="pr-10"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddSalesperson(); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setAddShowPw((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {addShowPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {addPassword.length > 0 && addPassword.length < 6 && (
+                <p className="text-xs text-destructive">Password must be at least 6 characters.</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddOpen(false); resetAdd(); }} disabled={addSaving}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddSalesperson}
+              disabled={addSaving || !addName.trim() || !addEmail.trim() || addPassword.length < 6}
+            >
+              {addSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Create Account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Edit Region Dialog ── */}
       <Dialog open={!!editTarget} onOpenChange={(o) => { if (!o) setEditTarget(null); }}>

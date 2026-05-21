@@ -120,6 +120,53 @@ router.patch(
   },
 );
 
+// Owner: create a new salesperson account
+router.post(
+  "/users",
+  requireAuth,
+  requireOwner,
+  async (req, res): Promise<void> => {
+    const body = z
+      .object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(6),
+      })
+      .safeParse(req.body);
+
+    if (!body.success) {
+      res.status(400).json({ error: body.error.errors[0]?.message ?? "Invalid input" });
+      return;
+    }
+
+    const existing = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, body.data.email.toLowerCase()))
+      .then((rows) => rows[0]);
+
+    if (existing) {
+      res.status(409).json({ error: "A user with that email already exists" });
+      return;
+    }
+
+    const { default: bcrypt } = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash(body.data.password, 10);
+
+    const [created] = await db
+      .insert(usersTable)
+      .values({
+        name: body.data.name,
+        email: body.data.email.toLowerCase(),
+        passwordHash,
+        role: "salesperson",
+      })
+      .returning(safeUserFields);
+
+    res.status(201).json(created);
+  },
+);
+
 // Owner: update any user's country/currency
 router.patch(
   "/users/:id/profile",
