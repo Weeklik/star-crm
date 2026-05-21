@@ -108,6 +108,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       earliestClosingDate: data.earliestClosingDate as unknown as string | undefined,
       latestClosingDate: data.latestClosingDate as unknown as string | undefined,
       notes: data.notes ?? null,
+      lostReason: data.lostReason ?? null,
     })
     .returning();
 
@@ -193,6 +194,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if (d.latestClosingDate !== undefined)
     updateData.latestClosingDate = d.latestClosingDate as unknown as string | null;
   if (d.notes !== undefined) updateData.notes = d.notes;
+  if (d.lostReason !== undefined) updateData.lostReason = d.lostReason;
 
   const [updated] = await db
     .update(dealsTable)

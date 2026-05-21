@@ -58,6 +58,7 @@ export const ListDealsResponseItem = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -92,6 +93,7 @@ export const CreateDealBody = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
 });
 
 /**
@@ -130,6 +132,7 @@ export const GetDealResponse = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -165,6 +168,7 @@ export const UpdateDealBody = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
@@ -196,6 +200,7 @@ export const UpdateDealResponse = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

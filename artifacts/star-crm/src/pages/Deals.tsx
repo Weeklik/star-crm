@@ -88,6 +88,13 @@ const TEMPLATE_HEADERS = [
   "Notes / Comments",
 ];
 
+const LOST_REASONS = [
+  "Price Factor",
+  "Specification Match",
+  "Credit Period",
+  "Availability Issue at our end",
+] as const;
+
 interface DealFormState {
   dealStartDate: string;
   name: string;
@@ -103,6 +110,7 @@ interface DealFormState {
   earliestClosingDate: string;
   latestClosingDate: string;
   notes: string;
+  lostReason: string;
 }
 
 interface ImportRow extends DealFormState {
@@ -127,6 +135,7 @@ const emptyForm = (): DealFormState => ({
   earliestClosingDate: "",
   latestClosingDate: "",
   notes: "",
+  lostReason: "",
 });
 
 function toPayload(f: DealFormState) {
@@ -145,6 +154,7 @@ function toPayload(f: DealFormState) {
     earliestClosingDate: f.earliestClosingDate || undefined,
     latestClosingDate: f.latestClosingDate || undefined,
     notes: f.notes || undefined,
+    lostReason: f.stage === "Order Lost" ? (f.lostReason || undefined) : undefined,
   };
 }
 
@@ -512,6 +522,7 @@ export default function Deals() {
           ? String(deal.latestClosingDate).split("T")[0]
           : "",
       notes: deal.notes ?? "",
+      lostReason: deal.lostReason ?? "",
     });
     setFormOpen(true);
   }
@@ -1046,7 +1057,13 @@ export default function Deals() {
             </div>
             <div className="space-y-1.5">
               <Label>Stage</Label>
-              <Select value={form.stage} onValueChange={(v) => set("stage", v as Stage)}>
+              <Select
+                value={form.stage}
+                onValueChange={(v) => {
+                  set("stage", v as Stage);
+                  if (v !== "Order Lost") set("lostReason", "");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1059,6 +1076,30 @@ export default function Deals() {
                 </SelectContent>
               </Select>
             </div>
+            {form.stage === "Order Lost" && (
+              <div className="space-y-1.5">
+                <Label>
+                  Lost Reason
+                  <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+                </Label>
+                <Select
+                  value={form.lostReason || "__none__"}
+                  onValueChange={(v) => set("lostReason", v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a reason…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— No reason selected —</SelectItem>
+                    {LOST_REASONS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>Sales Status</Label>
               <Input

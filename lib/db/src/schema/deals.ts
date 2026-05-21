@@ -19,6 +19,7 @@ export const dealsTable = pgTable("deals", {
   earliestClosingDate: date("earliest_closing_date"),
   latestClosingDate: date("latest_closing_date"),
   notes: text("notes"),
+  lostReason: text("lost_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
