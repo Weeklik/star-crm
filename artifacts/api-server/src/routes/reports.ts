@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lte, isNotNull, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, type SQL } from "drizzle-orm";
 import { db, dealsTable, usersTable } from "@workspace/db";
 import { requireAuth, requireOwner } from "../middlewares/requireAuth";
 import {
@@ -15,19 +15,35 @@ import {
 
 const router: IRouter = Router();
 
+/** Resolve a salesperson-country filter to a list of matching salesperson IDs. */
+async function resolveRegionSpIds(country: string): Promise<number[]> {
+  const rows = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(and(eq(usersTable.role, "salesperson"), eq(usersTable.country, country)));
+  return rows.map((r) => r.id);
+}
+
 function buildDateConditions(
   startDate?: Date | string,
   endDate?: Date | string,
   salespersonId?: number,
   userRole?: string,
   userId?: number,
-  region?: string,
+  regionSpIds?: number[],
 ): SQL[] {
   const conditions: SQL[] = [];
   if (userRole !== "owner") {
     conditions.push(eq(dealsTable.salespersonId, userId!));
   } else if (salespersonId) {
     conditions.push(eq(dealsTable.salespersonId, salespersonId));
+  } else if (regionSpIds) {
+    // regionSpIds resolved but empty → no salespersons in that country → force zero results
+    conditions.push(
+      regionSpIds.length > 0
+        ? inArray(dealsTable.salespersonId, regionSpIds)
+        : eq(dealsTable.salespersonId, -1),
+    );
   }
   if (startDate) {
     const d = startDate instanceof Date ? startDate.toISOString().split("T")[0] : startDate;
@@ -36,9 +52,6 @@ function buildDateConditions(
   if (endDate) {
     const d = endDate instanceof Date ? endDate.toISOString().split("T")[0] : endDate;
     conditions.push(lte(dealsTable.dealStartDate, d));
-  }
-  if (region) {
-    conditions.push(eq(dealsTable.region, region));
   }
   return conditions;
 }
@@ -60,13 +73,14 @@ router.get(
     }
 
     const { salespersonId, startDate, endDate, region } = parsed.data;
+    const regionSpIds = region ? await resolveRegionSpIds(region) : undefined;
     const conditions = buildDateConditions(
       startDate,
       endDate,
       salespersonId,
       user.role,
       user.id,
-      region,
+      regionSpIds,
     );
 
     const deals =
@@ -143,8 +157,15 @@ router.get(
     }
 
     const { startDate, endDate, region } = parsed.data;
+    const regionSpIds = region ? await resolveRegionSpIds(region) : undefined;
     const conditions: SQL[] = [];
-    if (region) conditions.push(eq(dealsTable.region, region));
+    if (regionSpIds) {
+      conditions.push(
+        regionSpIds.length > 0
+          ? inArray(dealsTable.salespersonId, regionSpIds)
+          : eq(dealsTable.salespersonId, -1),
+      );
+    }
     if (startDate) {
       const d = startDate instanceof Date ? startDate.toISOString().split("T")[0] : startDate;
       conditions.push(gte(dealsTable.dealStartDate, d));
@@ -292,13 +313,14 @@ router.get(
     }
 
     const { salespersonId, startDate, endDate, region } = parsed.data;
+    const regionSpIds = region ? await resolveRegionSpIds(region) : undefined;
     const conditions = buildDateConditions(
       startDate,
       endDate,
       salespersonId,
       user.role,
       user.id,
-      region,
+      regionSpIds,
     );
 
     const deals =
@@ -384,7 +406,14 @@ router.get(
     } else if (salespersonId) {
       conditions.push(eq(dealsTable.salespersonId, salespersonId));
     }
-    if (region) conditions.push(eq(dealsTable.region, region));
+    if (region) {
+      const regionSpIds = await resolveRegionSpIds(region);
+      conditions.push(
+        regionSpIds.length > 0
+          ? inArray(dealsTable.salespersonId, regionSpIds)
+          : eq(dealsTable.salespersonId, -1),
+      );
+    }
     const allDeals = await db.select().from(dealsTable).where(and(...conditions));
 
     const result = weekBuckets.map(({ weekLabel, weekStart, weekEnd }) => {
@@ -432,6 +461,8 @@ router.get(
     const filterSalespersonId = req.query.salespersonId
       ? parseInt(req.query.salespersonId as string, 10)
       : undefined;
+    const region = req.query.region as string | undefined;
+    const regionSpIds = region ? await resolveRegionSpIds(region) : undefined;
 
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
@@ -445,6 +476,12 @@ router.get(
       yearConditions.push(eq(dealsTable.salespersonId, user.id));
     } else if (filterSalespersonId) {
       yearConditions.push(eq(dealsTable.salespersonId, filterSalespersonId));
+    } else if (regionSpIds) {
+      yearConditions.push(
+        regionSpIds.length > 0
+          ? inArray(dealsTable.salespersonId, regionSpIds)
+          : eq(dealsTable.salespersonId, -1),
+      );
     }
     const yearDeals = await db
       .select()
@@ -462,6 +499,12 @@ router.get(
         sumConditions.push(eq(dealsTable.salespersonId, user.id));
       } else if (filterSalespersonId) {
         sumConditions.push(eq(dealsTable.salespersonId, filterSalespersonId));
+      } else if (regionSpIds) {
+        sumConditions.push(
+          regionSpIds.length > 0
+            ? inArray(dealsTable.salespersonId, regionSpIds)
+            : eq(dealsTable.salespersonId, -1),
+        );
       }
       summaryDeals = await db
         .select()

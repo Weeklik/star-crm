@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { ilike, isNotNull, ne, sql } from "drizzle-orm";
-import { db, customersTable, companiesTable, productsTable, dealsTable } from "@workspace/db";
+import { and, eq, ilike, isNotNull } from "drizzle-orm";
+import { db, customersTable, companiesTable, productsTable, usersTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -40,12 +40,12 @@ router.get("/lookup", requireAuth, async (req, res): Promise<void> => {
 
 router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
   const rows = await db
-    .selectDistinct({ region: dealsTable.region })
-    .from(dealsTable)
-    .where(isNotNull(dealsTable.region));
+    .selectDistinct({ country: usersTable.country })
+    .from(usersTable)
+    .where(and(eq(usersTable.role, "salesperson"), isNotNull(usersTable.country)));
 
   const regions = rows
-    .map((r) => r.region)
+    .map((r) => r.country)
     .filter((r): r is string => !!r && r.trim().length > 0)
     .sort();
 
