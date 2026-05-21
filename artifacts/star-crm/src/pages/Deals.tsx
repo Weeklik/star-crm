@@ -103,6 +103,7 @@ interface DealFormState {
   productItem: string;
   stage: Stage;
   dealType: "New Deal" | "Recurring" | "Dealer";
+  region: string;
   progress: number;
   salesStatus: string;
   vatApplicable: boolean;
@@ -129,6 +130,7 @@ const emptyForm = (): DealFormState => ({
   productItem: "",
   stage: "Quotation Sent",
   dealType: "New Deal",
+  region: "",
   progress: 0,
   salesStatus: "Active",
   vatApplicable: false,
@@ -149,6 +151,7 @@ function toPayload(f: DealFormState) {
     productItem: f.productItem,
     stage: f.stage,
     dealType: f.dealType,
+    region: f.region || undefined,
     progress: Number(f.progress),
     salesStatus: f.salesStatus,
     vatApplicable: f.vatApplicable,
@@ -422,7 +425,7 @@ export default function Deals() {
 
   const { data: deals, isLoading } = useListDeals(
     me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
-    { query: { enabled: !!me } }
+    { query: { enabled: !!me } as any }
   );
 
   const createDeal = useCreateDeal();
@@ -514,6 +517,7 @@ export default function Deals() {
       productItem: deal.productItem,
       stage: deal.stage as Stage,
       dealType: (deal.dealType as "New Deal" | "Recurring" | "Dealer") ?? "New Deal",
+      region: deal.region ?? "",
       progress: deal.progress,
       salesStatus: deal.salesStatus,
       vatApplicable: deal.vatApplicable,
@@ -1130,6 +1134,17 @@ export default function Deals() {
                   <SelectItem value="Dealer">Dealer</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                Region
+                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                value={form.region}
+                onChange={(e) => set("region", e.target.value)}
+                placeholder="e.g. Middle East, Europe…"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Sales Status</Label>

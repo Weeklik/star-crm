@@ -11,6 +11,7 @@ export const dealsTable = pgTable("deals", {
   productItem: text("product_item").notNull(),
   stage: text("stage").notNull().default("Quotation Sent"),
   dealType: text("deal_type").notNull().default("New Deal"),
+  region: text("region"),
   progress: integer("progress").notNull().default(0),
   salesStatus: text("sales_status").notNull().default("Active"),
   vatApplicable: boolean("vat_applicable").notNull().default(false),

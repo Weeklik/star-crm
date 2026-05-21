@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lte, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, isNotNull, type SQL } from "drizzle-orm";
 import { db, dealsTable, usersTable } from "@workspace/db";
 import { requireAuth, requireOwner } from "../middlewares/requireAuth";
 import {
@@ -21,6 +21,7 @@ function buildDateConditions(
   salespersonId?: number,
   userRole?: string,
   userId?: number,
+  region?: string,
 ): SQL[] {
   const conditions: SQL[] = [];
   if (userRole !== "owner") {
@@ -35,6 +36,9 @@ function buildDateConditions(
   if (endDate) {
     const d = endDate instanceof Date ? endDate.toISOString().split("T")[0] : endDate;
     conditions.push(lte(dealsTable.dealStartDate, d));
+  }
+  if (region) {
+    conditions.push(eq(dealsTable.region, region));
   }
   return conditions;
 }
@@ -55,13 +59,14 @@ router.get(
       return;
     }
 
-    const { salespersonId, startDate, endDate } = parsed.data;
+    const { salespersonId, startDate, endDate, region } = parsed.data;
     const conditions = buildDateConditions(
       startDate,
       endDate,
       salespersonId,
       user.role,
       user.id,
+      region,
     );
 
     const deals =
@@ -137,8 +142,9 @@ router.get(
       return;
     }
 
-    const { startDate, endDate } = parsed.data;
+    const { startDate, endDate, region } = parsed.data;
     const conditions: SQL[] = [];
+    if (region) conditions.push(eq(dealsTable.region, region));
     if (startDate) {
       const d = startDate instanceof Date ? startDate.toISOString().split("T")[0] : startDate;
       conditions.push(gte(dealsTable.dealStartDate, d));
@@ -285,13 +291,14 @@ router.get(
       return;
     }
 
-    const { salespersonId, startDate, endDate } = parsed.data;
+    const { salespersonId, startDate, endDate, region } = parsed.data;
     const conditions = buildDateConditions(
       startDate,
       endDate,
       salespersonId,
       user.role,
       user.id,
+      region,
     );
 
     const deals =
@@ -339,6 +346,7 @@ router.get(
       : undefined;
     const startDate = (req.query.startDate as string) || undefined;
     const endDate = (req.query.endDate as string) || undefined;
+    const region = (req.query.region as string) || undefined;
 
     const now = new Date();
     const rangeEndStr = endDate ?? now.toISOString().split("T")[0];
@@ -376,6 +384,7 @@ router.get(
     } else if (salespersonId) {
       conditions.push(eq(dealsTable.salespersonId, salespersonId));
     }
+    if (region) conditions.push(eq(dealsTable.region, region));
     const allDeals = await db.select().from(dealsTable).where(and(...conditions));
 
     const result = weekBuckets.map(({ weekLabel, weekStart, weekEnd }) => {

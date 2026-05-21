@@ -1,5 +1,7 @@
 import { useGetMe } from "@workspace/api-client-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useOwnerControls } from "@/contexts/OwnerControlsContext";
+import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Download, FileSpreadsheet, Loader2, ChevronDown, ChevronRight } from "lucide-react";
@@ -70,9 +72,9 @@ export default function SummarySalesReport() {
   const [weekRows, setWeekRows]       = useState<WeekRow[]>([]);
   const [weekLoading, setWeekLoading] = useState(false);
 
-  const { formatAmount } = useCurrency();
-  const fmt  = (n: number) => (n ? formatAmount(n) : "-");
-  const fmtW = (n: number) => (n ? formatAmount(n) : "");
+  const { formatConverted, selectedRegion } = useOwnerControls();
+  const fmt  = (n: number) => (n ? formatConverted(n) : "-");
+  const fmtW = (n: number) => (n ? formatConverted(n) : "");
 
   useEffect(() => {
     if (me?.role === "owner") {
@@ -86,6 +88,7 @@ export default function SummarySalesReport() {
     if (summaryStart) params.set("summaryStart", summaryStart);
     if (summaryEnd)   params.set("summaryEnd",   summaryEnd);
     if (filterSpId && filterSpId !== "all") params.set("salespersonId", filterSpId);
+    if (me.role === "owner" && selectedRegion !== "all") params.set("region", selectedRegion);
 
     setLoading(true);
     fetch(`/api/reports/summary-sales?${params}`)
@@ -93,7 +96,7 @@ export default function SummarySalesReport() {
       .then(setRows)
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [me, year, summaryStart, summaryEnd, filterSpId]);
+  }, [me, year, summaryStart, summaryEnd, filterSpId, selectedRegion]);
 
   // Collapse expansion when year changes
   useEffect(() => { setExpanded(null); setWeekRows([]); }, [year]);
@@ -165,7 +168,9 @@ export default function SummarySalesReport() {
   };
 
   return (
-    <div className="p-6 max-w-full mx-auto space-y-4 print:p-2">
+    <div className="flex flex-col print:block">
+    {me?.role === "owner" && <OwnerControlsBar />}
+    <div className="p-6 max-w-full mx-auto w-full space-y-4 print:p-2">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
@@ -441,6 +446,7 @@ export default function SummarySalesReport() {
           )}
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

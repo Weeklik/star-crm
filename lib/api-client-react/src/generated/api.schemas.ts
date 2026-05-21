@@ -28,6 +28,10 @@ export interface Deal {
   companyName: string;
   productItem: string;
   stage: DealStage;
+  /** @nullable */
+  dealType?: string | null;
+  /** @nullable */
+  region?: string | null;
   /**
    * @minimum 0
    * @maximum 100
@@ -44,6 +48,8 @@ export interface Deal {
   latestClosingDate?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  lostReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -150,7 +156,11 @@ export interface ReportSummary {
   totalReceivedAmount: number;
   totalOutstandingAmount: number;
   closedDeals: number;
+  closedAmount: number;
+  confirmedDeals: number;
+  confirmedAmount: number;
   lostDeals: number;
+  lostAmount: number;
   avgProgress: number;
   vatApplicableCount: number;
 }

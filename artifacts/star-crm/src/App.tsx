@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { OwnerControlsProvider } from "@/contexts/OwnerControlsContext";
 
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -52,6 +53,7 @@ function SignInPage() {
 function AppRoutes() {
   return (
     <CurrencyProvider>
+    <OwnerControlsProvider>
       <Switch>
         <Route path="/" component={HomeRedirect} />
         <Route path="/sign-in" component={SignInPage} />
@@ -78,6 +80,7 @@ function AppRoutes() {
         </Route>
         <Route component={NotFound} />
       </Switch>
+    </OwnerControlsProvider>
     </CurrencyProvider>
   );
 }

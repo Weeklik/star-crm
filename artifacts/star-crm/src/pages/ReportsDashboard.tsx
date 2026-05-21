@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useOwnerControls } from "@/contexts/OwnerControlsContext";
+import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -139,7 +141,7 @@ const TOOLTIP_STYLE = {
 
 export default function ReportsDashboard() {
   const { data: me } = useGetMe();
-  const { formatAmount } = useCurrency();
+  const { formatConverted, convertAmount, selectedRegion } = useOwnerControls();
 
   const isOwner = me?.role === "owner";
 
@@ -166,8 +168,9 @@ export default function ReportsDashboard() {
     const { startDate, endDate } = getDateBounds(dateRange);
     const p = new URLSearchParams({ startDate, endDate });
     if (isOwner && selectedSpId !== "all") p.set("salespersonId", selectedSpId);
+    if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
     return p.toString();
-  }, [dateRange, selectedSpId, isOwner]);
+  }, [dateRange, selectedSpId, isOwner, selectedRegion]);
 
   useEffect(() => {
     if (!me) return;
@@ -225,7 +228,7 @@ export default function ReportsDashboard() {
       <div style={TOOLTIP_STYLE} className="p-3 shadow-xl">
         <p className="font-semibold mb-1">{d.name}</p>
         <p className="text-muted-foreground">{d.value} deals</p>
-        <p style={{ color: STAGE_COLORS[d.name] }}>{formatAmount(d.amount)}</p>
+        <p style={{ color: STAGE_COLORS[d.name] }}>{formatConverted(d.amount)}</p>
       </div>
     );
   };
@@ -241,7 +244,7 @@ export default function ReportsDashboard() {
               {p.name}
             </span>
             <span className="text-xs font-medium">
-              {formatAmount(p.value ?? 0)}
+              {formatConverted(p.value ?? 0)}
             </span>
           </div>
         ))}
@@ -257,7 +260,7 @@ export default function ReportsDashboard() {
         {payload.map((p: any) => (
           <div key={p.name} className="flex justify-between gap-4 py-0.5">
             <span style={{ color: p.color }} className="text-xs">{p.name}</span>
-            <span className="text-xs font-medium">{formatAmount(p.value ?? 0)}</span>
+            <span className="text-xs font-medium">{formatConverted(p.value ?? 0)}</span>
           </div>
         ))}
       </div>
@@ -290,7 +293,7 @@ export default function ReportsDashboard() {
     },
     {
       label: "Pipeline Value",
-      value: fmtK(summary?.totalAgreedAmount ?? 0),
+      value: fmtK(convertAmount(summary?.totalAgreedAmount ?? 0)),
       sub: "Total agreed",
       icon: DollarSign,
       color: "blue",
@@ -300,7 +303,7 @@ export default function ReportsDashboard() {
     },
     {
       label: "Received",
-      value: fmtK(summary?.totalReceivedAmount ?? 0),
+      value: fmtK(convertAmount(summary?.totalReceivedAmount ?? 0)),
       sub: "Collected",
       icon: TrendingUp,
       color: "emerald",
@@ -310,7 +313,7 @@ export default function ReportsDashboard() {
     },
     {
       label: "Outstanding",
-      value: fmtK(summary?.totalOutstandingAmount ?? 0),
+      value: fmtK(convertAmount(summary?.totalOutstandingAmount ?? 0)),
       sub: "Pending",
       icon: AlertCircle,
       color: "amber",
@@ -333,7 +336,9 @@ export default function ReportsDashboard() {
   const showPersonChart = isOwner && selectedSpId === "all";
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 pb-10">
+    <div className="flex flex-col">
+    <OwnerControlsBar />
+    <div className="p-6 max-w-7xl mx-auto w-full space-y-6 pb-10">
       {/* ── Header ── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -670,6 +675,7 @@ export default function ReportsDashboard() {
           )}
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

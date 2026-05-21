@@ -60,6 +60,7 @@ export const ListDealsResponseItem = zod.object({
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
   dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).nullish(),
+  region: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -83,6 +84,7 @@ export const CreateDealBody = zod.object({
     "Order Lost",
   ]),
   dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).optional(),
+  region: zod.string().nullish(),
   progress: zod
     .number()
     .min(createDealBodyProgressMin)
@@ -136,6 +138,7 @@ export const GetDealResponse = zod.object({
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
   dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).nullish(),
+  region: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -159,6 +162,7 @@ export const UpdateDealBody = zod.object({
     .enum(["Quotation Sent", "Order Closed", "Order Confirmed", "Order Lost"])
     .optional(),
   dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).optional(),
+  region: zod.string().nullish(),
   progress: zod
     .number()
     .min(updateDealBodyProgressMin)
@@ -206,6 +210,7 @@ export const UpdateDealResponse = zod.object({
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
   dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).nullish(),
+  region: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -268,6 +273,7 @@ export const GetReportSummaryQueryParams = zod.object({
   salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
+  region: zod.string().optional(),
 });
 
 export const GetReportSummaryResponse = zod.object({
@@ -292,6 +298,7 @@ export const GetReportSummaryResponse = zod.object({
 export const GetReportBySalespersonQueryParams = zod.object({
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
+  region: zod.string().optional(),
 });
 
 export const GetReportBySalespersonResponseItem = zod.object({
@@ -342,6 +349,7 @@ export const GetStageBreakdownQueryParams = zod.object({
   salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
+  region: zod.string().optional(),
 });
 
 export const GetStageBreakdownResponseItem = zod.object({
