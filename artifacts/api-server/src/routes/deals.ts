@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, lte, type SQL } from "drizzle-orm";
-import { db, dealsTable } from "@workspace/db";
+import { db, dealsTable, customersTable, companiesTable, productsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   ListDealsQueryParams,
@@ -15,6 +15,18 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+async function upsertLookupNames(name: string, companyName: string, productItem: string) {
+  try {
+    await Promise.all([
+      db.insert(customersTable).values({ name: name.trim() }).onConflictDoNothing(),
+      db.insert(companiesTable).values({ name: companyName.trim() }).onConflictDoNothing(),
+      db.insert(productsTable).values({ name: productItem.trim() }).onConflictDoNothing(),
+    ]);
+  } catch {
+    // Non-critical — don't fail the main request
+  }
+}
 
 function formatDeal(deal: any) {
   return {
@@ -113,6 +125,9 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
     .returning();
 
   res.status(201).json(GetDealResponse.parse(formatDeal(deal)));
+
+  // Auto-save new names to lookup tables (fire-and-forget)
+  void upsertLookupNames(data.name, data.companyName, data.productItem);
 });
 
 router.get("/deals/:id", requireAuth, async (req, res): Promise<void> => {
@@ -203,6 +218,13 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
     .returning();
 
   res.json(UpdateDealResponse.parse(formatDeal(updated)));
+
+  // Auto-save any updated names to lookup tables (fire-and-forget)
+  void upsertLookupNames(
+    d.name ?? existing.name,
+    d.companyName ?? existing.companyName,
+    d.productItem ?? existing.productItem,
+  );
 });
 
 // ─── Bulk Import ─────────────────────────────────────────────────────────────

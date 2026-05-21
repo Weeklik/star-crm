@@ -61,6 +61,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost";
 
@@ -1026,25 +1027,28 @@ export default function Deals() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5">
               <Label>Deal Name *</Label>
-              <Input
+              <AutocompleteInput
                 value={form.name}
-                onChange={(e) => set("name", e.target.value)}
+                onChange={(v) => set("name", v)}
+                lookupType="customer"
                 placeholder="e.g. Q3 Enterprise Renewal"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Company Name *</Label>
-              <Input
+              <AutocompleteInput
                 value={form.companyName}
-                onChange={(e) => set("companyName", e.target.value)}
+                onChange={(v) => set("companyName", v)}
+                lookupType="company"
                 placeholder="e.g. Acme Corp"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Product / Item *</Label>
-              <Input
+              <AutocompleteInput
                 value={form.productItem}
-                onChange={(e) => set("productItem", e.target.value)}
+                onChange={(v) => set("productItem", v)}
+                lookupType="product"
                 placeholder="e.g. SaaS Pro Plan"
               />
             </div>
