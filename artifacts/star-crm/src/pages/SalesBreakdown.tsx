@@ -247,7 +247,7 @@ function DealDrillDownModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-auto min-h-0">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -257,7 +257,7 @@ function DealDrillDownModal({
               No deals found for this period and stage.
             </div>
           ) : (
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-sm min-w-[800px]">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted/60">
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">#</th>
@@ -284,9 +284,9 @@ function DealDrillDownModal({
                           ).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
                         : "—"}
                     </td>
-                    <td className="border border-border px-3 py-2 text-xs font-medium max-w-[160px] truncate">{deal.name}</td>
-                    <td className="border border-border px-3 py-2 text-xs max-w-[140px] truncate">{deal.companyName}</td>
-                    <td className="border border-border px-3 py-2 text-xs max-w-[120px] truncate text-muted-foreground">{deal.productItem}</td>
+                    <td className="border border-border px-3 py-2 text-xs font-medium whitespace-nowrap">{deal.name}</td>
+                    <td className="border border-border px-3 py-2 text-xs whitespace-nowrap">{deal.companyName}</td>
+                    <td className="border border-border px-3 py-2 text-xs whitespace-nowrap text-muted-foreground">{deal.productItem}</td>
                     <td className="border border-border px-3 py-2 text-xs">
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap ${
                         deal.stage === "Order Closed"     ? "bg-green-500/20 text-green-700 dark:text-green-400" :
