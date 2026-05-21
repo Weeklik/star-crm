@@ -491,7 +491,8 @@ export default function Deals() {
   const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)      || 0), 0) ?? 0;
   const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)     || 0), 0) ?? 0;
   const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount)  || 0), 0) ?? 0;
-  const stageCount = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
+  const stageCount  = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
+  const stageAmount = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).reduce((s, d) => s + (Number(d.agreedAmount) || 0), 0) ?? 0;
 
   // Reset to page 1 whenever filters or page size change
   const resetPage = () => setPage(1);
@@ -802,81 +803,72 @@ export default function Deals() {
       </div>
 
       {/* ── Stat boxes ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
         {/* Total Deals */}
-        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
+        <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Deals</span>
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
           </div>
-          <p className="text-sm font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
+          <p className="text-2xl font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
           <p className="text-xs text-muted-foreground">in current view</p>
         </div>
 
-        {/* Agreed Amount */}
-        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1 border-l-4 border-l-blue-500">
+        {/* Confirmed Orders */}
+        <div className="bg-card border border-border border-l-4 border-l-yellow-500 rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agreed</span>
-            <Handshake className="w-4 h-4 text-blue-500" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Confirmed Orders</span>
+            <CheckCircle2 className="w-4 h-4 text-yellow-500" />
           </div>
-          <p className="text-sm font-bold tabular-nums text-blue-600 dark:text-blue-400">{fmtCurrency(statsAgreed)}</p>
-          <p className="text-xs text-muted-foreground">total agreed amount</p>
+          <p className="text-2xl font-bold tabular-nums text-yellow-600 dark:text-yellow-400">
+            {stageCount("Order Confirmed")}
+          </p>
+          <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 tabular-nums">
+            {fmtCurrency(stageAmount("Order Confirmed"))}
+          </p>
+        </div>
+
+        {/* Closed Orders */}
+        <div className="bg-card border border-border border-l-4 border-l-green-500 rounded-xl p-4 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Closed Orders</span>
+            <Handshake className="w-4 h-4 text-green-500" />
+          </div>
+          <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
+            {stageCount("Order Closed")}
+          </p>
+          <p className="text-xs font-medium text-green-700 dark:text-green-300 tabular-nums">
+            {fmtCurrency(stageAmount("Order Closed"))}
+          </p>
         </div>
 
         {/* Received Amount */}
-        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1 border-l-4 border-l-green-500">
+        <div className="bg-card border border-border border-l-4 border-l-blue-500 rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Received</span>
-            <Wallet className="w-4 h-4 text-green-500" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Received Amount</span>
+            <Wallet className="w-4 h-4 text-blue-500" />
           </div>
-          <p className="text-sm font-bold tabular-nums text-green-600 dark:text-green-400">{fmtCurrency(statsReceived)}</p>
-          <p className="text-xs text-muted-foreground">total received</p>
+          <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
+            {fmtCurrency(statsReceived)}
+          </p>
+          <p className="text-xs text-muted-foreground">total collected</p>
         </div>
 
-        {/* Outstanding Amount */}
-        <div className="col-span-1 bg-card border border-border rounded-xl p-4 flex flex-col gap-1 border-l-4 border-l-orange-500">
+        {/* Lost Orders */}
+        <div className="bg-card border border-border border-l-4 border-l-red-500 rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Outstanding</span>
-            <Clock4 className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lost Orders</span>
+            <XCircle className="w-4 h-4 text-red-500" />
           </div>
-          <p className="text-sm font-bold tabular-nums text-orange-600 dark:text-orange-400">{fmtCurrency(statsOutstanding)}</p>
-          <p className="text-xs text-muted-foreground">pending collection</p>
+          <p className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
+            {stageCount("Order Lost")}
+          </p>
+          <p className="text-xs font-medium text-red-700 dark:text-red-300 tabular-nums">
+            {fmtCurrency(stageAmount("Order Lost"))}
+          </p>
         </div>
 
-        {/* Pipeline Stages — spans 2 cols */}
-        <div className="col-span-2 bg-card border border-border rounded-xl p-4 flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pipeline Stages</span>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                <span className="text-xs text-muted-foreground">Quotation Sent</span>
-              </div>
-              <span className="text-sm font-bold tabular-nums">{stageCount("Quotation Sent")}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
-                <span className="text-xs text-muted-foreground">Order Confirmed</span>
-              </div>
-              <span className="text-sm font-bold tabular-nums">{stageCount("Order Confirmed")}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                <span className="text-xs text-muted-foreground">Order Closed</span>
-              </div>
-              <span className="text-sm font-bold tabular-nums">{stageCount("Order Closed")}</span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                <span className="text-xs text-muted-foreground">Order Lost</span>
-              </div>
-              <span className="text-sm font-bold tabular-nums">{stageCount("Order Lost")}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="border border-border rounded-lg bg-card overflow-hidden">
