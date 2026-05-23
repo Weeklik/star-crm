@@ -24,7 +24,7 @@ function KpiCard({ title, subtitle, count, countLabel, amount, amountLabel, icon
       <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-5">
         <div>
           <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          {subtitle && <p className="text-xs text-muted-foreground/60 mt-0.5">{subtitle}</p>}
+          <p className="text-xs text-muted-foreground/60 mt-0.5">{subtitle ?? "\u00a0"}</p>
         </div>
         <div className={`p-1.5 rounded-md ${accentColor}`}>
           <Icon className={`w-4 h-4 ${iconColor}`} />
