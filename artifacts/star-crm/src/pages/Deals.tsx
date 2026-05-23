@@ -495,6 +495,13 @@ export default function Deals() {
   const stageCount  = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
   const stageAmount = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).reduce((s, d) => s + (Number(d.agreedAmount) || 0), 0) ?? 0;
 
+  const cutoff90 = new Date();
+  cutoff90.setDate(cutoff90.getDate() - 90);
+  const cutoff90Str = cutoff90.toISOString().slice(0, 10);
+  const quotationSent90 = filteredDeals?.filter((d) => d.stage === "Quotation Sent" && (d.dealStartDate ?? "") > cutoff90Str) ?? [];
+  const quotationSent90Count  = quotationSent90.length;
+  const quotationSent90Amount = quotationSent90.reduce((s, d) => s + (Number(d.agreedAmount) || 0), 0);
+
   // Reset to page 1 whenever filters or page size change
   const resetPage = () => setPage(1);
 
@@ -806,14 +813,15 @@ export default function Deals() {
       {/* ── Stat boxes ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 
-        {/* Total Deals */}
+        {/* Quotation Sent (within 90 days) */}
         <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Orders</span>
-            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quotation Sent</span>
+            <Clock4 className="w-4 h-4 text-muted-foreground" />
           </div>
-          <p className="text-2xl font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
-          <p className="text-xs text-muted-foreground">in current view</p>
+          <p className="text-2xl font-bold tabular-nums">{quotationSent90Count}</p>
+          <p className="text-xs text-muted-foreground">Within 90 days</p>
+          <p className="text-xs font-medium text-muted-foreground tabular-nums">{fmtCurrency(quotationSent90Amount)}</p>
         </div>
 
         {/* Confirmed Orders */}
