@@ -1192,32 +1192,6 @@ export default function Deals() {
                 onChange={(e) => set("outstandingAmount", Number(e.target.value))}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Earliest Closing Date</Label>
-              <DatePicker
-                value={form.earliestClosingDate}
-                onChange={(v) => set("earliestClosingDate", v)}
-                placeholder="Pick a date"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Latest Closing Date</Label>
-              <DatePicker
-                value={form.latestClosingDate}
-                onChange={(v) => set("latestClosingDate", v)}
-                placeholder="Pick a date"
-              />
-            </div>
-            <div className="sm:col-span-2 flex items-center gap-2">
-              <Checkbox
-                id="vat"
-                checked={form.vatApplicable}
-                onCheckedChange={(v) => set("vatApplicable", Boolean(v))}
-              />
-              <Label htmlFor="vat" className="cursor-pointer">
-                VAT Applicable
-              </Label>
-            </div>
             <div className="sm:col-span-2 space-y-1.5">
               <Label>Notes</Label>
               <Textarea
