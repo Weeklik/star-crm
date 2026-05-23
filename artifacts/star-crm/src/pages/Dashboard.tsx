@@ -90,7 +90,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <KpiCard
-            title="Quotation Sent"
+            title="Quotation Sent (Within 90 days)"
             count={summary?.quotationSentCount ?? 0}
             countLabel="quotations sent"
             amount={formatConverted(summary?.quotationSentAmount ?? 0)}
@@ -129,7 +129,7 @@ export default function Dashboard() {
             singleValue
           />
           <KpiCard
-            title="Lost Orders"
+            title="Lost Orders (More than 90 days)"
             count={summary?.lostDeals ?? 0}
             countLabel="orders lost"
             amount={formatConverted(summary?.lostAmount ?? 0)}
