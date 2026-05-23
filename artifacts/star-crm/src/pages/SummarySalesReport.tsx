@@ -201,9 +201,9 @@ export default function SummarySalesReport() {
             Year-to-date sales per salesperson. Click any month cell to expand weekly breakdown.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 flex-nowrap">
           <Select value={year} onValueChange={setYear}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
             <SelectContent>
               {yearOptions.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
             </SelectContent>
@@ -211,7 +211,7 @@ export default function SummarySalesReport() {
 
           {me?.role === "owner" && (
             <Select value={filterSpId} onValueChange={setFilterSpId}>
-              <SelectTrigger className="w-44">
+              <SelectTrigger className="w-36">
                 <SelectValue placeholder="All salespersons" />
               </SelectTrigger>
               <SelectContent>
@@ -223,10 +223,10 @@ export default function SummarySalesReport() {
             </Select>
           )}
 
-          <div className="flex items-center gap-1">
-            <DatePicker value={summaryStart} onChange={setSummaryStart} placeholder="Summary from" className="w-40" />
-            <span className="text-muted-foreground text-sm">to</span>
-            <DatePicker value={summaryEnd} onChange={setSummaryEnd} placeholder="Summary to" className="w-40" />
+          <div className="flex items-center gap-1 flex-nowrap">
+            <DatePicker value={summaryStart} onChange={setSummaryStart} placeholder="From" className="w-32" />
+            <span className="text-muted-foreground text-xs shrink-0">to</span>
+            <DatePicker value={summaryEnd} onChange={setSummaryEnd} placeholder="To" className="w-32" />
           </div>
 
           <Button variant="outline" size="icon" onClick={handleExportCSV} title="Export CSV">
