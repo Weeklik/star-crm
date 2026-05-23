@@ -475,7 +475,7 @@ router.get(
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year}-12-31`;
 
-    // Fetch all year deals
+    // Build query conditions
     const yearConditions: SQL[] = [
       gte(dealsTable.dealStartDate, yearStart),
       lte(dealsTable.dealStartDate, yearEnd),
@@ -491,13 +491,9 @@ router.get(
           : eq(dealsTable.salespersonId, -1),
       );
     }
-    const yearDeals = await db
-      .select()
-      .from(dealsTable)
-      .where(and(...yearConditions));
 
-    // Fetch summary period deals
-    let summaryDeals: typeof yearDeals = [];
+    type YearDeal = Awaited<ReturnType<typeof db.select>>[0] & Record<string, unknown>;
+    let summaryQueryPromise: Promise<YearDeal[]> = Promise.resolve([]);
     if (summaryStart && summaryEnd) {
       const sumConditions: SQL[] = [
         gte(dealsTable.dealStartDate, summaryStart),
@@ -514,47 +510,62 @@ router.get(
             : eq(dealsTable.salespersonId, -1),
         );
       }
-      summaryDeals = await db
-        .select()
-        .from(dealsTable)
-        .where(and(...sumConditions));
+      summaryQueryPromise = db.select().from(dealsTable).where(and(...sumConditions)) as Promise<YearDeal[]>;
     }
 
-    // Fetch all salespersons
-    const users = await db
-      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
-      .from(usersTable);
+    // Run all three queries in parallel
+    const [yearDeals, summaryDeals, users] = await Promise.all([
+      db.select().from(dealsTable).where(and(...yearConditions)),
+      summaryQueryPromise,
+      db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email }).from(usersTable),
+    ]);
+
     const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
-    // Collect salesperson IDs from year deals
-    const spIds = [...new Set(yearDeals.map((d) => d.salespersonId))];
+    // Group deals by salesperson in a single pass — avoids O(Salespeople × Deals) filtering
+    type DealRow = typeof yearDeals[0];
+    const yearDealsBySp = new Map<number, DealRow[]>();
+    for (const d of yearDeals) {
+      const arr = yearDealsBySp.get(d.salespersonId);
+      if (arr) arr.push(d);
+      else yearDealsBySp.set(d.salespersonId, [d]);
+    }
+
+    const summaryDealsBySp = new Map<number, DealRow[]>();
+    for (const d of summaryDeals as DealRow[]) {
+      const arr = summaryDealsBySp.get(d.salespersonId);
+      if (arr) arr.push(d);
+      else summaryDealsBySp.set(d.salespersonId, [d]);
+    }
+
+    const spIds = [...yearDealsBySp.keys()];
 
     const result = spIds.map((spId) => {
-      const spDeals = yearDeals.filter((d) => d.salespersonId === spId);
+      const spDeals = yearDealsBySp.get(spId) ?? [];
       const u = userMap[spId];
 
-      // Monthly totals (1-12) — Order Closed only
-      const closedDealsForSp = spDeals.filter((d) => d.stage === "Order Closed");
-      const monthly: Record<number, number> = {};
-      for (let m = 1; m <= 12; m++) monthly[m] = 0;
-      for (const d of closedDealsForSp) {
-        const month = new Date(d.dealStartDate).getMonth() + 1;
-        monthly[month] += parseFloat(d.agreedAmount ?? "0");
+      // Single pass: monthly totals (Order Closed only)
+      const monthly: Record<number, number> = { 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0 };
+      let totalSales = 0;
+      for (const d of spDeals) {
+        if (d.stage === "Order Closed") {
+          const amt = parseFloat(d.agreedAmount ?? "0");
+          monthly[new Date(d.dealStartDate).getMonth() + 1] += amt;
+          totalSales += amt;
+        }
       }
-
-      const totalSales = closedDealsForSp.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
       const activeMonths = Object.values(monthly).filter((v) => v > 0).length || 1;
       const avgMonthlySales = totalSales / activeMonths;
 
-      // Summary period
-      const spSummary = summaryDeals.filter((d) => d.salespersonId === spId);
-      const summaryTotal = spSummary.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-      const summaryQuotation = spSummary
-        .filter((d) => d.stage === "Quotation Sent")
-        .reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-      const summaryOrderConfirmed = spSummary
-        .filter((d) => d.stage === "Order Confirmed")
-        .reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
+      // Single pass: summary period aggregation
+      const spSummary = summaryDealsBySp.get(spId) ?? [];
+      let summaryTotal = 0, summaryQuotation = 0, summaryOrderConfirmed = 0;
+      for (const d of spSummary) {
+        const amt = parseFloat(d.agreedAmount ?? "0");
+        summaryTotal += amt;
+        if (d.stage === "Quotation Sent") summaryQuotation += amt;
+        else if (d.stage === "Order Confirmed") summaryOrderConfirmed += amt;
+      }
 
       return {
         salespersonId: spId,
@@ -666,27 +677,53 @@ router.get(
     }
     const allDeals = await db.select().from(dealsTable).where(and(...conditions));
 
-    // Build per-week stage aggregates
+    // Index deals by date string for O(1) lookup — avoids O(Weeks × Deals) scans
+    type Deal = typeof allDeals[0];
+    const dealsByDate = new Map<string, Deal[]>();
+    for (const deal of allDeals) {
+      const key = deal.dealStartDate ?? "";
+      if (!key) continue;
+      const bucket = dealsByDate.get(key);
+      if (bucket) bucket.push(deal);
+      else dealsByDate.set(key, [deal]);
+    }
+
+    // Collect deals for a date range via O(days) Map lookups instead of full scan
+    function dealsInRange(ws: string, we: string): Deal[] {
+      const out: Deal[] = [];
+      const cur = new Date(ws + "T00:00:00Z");
+      const last = new Date(we + "T00:00:00Z");
+      while (cur <= last) {
+        const key = cur.toISOString().slice(0, 10);
+        const bucket = dealsByDate.get(key);
+        if (bucket) out.push(...bucket);
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+      return out;
+    }
+
+    // Build per-week stage aggregates — single pass per week
     const weekData = weeks.map(({ monthName, monthYear, weekOrdinal, weekStart, weekEnd }) => {
-      const weekDeals = allDeals.filter(
-        (d) => d.dealStartDate >= weekStart && d.dealStartDate <= weekEnd,
-      );
+      const weekDeals = dealsInRange(weekStart, weekEnd);
 
-      const closedDeals = weekDeals.filter((d) => d.stage === "Order Closed");
-      const orderClosedCount = closedDeals.length;
-      const orderClosedAmount = closedDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-      const downPayment = closedDeals.reduce((s, d) => s + parseFloat(d.receivedAmount ?? "0"), 0);
-      const totalPaymentReceipt = orderClosedAmount;
+      let orderClosedCount = 0, orderClosedAmount = 0, downPayment = 0;
+      let quotationSentCount = 0, quotationSentAmount = 0;
+      let orderConfirmedCount = 0, orderConfirmedAmount = 0;
 
-      const quotationDeals = weekDeals.filter((d) => d.stage === "Quotation Sent");
-      const quotationSentCount = quotationDeals.length;
-      const quotationSentAmount = quotationDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-
-      const confirmedDeals = weekDeals.filter((d) => d.stage === "Order Confirmed");
-      const orderConfirmedCount = confirmedDeals.length;
-      const orderConfirmedAmount = confirmedDeals.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-
-      const totalSalesInProcess = quotationSentAmount + orderConfirmedAmount;
+      for (const d of weekDeals) {
+        const amt = parseFloat(d.agreedAmount ?? "0");
+        if (d.stage === "Order Closed") {
+          orderClosedCount++;
+          orderClosedAmount += amt;
+          downPayment += parseFloat(d.receivedAmount ?? "0");
+        } else if (d.stage === "Quotation Sent") {
+          quotationSentCount++;
+          quotationSentAmount += amt;
+        } else if (d.stage === "Order Confirmed") {
+          orderConfirmedCount++;
+          orderConfirmedAmount += amt;
+        }
+      }
 
       return {
         monthName,
@@ -697,12 +734,12 @@ router.get(
         orderClosedCount,
         orderClosedAmount,
         downPayment,
-        totalPaymentReceipt,
+        totalPaymentReceipt: orderClosedAmount,
         quotationSentCount,
         quotationSentAmount,
         orderConfirmedCount,
         orderConfirmedAmount,
-        totalSalesInProcess,
+        totalSalesInProcess: quotationSentAmount + orderConfirmedAmount,
       };
     });
 
