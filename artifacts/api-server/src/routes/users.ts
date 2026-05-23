@@ -151,7 +151,7 @@ router.post(
     }
 
     const { default: bcrypt } = await import("bcryptjs");
-    const passwordHash = await bcrypt.hash(body.data.password, 10);
+    const passwordHash = await bcrypt.hash(body.data.password, 8);
 
     const [created] = await db
       .insert(usersTable)

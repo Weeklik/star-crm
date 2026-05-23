@@ -7,6 +7,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import path from "path";
 import { existsSync } from "fs";
+import { pool } from "@workspace/db";
 
 const MemoryStore = memorystore(session);
 
@@ -80,6 +81,35 @@ app.use(
 );
 
 app.use("/api", router);
+
+// ── DB warmup + indexes ───────────────────────────────────────────────────────
+// Warm the Neon connection immediately on startup so the first real user
+// request doesn't pay the 2-3 s cold-start penalty.
+// Also create indexes if they don't exist yet (idempotent).
+async function warmDb() {
+  try {
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_deals_salesperson_id   ON deals (salesperson_id);
+      CREATE INDEX IF NOT EXISTS idx_deals_deal_start_date  ON deals (deal_start_date);
+      CREATE INDEX IF NOT EXISTS idx_deals_stage            ON deals (stage);
+      CREATE INDEX IF NOT EXISTS idx_deals_region           ON deals (region);
+      CREATE INDEX IF NOT EXISTS idx_deals_sp_date          ON deals (salesperson_id, deal_start_date);
+      SELECT 1;
+    `);
+    logger.info("DB warmed and indexes verified");
+  } catch (err) {
+    logger.warn({ err }, "DB warmup failed — will retry on next keepalive");
+  }
+}
+
+// Run warmup at startup (non-blocking)
+warmDb();
+
+// Keep Neon alive: ping every 4 minutes so the serverless compute
+// never goes cold between user requests (Neon sleeps after ~5 min idle).
+setInterval(() => {
+  pool.query("SELECT 1").catch((err) => logger.warn({ err }, "DB keepalive failed"));
+}, 4 * 60 * 1000);
 
 // Serve React frontend static files when built (production)
 // Check multiple locations: Docker copies to ./public, managed runtime builds to ./artifacts/star-crm/dist/public
