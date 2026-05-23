@@ -2,18 +2,30 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
-import { pool } from "@workspace/db";
+import memorystore from "memorystore";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import path from "path";
 import { existsSync } from "fs";
 
-const PgSession = connectPgSimple(session);
+const MemoryStore = memorystore(session);
+
+export interface CachedUser {
+  id: number;
+  email: string;
+  name: string | null;
+  role: string;
+  profilePicture: string | null;
+  dateOfJoining: string | null;
+  country: string | null;
+  currency: string | null;
+  createdAt: Date;
+}
 
 declare module "express-session" {
   interface SessionData {
     userId: number;
+    cachedUser: CachedUser;
   }
 }
 
@@ -47,12 +59,13 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 app.use(
   session({
-    store: new PgSession({
-      pool,
-      tableName: "session",
-      createTableIfMissing: false,
+    store: new MemoryStore({
+      checkPeriod: 60 * 60 * 1000, // prune expired entries every hour
+      ttl: SESSION_TTL_MS,
     }),
     secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
     resave: false,
@@ -61,7 +74,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: SESSION_TTL_MS,
     },
   }),
 );

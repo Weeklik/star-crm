@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import type { CachedUser } from "../app";
 
 export async function requireAuth(
   req: Request,
@@ -13,16 +14,27 @@ export async function requireAuth(
     return;
   }
 
-  const user = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .then((rows) => rows[0]);
+  // Use cached user from session to avoid a DB round-trip on every request.
+  // Re-fetch from DB only if the cache is missing (e.g. first request after login
+  // on an old session, or after a server restart).
+  let user: CachedUser | undefined = req.session.cachedUser;
 
   if (!user) {
-    req.session.destroy(() => {});
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+    const row = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .then((rows) => rows[0]);
+
+    if (!row) {
+      req.session.destroy(() => {});
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { passwordHash: _, ...safeUser } = row;
+    user = safeUser as CachedUser;
+    req.session.cachedUser = user;
   }
 
   (req as any).user = user;

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { z } from "zod";
+import type { CachedUser } from "../app";
 
 const router: IRouter = Router();
 
@@ -36,8 +37,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  req.session.userId = user.id;
   const { passwordHash: _, ...safeUser } = user;
+
+  req.session.userId = user.id;
+  req.session.cachedUser = safeUser as CachedUser;
+
   res.json(safeUser);
 });
 
