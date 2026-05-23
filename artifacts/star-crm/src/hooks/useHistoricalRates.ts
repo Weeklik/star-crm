@@ -25,17 +25,22 @@ export function useHistoricalRates(
   const now = new Date();
   const curKey = mkKey(now.getFullYear(), now.getMonth() + 1);
 
+  // fetched: key → rate value
+  // fetchedFromApi: key → true if Frankfurter returned a real rate, false if we used liveRate as fallback
   const [fetched, setFetched] = useState<Record<string, number>>({});
+  const [fetchedFromApi, setFetchedFromApi] = useState<Record<string, boolean>>({});
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
 
   const currencyPairRef = useRef(`${baseCurrency}->${targetCurrency}`);
   const pair = `${baseCurrency}->${targetCurrency}`;
 
+  // Reset all state when currency pair changes
   useEffect(() => {
     if (currencyPairRef.current !== pair) {
       currencyPairRef.current = pair;
       setFetched({});
+      setFetchedFromApi({});
       setOverrides({});
       setLoading({});
     }
@@ -43,6 +48,7 @@ export function useHistoricalRates(
 
   const monthKeys = months.map((m) => mkKey(m.year, m.month)).join(",");
 
+  // Fetch historical rates from Frankfurter for past months
   useEffect(() => {
     if (isSame) return;
 
@@ -69,7 +75,16 @@ export function useHistoricalRates(
       setFetched((prev) => {
         const next = { ...prev };
         for (const { key, rate } of results) {
+          // Store the Frankfurter rate if available; use current liveRate as a placeholder
+          // (will be updated in the liveRate-sync effect below if liveRate was still 1)
           next[key] = rate ?? liveRate;
+        }
+        return next;
+      });
+      setFetchedFromApi((prev) => {
+        const next = { ...prev };
+        for (const { key, rate } of results) {
+          next[key] = rate !== null; // true = real Frankfurter data, false = fallback
         }
         return next;
       });
@@ -82,10 +97,28 @@ export function useHistoricalRates(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseCurrency, targetCurrency, isSame, monthKeys]);
 
+  // When liveRate changes (e.g. loads from default 1 → real rate), sync two things:
+  //  1. The current month always tracks liveRate
+  //  2. Any past month that used liveRate as a fallback (Frankfurter returned null) gets updated
   useEffect(() => {
-    if (!isSame && fetched[curKey] !== undefined) {
-      setFetched((prev) => ({ ...prev, [curKey]: liveRate }));
-    }
+    if (isSame) return;
+    setFetched((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      // Update current month
+      if (prev[curKey] !== undefined && prev[curKey] !== liveRate) {
+        next[curKey] = liveRate;
+        changed = true;
+      }
+      // Update all months whose rate came from the fallback (not real Frankfurter data)
+      for (const key of Object.keys(fetchedFromApi)) {
+        if (!fetchedFromApi[key]) {
+          next[key] = liveRate;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveRate]);
 
