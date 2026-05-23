@@ -1093,6 +1093,19 @@ export default function Deals() {
                 </SelectContent>
               </Select>
             </div>
+            {(form.stage === "Quotation Sent" || form.stage === "Order Confirmed") && (
+              <div className="space-y-1.5">
+                <Label>
+                  Expected Closure Date
+                  <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+                </Label>
+                <DatePicker
+                  value={form.earliestClosingDate}
+                  onChange={(v) => set("earliestClosingDate", v)}
+                  placeholder="Pick a date"
+                />
+              </div>
+            )}
             {form.stage === "Order Lost" && (
               <div className="space-y-1.5">
                 <Label>
