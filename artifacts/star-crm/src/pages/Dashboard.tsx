@@ -90,11 +90,11 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <KpiCard
-            title="Total Orders"
-            count={summary?.totalDeals ?? 0}
-            countLabel="in pipeline"
-            amount={formatConverted(summary?.totalAgreedAmount ?? 0)}
-            amountLabel="total value"
+            title="Quotation Sent"
+            count={summary?.quotationSentCount ?? 0}
+            countLabel="quotations sent"
+            amount={formatConverted(summary?.quotationSentAmount ?? 0)}
+            amountLabel="quotation value"
             icon={Briefcase}
             iconColor="text-primary"
             accentColor="bg-primary/10"
