@@ -7,6 +7,7 @@ import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 
 interface KpiCardProps {
   title: string;
+  subtitle?: string;
   count?: number;
   countLabel?: string;
   amount: string;
@@ -17,11 +18,14 @@ interface KpiCardProps {
   singleValue?: boolean;
 }
 
-function KpiCard({ title, count, countLabel, amount, amountLabel, icon: Icon, iconColor, accentColor, singleValue }: KpiCardProps) {
+function KpiCard({ title, subtitle, count, countLabel, amount, amountLabel, icon: Icon, iconColor, accentColor, singleValue }: KpiCardProps) {
   return (
     <Card className="bg-card border-border/60">
       <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-5">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+          {subtitle && <p className="text-xs text-muted-foreground/60 mt-0.5">{subtitle}</p>}
+        </div>
         <div className={`p-1.5 rounded-md ${accentColor}`}>
           <Icon className={`w-4 h-4 ${iconColor}`} />
         </div>
@@ -90,7 +94,8 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <KpiCard
-            title="Quotation Sent (Within 90 days)"
+            title="Quotation Sent"
+            subtitle="Within 90 days"
             count={summary?.quotationSentCount ?? 0}
             countLabel="quotations sent"
             amount={formatConverted(summary?.quotationSentAmount ?? 0)}
@@ -129,7 +134,8 @@ export default function Dashboard() {
             singleValue
           />
           <KpiCard
-            title="Lost Orders (More than 90 days)"
+            title="Lost Orders"
+            subtitle="More than 90 days"
             count={summary?.lostDeals ?? 0}
             countLabel="orders lost"
             amount={formatConverted(summary?.lostAmount ?? 0)}
