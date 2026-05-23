@@ -197,37 +197,84 @@ const MONTH_ABBR: Record<string, number> = {
  * Convert any date value from Excel to YYYY-MM-DD.
  * Handles:
  *   - Excel serial number (e.g. 45000)
- *   - "9-Jan-25"  / "9-Jan-2025"  (d-MMM-yy / d-MMM-yyyy)
- *   - "YYYY-MM-DD"
+ *   - JS Date object
+ *   - "DD/MM/YYYY" or "D/M/YYYY" or "DD/MM/YY"  ← most common in Middle East/UK
+ *   - "DD-MM-YYYY" or "D-M-YYYY"
+ *   - "YYYY/MM/DD"
+ *   - "YYYY-MM-DD" or ISO string with time component
+ *   - "9-Jan-25" / "9-Jan-2025"  (d-MMM-yy / d-MMM-yyyy)
  *   - Any string parseable by Date()
  * Returns "" for blank/unparseable values.
  */
 function parseExcelDate(val: unknown): string {
   if (val === null || val === undefined || val === "") return "";
+
+  // Excel serial number
   if (typeof val === "number") {
     const date = XLSX.SSF.parse_date_code(val);
     if (!date) return "";
     return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
   }
+
+  // JS Date object (returned by xlsx when cellDates: true)
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const y = val.getFullYear();
+    const m = val.getMonth() + 1;
+    const d = val.getDate();
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+
   const s = String(val).trim();
   if (!s) return "";
 
-  // "9-Jan-25" or "9-Jan-2025"
-  const dmy = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
-  if (dmy) {
-    const day = parseInt(dmy[1], 10);
-    const mon = MONTH_ABBR[dmy[2].toLowerCase()];
-    let yr = parseInt(dmy[3], 10);
+  // Already YYYY-MM-DD (or ISO datetime — just take the date part)
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+
+  // "9-Jan-25" or "9-Jan-2025" (d-MMM-yy / d-MMM-yyyy)
+  const dmyAbbr = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+  if (dmyAbbr) {
+    const day = parseInt(dmyAbbr[1], 10);
+    const mon = MONTH_ABBR[dmyAbbr[2].toLowerCase()];
+    let yr = parseInt(dmyAbbr[3], 10);
     if (yr < 100) yr += 2000;
-    if (mon && day) {
-      return `${yr}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    if (mon && day) return `${yr}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  // DD/MM/YYYY or D/M/YYYY or DD/MM/YY  — assumed DD/MM (Middle East/UK convention)
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slashMatch) {
+    let [, p1, p2, p3] = slashMatch;
+    let d1 = parseInt(p1, 10), d2 = parseInt(p2, 10), yr = parseInt(p3, 10);
+    if (yr < 100) yr += 2000;
+    // If first part > 12 it's definitely the day → DD/MM/YYYY
+    // If second part > 12 it's definitely the month — but we always treat as DD/MM here
+    if (d1 <= 31 && d2 <= 12) {
+      return `${yr}-${String(d2).padStart(2, "0")}-${String(d1).padStart(2, "0")}`;
+    }
+    // If d2 > 12 swap interpretation (MM/DD where month > 12 makes no sense)
+    if (d2 > 12 && d1 <= 12) {
+      return `${yr}-${String(d1).padStart(2, "0")}-${String(d2).padStart(2, "0")}`;
     }
   }
 
-  // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // DD-MM-YYYY or D-M-YYYY  (numeric, not month-abbr — already caught above)
+  const dashMatch = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+  if (dashMatch) {
+    let d1 = parseInt(dashMatch[1], 10), d2 = parseInt(dashMatch[2], 10), yr = parseInt(dashMatch[3], 10);
+    if (yr < 100) yr += 2000;
+    if (d1 <= 31 && d2 <= 12) {
+      return `${yr}-${String(d2).padStart(2, "0")}-${String(d1).padStart(2, "0")}`;
+    }
+  }
 
-  // Fallback: let the JS Date parser try
+  // YYYY/MM/DD
+  const isoSlash = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (isoSlash) {
+    return `${isoSlash[1]}-${String(parseInt(isoSlash[2], 10)).padStart(2, "0")}-${String(parseInt(isoSlash[3], 10)).padStart(2, "0")}`;
+  }
+
+  // Fallback: let the JS Date parser try (works for RFC2822, locale strings, etc.)
   const d = new Date(s);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
 
@@ -331,7 +378,7 @@ function buildColumnMap(sheetKeys: string[]): Record<string, string> {
 }
 
 function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; skipped: number; detectedHeaders: string[] } {
-  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true });
+  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true, cellDates: true });
   if (json.length === 0) return { rows: [], skipped: 0, detectedHeaders: [] };
 
   const detectedHeaders = Object.keys(json[0]);
