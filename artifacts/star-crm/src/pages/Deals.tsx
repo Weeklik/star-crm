@@ -1109,8 +1109,7 @@ export default function Deals() {
             {form.stage === "Order Lost" && (
               <div className="space-y-1.5">
                 <Label>
-                  Lost Reason
-                  <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+                  Lost Reason *
                 </Label>
                 <Select
                   value={form.lostReason || "__none__"}
@@ -1222,7 +1221,7 @@ export default function Deals() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !form.name || !form.companyName || !form.productItem}
+              disabled={saving || !form.name || !form.companyName || !form.productItem || (form.stage === "Order Lost" && !form.lostReason)}
               data-testid="btn-save-deal"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
