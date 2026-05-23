@@ -90,7 +90,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <KpiCard
-            title="Total Deals"
+            title="Total Orders"
             count={summary?.totalDeals ?? 0}
             countLabel="in pipeline"
             amount={formatConverted(summary?.totalAgreedAmount ?? 0)}
@@ -162,7 +162,7 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">No recent deals</div>
+                <div className="text-center py-8 text-muted-foreground">No recent orders</div>
               )}
             </CardContent>
           </Card>

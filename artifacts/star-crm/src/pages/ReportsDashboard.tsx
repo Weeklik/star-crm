@@ -282,7 +282,7 @@ export default function ReportsDashboard() {
 
   const kpiCards = [
     {
-      label: "Total Deals",
+      label: "Total Orders",
       value: String(summary?.totalDeals ?? 0),
       sub: `${summary?.lostDeals ?? 0} lost`,
       icon: Briefcase,
@@ -413,7 +413,7 @@ export default function ReportsDashboard() {
         {/* Stage Pie Chart */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Deal Stage Breakdown</CardTitle>
+            <CardTitle className="text-base font-semibold">Order Stage Breakdown</CardTitle>
             <p className="text-xs text-muted-foreground">Distribution by stage · deal count</p>
           </CardHeader>
           <CardContent className="pt-0">

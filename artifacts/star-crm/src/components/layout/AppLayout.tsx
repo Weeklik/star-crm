@@ -21,7 +21,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const topItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/deals", label: "Deals", icon: Briefcase },
+    { href: "/deals", label: "Orders", icon: Briefcase },
   ];
 
   const reportsChildren = [

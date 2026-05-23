@@ -262,7 +262,7 @@ function DealDrillDownModal({
                 <tr className="bg-muted/60">
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">#</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs whitespace-nowrap">Start Date</th>
-                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Deal Name</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Order Name</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Company</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Product</th>
                   <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Stage</th>

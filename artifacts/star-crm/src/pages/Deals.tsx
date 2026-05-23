@@ -74,7 +74,7 @@ const STAGES: Stage[] = [
 
 // Excel template column headers (must stay in sync with parsing logic)
 const TEMPLATE_HEADERS = [
-  "Deal Start Date",
+  "Order Start Date",
   "Name",
   "Company Name",
   "Product / Item",
@@ -272,9 +272,10 @@ const FIELD_ALIASES: Record<string, string> = {
   "product item": "productItem", "product": "productItem", "item": "productItem",
   "service": "productItem", "product name": "productItem",
   "product service": "productItem", "services": "productItem",
-  // Deal Start Date
-  "deal start date": "dealStartDate", "start date": "dealStartDate",
-  "date": "dealStartDate", "deal date": "dealStartDate",
+  // Order / Deal Start Date
+  "order start date": "dealStartDate", "deal start date": "dealStartDate",
+  "start date": "dealStartDate", "date": "dealStartDate",
+  "deal date": "dealStartDate", "order date": "dealStartDate",
   "commencement date": "dealStartDate",
   // Stage / Status
   "stage status": "stage", "stage": "stage", "status": "stage",
@@ -397,7 +398,7 @@ function downloadTemplate() {
   const todayStr = fmtSample(today);
 
   const sampleRow: Record<string, string | number> = {
-    "Deal Start Date":          todayStr,
+    "Order Start Date":          todayStr,
     "Name":                     "Q3 Enterprise Renewal",
     "Company Name":             "Acme Corp",
     "Product / Item":           "SaaS Pro Plan",
@@ -414,7 +415,7 @@ function downloadTemplate() {
 
   const ws = XLSX.utils.json_to_sheet([sampleRow], { header: TEMPLATE_HEADERS });
   ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(h.length + 2, 18) }));
-  XLSX.utils.book_append_sheet(wb, ws, "Deals");
+  XLSX.utils.book_append_sheet(wb, ws, "Orders");
   XLSX.writeFile(wb, "star-crm-deals-template.xlsx");
 }
 
@@ -721,7 +722,7 @@ export default function Deals() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Deals</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground mt-1">
             Manage your active pipeline and closed won/lost orders.
           </p>
@@ -745,7 +746,7 @@ export default function Deals() {
           </Button>
           <Button className="shrink-0" onClick={openAdd} data-testid="btn-add-deal">
             <Plus className="w-4 h-4 mr-2" />
-            Add Deal
+            Add Order
           </Button>
         </div>
       </div>
@@ -808,7 +809,7 @@ export default function Deals() {
         {/* Total Deals */}
         <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Deals</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Orders</span>
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
           </div>
           <p className="text-2xl font-bold tabular-nums">{filteredDeals?.length ?? 0}</p>
@@ -1021,12 +1022,12 @@ export default function Deals() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId !== null ? "Edit Deal" : "Add Deal"}</DialogTitle>
+            <DialogTitle>{editingId !== null ? "Edit Order" : "Add Order"}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5">
-              <Label>Deal Name *</Label>
+              <Label>Order Name *</Label>
               <AutocompleteInput
                 value={form.name}
                 onChange={(v) => set("name", v)}
@@ -1110,7 +1111,7 @@ export default function Deals() {
             )}
             <div className="space-y-1.5">
               <Label>
-                Deal Type
+                Order Type
                 <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
               </Label>
               <Select
@@ -1121,7 +1122,7 @@ export default function Deals() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New Deal">New Deal</SelectItem>
+                  <SelectItem value="New Deal">New Order</SelectItem>
                   <SelectItem value="Recurring">Recurring</SelectItem>
                   <SelectItem value="Dealer">Dealer</SelectItem>
                 </SelectContent>
@@ -1230,7 +1231,7 @@ export default function Deals() {
               data-testid="btn-save-deal"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              {editingId !== null ? "Save Changes" : "Create Deal"}
+              {editingId !== null ? "Save Changes" : "Create Order"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1240,7 +1241,7 @@ export default function Deals() {
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Deal</AlertDialogTitle>
+            <AlertDialogTitle>Delete Order</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete the deal. This action cannot be undone.
             </AlertDialogDescription>
@@ -1271,7 +1272,7 @@ export default function Deals() {
               ) : (
                 <>
                   <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                  Duplicate Deals Detected
+                  Duplicate Orders Detected
                 </>
               )}
             </DialogTitle>
@@ -1302,7 +1303,7 @@ export default function Deals() {
                     <tr>
                       <th className="px-2 py-2 text-left font-semibold">#</th>
                       <th className="px-2 py-2 text-left font-semibold">Start Date <span className="text-destructive">*</span></th>
-                      <th className="px-2 py-2 text-left font-semibold">Deal Name <span className="text-destructive">*</span></th>
+                      <th className="px-2 py-2 text-left font-semibold">Order Name <span className="text-destructive">*</span></th>
                       <th className="px-2 py-2 text-left font-semibold">Company <span className="text-destructive">*</span></th>
                       <th className="px-2 py-2 text-left font-semibold">Product <span className="text-destructive">*</span></th>
                       <th className="px-2 py-2 text-left font-semibold">Stage <span className="text-destructive">*</span></th>
@@ -1360,7 +1361,7 @@ export default function Deals() {
                 <Button variant="outline" onClick={() => setImportDialogOpen(false)} disabled={importingNew}>Cancel</Button>
                 <Button onClick={handleImport} disabled={importingNew || importRows.length === 0}>
                   {importingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-                  {importingNew ? "Importing…" : `Import ${importRows.length} Deal${importRows.length !== 1 ? "s" : ""}`}
+                  {importingNew ? "Importing…" : `Import ${importRows.length} Order${importRows.length !== 1 ? "s" : ""}`}
                 </Button>
               </DialogFooter>
             </>
@@ -1377,7 +1378,7 @@ export default function Deals() {
                     <table className="w-full text-xs">
                       <thead className="text-muted-foreground">
                         <tr>
-                          <th className="text-left pb-1">Deal Name</th>
+                          <th className="text-left pb-1">Order Name</th>
                           <th className="text-left pb-1">Company</th>
                           <th className="text-right pb-1">Agreed</th>
                         </tr>
@@ -1409,7 +1410,7 @@ export default function Deals() {
                     <thead className="text-muted-foreground">
                       <tr>
                         <th className="text-left pb-1 w-8">Add?</th>
-                        <th className="text-left pb-1">Deal Name</th>
+                        <th className="text-left pb-1">Order Name</th>
                         <th className="text-left pb-1">Company</th>
                         <th className="text-right pb-1">Agreed</th>
                       </tr>
@@ -1456,7 +1457,7 @@ export default function Deals() {
                   {importingNew ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
                   {importingNew
                     ? "Importing…"
-                    : `Import ${importRows.length + forceAddSelected.size} Deal${(importRows.length + forceAddSelected.size) !== 1 ? "s" : ""}`}
+                    : `Import ${importRows.length + forceAddSelected.size} Order${(importRows.length + forceAddSelected.size) !== 1 ? "s" : ""}`}
                 </Button>
               </DialogFooter>
             </>
