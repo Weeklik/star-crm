@@ -1,8 +1,9 @@
 import { useGetMe } from "@workspace/api-client-react";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { useOwnerControls } from "@/contexts/OwnerControlsContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
-import { useState, useEffect } from "react";
+import { useHistoricalRates } from "@/hooks/useHistoricalRates";
+import { MonthRateCell } from "@/components/MonthRateCell";
+import { useState, useEffect, useMemo } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Download, FileSpreadsheet, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,15 @@ interface WeekRow {
 
 interface ExpandedKey { spId: number; monthIdx: number }
 
+function fmtCurrency(n: number, currency: string, rate: number): string {
+  if (!n) return "";
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(n * rate);
+  } catch {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n * rate);
+  }
+}
+
 export default function SummarySalesReport() {
   const { data: me } = useGetMe();
   const currentYear = new Date().getFullYear();
@@ -67,14 +77,36 @@ export default function SummarySalesReport() {
   const [loading, setLoading]         = useState(false);
   const [users, setUsers]             = useState<UserOption[]>([]);
 
-  // Inline week expansion
   const [expanded, setExpanded]       = useState<ExpandedKey | null>(null);
   const [weekRows, setWeekRows]       = useState<WeekRow[]>([]);
   const [weekLoading, setWeekLoading] = useState(false);
 
-  const { formatConverted, selectedRegion } = useOwnerControls();
+  const {
+    formatConverted, selectedRegion,
+    conversionRate, baseCurrency, selectedCurrency,
+  } = useOwnerControls();
+
+  const isSameCurrency = baseCurrency === selectedCurrency;
+  const yr = parseInt(year);
+
+  // Global rate formatter (for totals, averages, summary columns)
   const fmt  = (n: number) => (n ? formatConverted(n) : "-");
-  const fmtW = (n: number) => (n ? formatConverted(n) : "");
+
+  // Per-rate formatter (for monthly cells and weekly expansion)
+  const fmtR = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "";
+  const fmtRDash = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "-";
+
+  // Historical rates for all 12 months of the selected year
+  const months12 = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => ({ year: yr, month: i + 1 })),
+    [yr],
+  );
+  const {
+    getRate, setOverride,
+    isLoading: rateIsLoading,
+    isOverridden: rateIsOverridden,
+    isCurrentMonth: rateIsCurrent,
+  } = useHistoricalRates(baseCurrency, selectedCurrency, conversionRate, months12);
 
   useEffect(() => {
     if (me?.role === "owner") {
@@ -98,20 +130,15 @@ export default function SummarySalesReport() {
       .finally(() => setLoading(false));
   }, [me, year, summaryStart, summaryEnd, filterSpId, selectedRegion]);
 
-  // Collapse expansion when year changes
   useEffect(() => { setExpanded(null); setWeekRows([]); }, [year]);
 
   function handleMonthClick(spId: number, monthIdx: number) {
-    // monthIdx is 1-based
     if (expanded?.spId === spId && expanded?.monthIdx === monthIdx) {
-      setExpanded(null);
-      setWeekRows([]);
-      return;
+      setExpanded(null); setWeekRows([]); return;
     }
     setExpanded({ spId, monthIdx });
-    setWeekLoading(true);
-    setWeekRows([]);
-    const d0 = new Date(parseInt(year), monthIdx - 1, 1);
+    setWeekLoading(true); setWeekRows([]);
+    const d0 = new Date(yr, monthIdx - 1, 1);
     const startDate = format(startOfMonth(d0), "yyyy-MM-dd");
     const endDate   = format(endOfMonth(d0),   "yyyy-MM-dd");
     const params = new URLSearchParams({ startDate, endDate, salespersonId: String(spId) });
@@ -138,7 +165,6 @@ export default function SummarySalesReport() {
     ? `${format(new Date(summaryStart), "d MMM")} – ${format(new Date(summaryEnd), "d MMM")}`
     : "Summary Period";
 
-  // Total columns count for colspan
   const totalCols = 3 + 12 + (hasSummary ? 3 : 0);
 
   const thW = "border border-border text-center text-[11px] font-semibold px-2 py-1.5 whitespace-nowrap bg-muted/60";
@@ -150,20 +176,16 @@ export default function SummarySalesReport() {
     for (const m of MONTHS) csv += `,${m} ${year}`;
     if (hasSummary) csv += `,${summaryLabel} Sales,${summaryLabel} Quotation,${summaryLabel} Order Confirmed`;
     csv += "\n";
-
     for (const r of rows) {
       csv += `${r.name},${r.totalSales},${Math.round(r.avgMonthlySales)}`;
       for (let m = 1; m <= 12; m++) csv += `,${r.monthly[m] ?? 0}`;
       if (hasSummary) csv += `,${r.summaryTotal},${r.summaryQuotation},${r.summaryOrderConfirmed}`;
       csv += "\n";
     }
-
     const blob = new Blob([csv], { type: "text/csv" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `summary-sales-${year}.csv`;
-    a.click();
+    a.href = url; a.download = `summary-sales-${year}.csv`; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -229,12 +251,28 @@ export default function SummarySalesReport() {
             <div className="overflow-x-auto scrollbar-subtle">
               <table className="w-full text-sm border-collapse">
                 <thead>
+                  {/* Main header row */}
                   <tr className="bg-muted/60 border-b border-border">
                     <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap sticky left-0 bg-muted/60">Name</th>
                     <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">Avg Monthly {year}</th>
                     <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">Total {year}</th>
-                    {MONTHS.map((m) => (
-                      <th key={m} className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{m} {year}</th>
+                    {MONTHS.map((m, idx) => (
+                      <th key={m} className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
+                        {m} {year}
+                        {!isSameCurrency && (
+                          <div className="mt-0.5">
+                            <MonthRateCell
+                              baseCurrency={baseCurrency}
+                              targetCurrency={selectedCurrency}
+                              rate={getRate(yr, idx + 1)}
+                              loading={rateIsLoading(yr, idx + 1)}
+                              overridden={rateIsOverridden(yr, idx + 1)}
+                              isCurrentMonth={rateIsCurrent(yr, idx + 1)}
+                              onEdit={(r) => setOverride(yr, idx + 1, r)}
+                            />
+                          </div>
+                        )}
+                      </th>
                     ))}
                     {hasSummary && (
                       <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap bg-blue-500/10 border-l border-border" colSpan={3}>
@@ -264,8 +302,9 @@ export default function SummarySalesReport() {
                     </tr>
                   ) : (
                     rows.map((row, i) => {
-                      const isExpanded = expanded?.spId === row.salespersonId;
+                      const isExpanded  = expanded?.spId === row.salespersonId;
                       const expandedMonth = expanded?.monthIdx ?? null;
+                      const expandedRate  = expandedMonth ? getRate(yr, expandedMonth) : conversionRate;
 
                       return (
                         <>
@@ -281,6 +320,7 @@ export default function SummarySalesReport() {
                               const mIdx = idx + 1;
                               const val  = row.monthly[mIdx] ?? 0;
                               const active = isExpanded && expandedMonth === mIdx;
+                              const monthRate = getRate(yr, mIdx);
                               return (
                                 <td
                                   key={mIdx}
@@ -298,7 +338,7 @@ export default function SummarySalesReport() {
                                         ? <ChevronRight className="w-3 h-3 shrink-0 opacity-30" />
                                         : null
                                     }
-                                    {fmt(val)}
+                                    {isSameCurrency ? fmt(val) : (val ? fmtR(val, monthRate) : "-")}
                                   </span>
                                 </td>
                               );
@@ -317,12 +357,16 @@ export default function SummarySalesReport() {
                             <tr key={`expand-${row.salespersonId}`} className="border-b border-primary/20">
                               <td colSpan={totalCols} className="p-0 bg-primary/5">
                                 <div className="px-4 py-3">
-                                  {/* Expansion header */}
                                   <div className="flex items-center gap-2 mb-2.5">
                                     <ChevronDown className="w-4 h-4 text-primary" />
                                     <span className="text-sm font-semibold text-primary">
                                       {row.name} — {MONTHS_FULL[expandedMonth! - 1]} {year} — Weekly Breakdown
                                     </span>
+                                    {!isSameCurrency && (
+                                      <span className="text-xs text-muted-foreground ml-2">
+                                        Rate: 1 {baseCurrency} = {expandedRate.toFixed(4)} {selectedCurrency}
+                                      </span>
+                                    )}
                                     <button
                                       onClick={() => { setExpanded(null); setWeekRows([]); }}
                                       className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5 rounded border border-border hover:border-foreground/30"
@@ -343,7 +387,6 @@ export default function SummarySalesReport() {
                                     <div className="overflow-x-auto rounded border border-border/60">
                                       <table className="w-full border-collapse text-sm">
                                         <thead>
-                                          {/* Section headers */}
                                           <tr>
                                             <th rowSpan={3} className={`${thW} text-left min-w-[120px] bg-muted/50`}>Week</th>
                                             <th colSpan={4} className={`${thW} bg-green-700/20 text-green-800 dark:text-green-300`}>Payment Receipt</th>
@@ -382,15 +425,15 @@ export default function SummarySalesReport() {
                                                 </div>
                                               </td>
                                               <td className={`${tdW} text-green-800 dark:text-green-300 font-medium`}>{w.orderClosedCount || ""}</td>
-                                              <td className={`${tdW} text-green-800 dark:text-green-300`}>{fmtW(w.orderClosedAmount)}</td>
-                                              <td className={`${tdW}`}>{fmtW(w.downPayment)}</td>
-                                              <td className={`${tdW} font-semibold`}>{fmtW(w.totalPaymentReceipt)}</td>
+                                              <td className={`${tdW} text-green-800 dark:text-green-300`}>{fmtR(w.orderClosedAmount, expandedRate)}</td>
+                                              <td className={tdW}>{fmtR(w.downPayment, expandedRate)}</td>
+                                              <td className={`${tdW} font-semibold`}>{fmtR(w.totalPaymentReceipt, expandedRate)}</td>
                                               <td className="border border-border bg-muted/10" />
                                               <td className={`${tdW} text-yellow-800 dark:text-yellow-300 font-medium`}>{w.quotationSentCount || ""}</td>
-                                              <td className={`${tdW} text-yellow-800 dark:text-yellow-300`}>{fmtW(w.quotationSentAmount)}</td>
+                                              <td className={`${tdW} text-yellow-800 dark:text-yellow-300`}>{fmtR(w.quotationSentAmount, expandedRate)}</td>
                                               <td className={`${tdW} text-blue-800 dark:text-blue-300 font-medium`}>{w.orderConfirmedCount || ""}</td>
-                                              <td className={`${tdW} text-blue-800 dark:text-blue-300`}>{fmtW(w.orderConfirmedAmount)}</td>
-                                              <td className={`${tdW} font-semibold`}>{fmtW(w.totalSalesInProcess)}</td>
+                                              <td className={`${tdW} text-blue-800 dark:text-blue-300`}>{fmtR(w.orderConfirmedAmount, expandedRate)}</td>
+                                              <td className={`${tdW} font-semibold`}>{fmtR(w.totalSalesInProcess, expandedRate)}</td>
                                             </tr>
                                           ))}
                                         </tbody>
@@ -398,15 +441,15 @@ export default function SummarySalesReport() {
                                           <tr className="bg-muted/40 font-semibold border-t-2 border-border">
                                             <td className={`${tdW} text-left`}>Total {MONTHS_FULL[expandedMonth! - 1]}</td>
                                             <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderClosedCount, 0) || ""}</td>
-                                            <td className={tdW}>{fmtW(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0))}</td>
-                                            <td className={tdW}>{fmtW(weekRows.reduce((s, w) => s + w.downPayment, 0))}</td>
-                                            <td className={tdW}>{fmtW(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0))}</td>
+                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.downPayment, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0), expandedRate)}</td>
                                             <td className="border border-border bg-muted/10" />
                                             <td className={tdW}>{weekRows.reduce((s, w) => s + w.quotationSentCount, 0) || ""}</td>
-                                            <td className={tdW}>{fmtW(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0))}</td>
+                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0), expandedRate)}</td>
                                             <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderConfirmedCount, 0) || ""}</td>
-                                            <td className={tdW}>{fmtW(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0))}</td>
-                                            <td className={tdW}>{fmtW(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0))}</td>
+                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0), expandedRate)}</td>
                                           </tr>
                                         </tfoot>
                                       </table>
@@ -428,9 +471,15 @@ export default function SummarySalesReport() {
                       <td className="px-3 py-2 sticky left-0 bg-muted/40">Total</td>
                       <td className="px-3 py-2 text-right">{fmt(Math.round(rows.reduce((s, r) => s + r.avgMonthlySales, 0)))}</td>
                       <td className="px-3 py-2 text-right">{fmt(totalSalesSum)}</td>
-                      {Array.from({ length: 12 }, (_, idx) => (
-                        <td key={idx + 1} className="px-3 py-2 text-right">{fmt(monthlyTotals[idx + 1])}</td>
-                      ))}
+                      {Array.from({ length: 12 }, (_, idx) => {
+                        const mIdx = idx + 1;
+                        const val = monthlyTotals[mIdx];
+                        return (
+                          <td key={mIdx} className="px-3 py-2 text-right">
+                            {isSameCurrency ? fmt(val) : fmtRDash(val, getRate(yr, mIdx))}
+                          </td>
+                        );
+                      })}
                       {hasSummary && (
                         <>
                           <td className="px-3 py-2 text-right bg-blue-500/10 border-l border-border">{fmt(summaryTotalSum)}</td>
