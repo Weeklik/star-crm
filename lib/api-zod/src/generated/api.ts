@@ -290,6 +290,7 @@ export const GetReportSummaryResponse = zod.object({
   avgProgress: zod.number(),
   vatApplicableCount: zod.number(),
   quotationSentCount: zod.number(),
+  quotationSentAmount: zod.number(),
 });
 
 /**

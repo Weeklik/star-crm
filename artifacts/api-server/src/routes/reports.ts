@@ -113,7 +113,14 @@ router.get(
     const lostDealsList = deals.filter((d) => d.stage === "Order Lost");
     const lostDeals = lostDealsList.length;
     const lostAmount = lostDealsList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-    const quotationSentCount = deals.filter((d) => d.stage === "Quotation Sent").length;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    const cutoffDate = cutoff.toISOString().slice(0, 10);
+    const quotationSentList = deals.filter(
+      (d) => d.stage === "Quotation Sent" && (d.dealStartDate ?? "") > cutoffDate,
+    );
+    const quotationSentCount = quotationSentList.length;
+    const quotationSentAmount = quotationSentList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
     const avgProgress =
       totalDeals > 0
         ? deals.reduce((s, d) => s + (d.progress ?? 0), 0) / totalDeals
@@ -135,6 +142,7 @@ router.get(
         avgProgress,
         vatApplicableCount,
         quotationSentCount,
+        quotationSentAmount,
       }),
     );
   },

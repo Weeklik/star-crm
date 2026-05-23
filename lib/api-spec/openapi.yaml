@@ -544,21 +544,39 @@ components:
           type: number
         closedDeals:
           type: integer
+        closedAmount:
+          type: number
+        confirmedDeals:
+          type: integer
+        confirmedAmount:
+          type: number
         lostDeals:
           type: integer
+        lostAmount:
+          type: number
         avgProgress:
           type: number
         vatApplicableCount:
           type: integer
+        quotationSentCount:
+          type: integer
+        quotationSentAmount:
+          type: number
       required:
         - totalDeals
         - totalAgreedAmount
         - totalReceivedAmount
         - totalOutstandingAmount
         - closedDeals
+        - closedAmount
+        - confirmedDeals
+        - confirmedAmount
         - lostDeals
+        - lostAmount
         - avgProgress
         - vatApplicableCount
+        - quotationSentCount
+        - quotationSentAmount
 
     SalespersonReport:
       type: object

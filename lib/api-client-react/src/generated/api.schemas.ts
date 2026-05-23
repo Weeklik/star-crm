@@ -163,6 +163,8 @@ export interface ReportSummary {
   lostAmount: number;
   avgProgress: number;
   vatApplicableCount: number;
+  quotationSentCount: number;
+  quotationSentAmount: number;
 }
 
 export interface SalespersonReport {
