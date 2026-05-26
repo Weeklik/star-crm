@@ -48,6 +48,27 @@ function toDateStr(y: number, m: number, d: number) {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
+// ── Event color palette (consistent per company name) ────────────────────────
+
+const EVENT_COLORS = [
+  { bg: "#4285F4", hover: "#3367D6" }, // Google blue
+  { bg: "#0F9D58", hover: "#0B8043" }, // Google green
+  { bg: "#DB4437", hover: "#C53929" }, // Google red
+  { bg: "#F4B400", hover: "#F09300" }, // Google yellow
+  { bg: "#AB47BC", hover: "#8E24AA" }, // purple
+  { bg: "#00ACC1", hover: "#00838F" }, // cyan
+  { bg: "#FF7043", hover: "#E64A19" }, // deep orange
+  { bg: "#43A047", hover: "#2E7D32" }, // green 600
+  { bg: "#7986CB", hover: "#5C6BC0" }, // indigo
+  { bg: "#F06292", hover: "#E91E63" }, // pink
+];
+
+function getEventColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return EVENT_COLORS[hash % EVENT_COLORS.length];
+}
+
 // ── Calendar Tab ─────────────────────────────────────────────────────────────
 
 function CalendarTab() {
@@ -210,28 +231,36 @@ function CalendarTab() {
                   </div>
 
                   {/* Events */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden" }}>
-                    {evts.slice(0, 3).map(m => (
-                      <div
-                        key={m.id}
-                        onClick={e => { e.stopPropagation(); openEdit(m); }}
-                        title={[m.companyName, m.meetingTime, m.location].filter(Boolean).join(" · ")}
-                        style={{
-                          display: "flex", alignItems: "center", gap: "4px",
-                          padding: "2px 6px", borderRadius: "4px",
-                          fontSize: "11px", fontWeight: 500,
-                          backgroundColor: "color-mix(in srgb, var(--primary) 20%, transparent)",
-                          color: "var(--primary)",
-                          cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap",
-                        }}
-                      >
-                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "var(--primary)", flexShrink: 0 }} />
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>{m.companyName}</span>
-                        {m.meetingTime && (
-                          <span style={{ flexShrink: 0, opacity: 0.7, marginLeft: "4px" }}>{m.meetingTime}</span>
-                        )}
-                      </div>
-                    ))}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "3px", overflow: "hidden" }}>
+                    {evts.slice(0, 3).map(m => {
+                      const color = getEventColor(m.companyName);
+                      return (
+                        <div
+                          key={m.id}
+                          onClick={e => { e.stopPropagation(); openEdit(m); }}
+                          title={[m.companyName, m.meetingTime, m.location].filter(Boolean).join(" · ")}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = color.hover}
+                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = color.bg}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "5px",
+                            padding: "3px 7px", borderRadius: "5px",
+                            fontSize: "11px", fontWeight: 600,
+                            backgroundColor: color.bg, color: "#fff",
+                            cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap",
+                            transition: "background-color 0.12s",
+                          }}
+                        >
+                          {m.meetingTime && (
+                            <span style={{ flexShrink: 0, opacity: 0.85, fontSize: "10px", fontWeight: 500 }}>
+                              {m.meetingTime}
+                            </span>
+                          )}
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+                            {m.companyName}
+                          </span>
+                        </div>
+                      );
+                    })}
                     {evts.length > 3 && (
                       <span style={{ fontSize: "10px", color: "var(--muted-foreground)", paddingLeft: "4px" }}>
                         +{evts.length - 3} more
