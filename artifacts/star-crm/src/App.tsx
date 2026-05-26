@@ -20,6 +20,7 @@ import ReportsDashboard from "./pages/ReportsDashboard";
 import Users from "./pages/Users";
 import Login from "./pages/Login";
 import NotFound from "./pages/not-found";
+import Planner from "./pages/Planner";
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -84,6 +85,9 @@ function AppRoutes() {
         </Route>
         <Route path="/users">
           <ProtectedRoute component={Users} ownerOnly />
+        </Route>
+        <Route path="/planner">
+          <ProtectedRoute component={Planner} />
         </Route>
         <Route path="/profile">
           <ProtectedRoute component={Profile} />

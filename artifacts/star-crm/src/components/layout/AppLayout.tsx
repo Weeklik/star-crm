@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
-  ChevronDown, TableProperties, TrendingUp, Sun, Moon, PieChart,
+  ChevronDown, TableProperties, TrendingUp, Sun, Moon, PieChart, CalendarDays,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -22,6 +22,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const topItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/deals", label: "Orders", icon: Briefcase },
+    { href: "/planner", label: "Planner", icon: CalendarDays },
   ];
 
   const reportsChildren = [
