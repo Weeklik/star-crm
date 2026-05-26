@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Trash2, CalendarDays, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, CalendarDays, Target, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -256,6 +256,137 @@ function CalendarTab() {
   );
 }
 
+// ── Lookup Combobox ───────────────────────────────────────────────────────────
+
+interface LookupComboboxProps {
+  type: "company" | "product";
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  autoFocus?: boolean;
+}
+
+function LookupCombobox({ type, value, onChange, placeholder, required, autoFocus }: LookupComboboxProps) {
+  const [open, setOpen]     = useState(false);
+  const [query, setQuery]   = useState(value);
+  const [adding, setAdding] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  // sync external value → local query when modal reopens
+  useEffect(() => { setQuery(value); }, [value]);
+
+  const { data: options = [] } = useQuery<string[]>({
+    queryKey: ["lookup", type, query],
+    queryFn: () => apiFetch(`/api/lookup?type=${type}&q=${encodeURIComponent(query)}`),
+    enabled: open,
+  });
+
+  // close dropdown when clicking outside
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const exactMatch = options.some(o => o.toLowerCase() === query.trim().toLowerCase());
+  const showAdd    = query.trim().length > 0 && !exactMatch;
+
+  function pick(name: string) {
+    setQuery(name);
+    onChange(name);
+    setOpen(false);
+  }
+
+  async function addNew() {
+    const name = query.trim();
+    if (!name) return;
+    setAdding(true);
+    try {
+      await apiFetch(`/api/lookup?type=${type}`, { method: "POST", body: JSON.stringify({ name }) });
+      qc.invalidateQueries({ queryKey: ["lookup", type] });
+      onChange(name);
+      setOpen(false);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <Input
+        autoFocus={autoFocus}
+        value={query}
+        placeholder={placeholder}
+        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={e => {
+          if (e.key === "Escape") setOpen(false);
+          if (e.key === "Enter" && showAdd) { e.preventDefault(); addNew(); }
+        }}
+        className={required && !query.trim() ? "border-destructive" : ""}
+      />
+      {open && (options.length > 0 || showAdd) && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
+            background: "var(--card)", border: "1px solid var(--border)",
+            borderRadius: "8px", boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            maxHeight: "220px", overflowY: "auto",
+          }}
+        >
+          {options.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onMouseDown={e => { e.preventDefault(); pick(opt); }}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                width: "100%", textAlign: "left", padding: "8px 12px",
+                fontSize: "14px", background: "transparent", border: "none",
+                cursor: "pointer", color: "var(--foreground)",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--accent)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            >
+              {opt.toLowerCase() === query.trim().toLowerCase() && (
+                <Check style={{ width: "14px", height: "14px", color: "var(--primary)", flexShrink: 0 }} />
+              )}
+              <span style={{ marginLeft: opt.toLowerCase() === query.trim().toLowerCase() ? 0 : "22px" }}>{opt}</span>
+            </button>
+          ))}
+          {showAdd && (
+            <button
+              type="button"
+              onMouseDown={e => { e.preventDefault(); addNew(); }}
+              disabled={adding}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                width: "100%", textAlign: "left", padding: "8px 12px",
+                fontSize: "14px", border: "none", cursor: "pointer",
+                color: "var(--primary)",
+                background: "color-mix(in srgb, var(--primary) 8%, transparent)",
+                borderTop: options.length > 0 ? "1px solid var(--border)" : "none",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--primary) 16%, transparent)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--primary) 8%, transparent)")}
+            >
+              <Plus style={{ width: "14px", height: "14px", flexShrink: 0 }} />
+              <span>{adding ? "Adding…" : `Add "${query.trim()}"`}</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Meeting Modal ─────────────────────────────────────────────────────────────
 
 interface MeetingModalProps {
@@ -307,12 +438,29 @@ function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDele
         </DialogHeader>
         <div className="space-y-4 py-1">
           <div className="space-y-1.5">
-            <Label>Company Name <span className="text-destructive">*</span></Label>
-            <Input autoFocus value={form.companyName} onChange={e => set("companyName", e.target.value)} placeholder="Enter company name" />
+            <Label>
+              Company Name <span className="text-destructive">*</span>
+            </Label>
+            <LookupCombobox
+              type="company"
+              value={form.companyName}
+              onChange={v => set("companyName", v)}
+              placeholder="Search or add company…"
+              required
+              autoFocus
+            />
           </div>
           <div className="space-y-1.5">
-            <Label>Product / Service <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
-            <Input value={form.productName} onChange={e => set("productName", e.target.value)} placeholder="e.g. Enterprise License" />
+            <Label>
+              Product / Service{" "}
+              <span className="text-xs text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <LookupCombobox
+              type="product"
+              value={form.productName}
+              onChange={v => set("productName", v)}
+              placeholder="Search or add product…"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
