@@ -334,50 +334,37 @@ function LookupCombobox({ type, value, onChange, placeholder, required, autoFocu
       />
       {open && (options.length > 0 || showAdd) && (
         <div
+          className="bg-popover border border-border rounded-lg shadow-xl overflow-hidden"
           style={{
-            position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
-            background: "var(--card)", border: "1px solid var(--border)",
-            borderRadius: "8px", boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-            maxHeight: "220px", overflowY: "auto",
+            position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+            zIndex: 9999, maxHeight: "220px", overflowY: "auto",
           }}
         >
-          {options.map(opt => (
-            <button
-              key={opt}
-              type="button"
-              onMouseDown={e => { e.preventDefault(); pick(opt); }}
-              style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                width: "100%", textAlign: "left", padding: "8px 12px",
-                fontSize: "14px", background: "transparent", border: "none",
-                cursor: "pointer", color: "var(--foreground)",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--accent)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-            >
-              {opt.toLowerCase() === query.trim().toLowerCase() && (
-                <Check style={{ width: "14px", height: "14px", color: "var(--primary)", flexShrink: 0 }} />
-              )}
-              <span style={{ marginLeft: opt.toLowerCase() === query.trim().toLowerCase() ? 0 : "22px" }}>{opt}</span>
-            </button>
-          ))}
+          {options.map(opt => {
+            const isSelected = opt.toLowerCase() === query.trim().toLowerCase();
+            return (
+              <button
+                key={opt}
+                type="button"
+                onMouseDown={e => { e.preventDefault(); pick(opt); }}
+                className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+              >
+                {isSelected
+                  ? <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                  : <span className="w-3.5 h-3.5 shrink-0" />}
+                <span>{opt}</span>
+              </button>
+            );
+          })}
           {showAdd && (
             <button
               type="button"
               onMouseDown={e => { e.preventDefault(); addNew(); }}
               disabled={adding}
-              style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                width: "100%", textAlign: "left", padding: "8px 12px",
-                fontSize: "14px", border: "none", cursor: "pointer",
-                color: "var(--primary)",
-                background: "color-mix(in srgb, var(--primary) 8%, transparent)",
-                borderTop: options.length > 0 ? "1px solid var(--border)" : "none",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--primary) 16%, transparent)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "color-mix(in srgb, var(--primary) 8%, transparent)")}
+              className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-primary hover:bg-primary/10 transition-colors font-medium"
+              style={{ borderTop: options.length > 0 ? "1px solid var(--border)" : "none" }}
             >
-              <Plus style={{ width: "14px", height: "14px", flexShrink: 0 }} />
+              <Plus className="w-3.5 h-3.5 shrink-0" />
               <span>{adding ? "Adding…" : `Add "${query.trim()}"`}</span>
             </button>
           )}
