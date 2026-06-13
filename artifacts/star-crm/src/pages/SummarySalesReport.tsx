@@ -93,8 +93,8 @@ export default function SummarySalesReport() {
   const fmt  = (n: number) => (n ? formatConverted(n) : "-");
 
   // Per-rate formatter (for monthly cells and weekly expansion)
-  const fmtR = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "";
-  const fmtRDash = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "-";
+  const fmtR = (n: number, rate: number) => fmtCurrency(n, baseCurrency, rate) || "";
+  const fmtRDash = (n: number, rate: number) => fmtCurrency(n, baseCurrency, rate) || "-";
 
   // Historical rates for all 12 months of the selected year
   const months12 = useMemo(
@@ -106,7 +106,7 @@ export default function SummarySalesReport() {
     isLoading: rateIsLoading,
     isOverridden: rateIsOverridden,
     isCurrentMonth: rateIsCurrent,
-  } = useHistoricalRates(baseCurrency, selectedCurrency, conversionRate, months12);
+  } = useHistoricalRates(selectedCurrency, baseCurrency, conversionRate, months12);
 
   useEffect(() => {
     if (me?.role === "owner") {
@@ -262,8 +262,8 @@ export default function SummarySalesReport() {
                         {!isSameCurrency && (
                           <div className="mt-0.5">
                             <MonthRateCell
-                              baseCurrency={baseCurrency}
-                              targetCurrency={selectedCurrency}
+                              baseCurrency={selectedCurrency}
+                              targetCurrency={baseCurrency}
                               rate={getRate(yr, idx + 1)}
                               loading={rateIsLoading(yr, idx + 1)}
                               overridden={rateIsOverridden(yr, idx + 1)}

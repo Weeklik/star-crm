@@ -82,7 +82,7 @@ export function OwnerControlsBar() {
 
         {!isSameCurrency && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="whitespace-nowrap">1 {baseCurrency} =</span>
+            <span className="whitespace-nowrap">1 {selectedCurrency} =</span>
             {rateLoading ? (
               <Loader2 className="w-3 h-3 animate-spin" />
             ) : editingRate ? (
@@ -104,7 +104,7 @@ export function OwnerControlsBar() {
                 <Pencil className="w-3 h-3 opacity-50" />
               </button>
             )}
-            <span className="whitespace-nowrap">{selectedCurrency}</span>
+            <span className="whitespace-nowrap">{baseCurrency}</span>
             {rateEdited && (
               <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500/50 text-amber-600 dark:text-amber-400">
                 custom

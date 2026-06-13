@@ -269,10 +269,11 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
-  // Re-fetch when base currency (user profile) or selected currency changes
+  // Re-fetch when base currency (user profile) or selected currency changes.
+  // We fetch selectedCurrency→baseCurrency so the rate means "1 deal-currency = X owner-currency".
   useEffect(() => {
     setRateEdited(false);
-    fetchRate(baseCurrency, selectedCurrency);
+    fetchRate(selectedCurrency, baseCurrency);
   }, [baseCurrency, selectedCurrency, fetchRate]);
 
   const setSelectedCurrency = useCallback((c: string) => {
@@ -291,13 +292,13 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   );
 
   const formatConverted = useCallback(
-    (n: number) => fmt(n * conversionRate, selectedCurrency),
-    [conversionRate, selectedCurrency],
+    (n: number) => fmt(n * conversionRate, baseCurrency),
+    [conversionRate, baseCurrency],
   );
 
   const formatConvertedOrEmpty = useCallback(
-    (n: number) => (n ? fmt(n * conversionRate, selectedCurrency) : ""),
-    [conversionRate, selectedCurrency],
+    (n: number) => (n ? fmt(n * conversionRate, baseCurrency) : ""),
+    [conversionRate, baseCurrency],
   );
 
   return (
