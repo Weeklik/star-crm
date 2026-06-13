@@ -532,9 +532,19 @@ export default function Deals() {
   const safePage   = Math.min(page, totalPages);
   const pagedDeals = filteredDeals?.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  const { formatAmount } = useCurrency();
+  const { formatAmount, currency: userCurrency } = useCurrency();
   const fmtCurrency = formatAmount;
   const formatCurrency = formatAmount;
+
+  // Format an amount using the deal's own stored currency (falls back to user's currency)
+  function fmtDealAmt(dealCurrency: string | null | undefined, amount: number): string {
+    const cur = dealCurrency ?? userCurrency;
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(amount);
+    } catch {
+      return formatAmount(amount);
+    }
+  }
 
   const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)      || 0), 0) ?? 0;
   const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)     || 0), 0) ?? 0;
@@ -972,7 +982,7 @@ export default function Deals() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatCurrency(deal.agreedAmount)}
+                    {fmtDealAmt((deal as any).currency, deal.agreedAmount)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">

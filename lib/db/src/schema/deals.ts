@@ -20,6 +20,7 @@ export const dealsTable = pgTable("deals", {
   outstandingAmount: numeric("outstanding_amount", { precision: 15, scale: 2 }).notNull().default("0"),
   earliestClosingDate: date("earliest_closing_date"),
   latestClosingDate: date("latest_closing_date"),
+  currency: text("currency").notNull().default("USD"),
   notes: text("notes"),
   lostReason: text("lost_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
