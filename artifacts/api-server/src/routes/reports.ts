@@ -582,12 +582,13 @@ router.get(
       const avgMonthlySales = totalSales / activeMonths;
 
       // Single pass: summary period aggregation
+      // summaryTotal = Order Closed only (matches the monthly Sales columns)
       const spSummary = summaryDealsBySp.get(spId) ?? [];
       let summaryTotal = 0, summaryQuotation = 0, summaryOrderConfirmed = 0;
       for (const d of spSummary) {
         const amt = parseFloat(d.agreedAmount ?? "0");
-        summaryTotal += amt;
-        if (d.stage === "Quotation Sent") summaryQuotation += amt;
+        if (d.stage === "Order Closed") summaryTotal += amt;
+        else if (d.stage === "Quotation Sent") summaryQuotation += amt;
         else if (d.stage === "Order Confirmed") summaryOrderConfirmed += amt;
       }
 
