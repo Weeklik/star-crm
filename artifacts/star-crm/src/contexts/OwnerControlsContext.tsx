@@ -225,6 +225,15 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   const [conversionRate, setConversionRateState] = useState(1);
   const [rateLoading, setRateLoading] = useState(false);
   const [rateEdited, setRateEdited] = useState(false);
+  const [currencyUserSet, setCurrencyUserSet] = useState(false);
+
+  // Sync selectedCurrency to baseCurrency when user profile first loads
+  // (baseCurrency starts as "USD" default because user is null at first render)
+  useEffect(() => {
+    if (!currencyUserSet && baseCurrency) {
+      setSelectedCurrencyState(baseCurrency);
+    }
+  }, [baseCurrency, currencyUserSet]);
 
   // Fetch distinct regions (with currencies) from API
   useEffect(() => {
@@ -239,17 +248,23 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   // Priority: 1) salesperson's profile currency, 2) static country→currency map.
   const setSelectedRegion = useCallback((r: string) => {
     setSelectedRegionState(r);
-    if (r !== "all") {
+    if (r === "all") {
+      // Reset to base currency when going back to "all"
+      setSelectedCurrencyState(baseCurrency);
+      setCurrencyUserSet(false);
+      setRateEdited(false);
+    } else {
       const regionObj = regions.find((ro) => ro.country === r);
       const currency =
         regionObj?.currency ||        // from salesperson profile
         COUNTRY_CURRENCY_MAP[r];      // static fallback
       if (currency) {
         setSelectedCurrencyState(currency);
+        setCurrencyUserSet(true);
         setRateEdited(false);
       }
     }
-  }, [regions]);
+  }, [regions, baseCurrency]);
 
   const fetchRate = useCallback(async (base: string, target: string) => {
     if (base === target) {
@@ -279,6 +294,7 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   const setSelectedCurrency = useCallback((c: string) => {
     setSelectedCurrencyState(c);
     setRateEdited(false);
+    setCurrencyUserSet(true);
   }, []);
 
   const setConversionRate = useCallback((r: number) => {
