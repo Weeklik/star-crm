@@ -95,6 +95,7 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editMeeting, setEditMeeting] = useState<Meeting | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
+  const [dayViewDate, setDayViewDate] = useState<string | null>(null);
 
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -315,9 +316,17 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
                       );
                     })}
                     {evts.length > 3 && (
-                      <span style={{ fontSize: "10px", color: "var(--muted-foreground)", paddingLeft: "4px" }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); setDayViewDate(ds); }}
+                        style={{
+                          fontSize: "10px", color: "var(--primary)", paddingLeft: "4px",
+                          background: "none", border: "none", cursor: "pointer",
+                          textAlign: "left", fontWeight: 600, textDecoration: "underline",
+                          textUnderlineOffset: "2px",
+                        }}
+                      >
                         +{evts.length - 3} more
-                      </span>
+                      </button>
                     )}
                   </div>
                 </>
@@ -334,6 +343,67 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
         onCreate={d => create.mutate(d)} onUpdate={d => update.mutate(d)} onDelete={id => del.mutate(id)}
         saving={create.isPending || update.isPending} deleting={del.isPending}
       />
+
+      {/* ── Day overflow modal ── */}
+      <Dialog open={!!dayViewDate} onOpenChange={open => { if (!open) setDayViewDate(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {dayViewDate
+                ? new Date(dayViewDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+                : ""}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {dayViewDate ? `${(byDate[dayViewDate] ?? []).length} meeting${(byDate[dayViewDate] ?? []).length !== 1 ? "s" : ""}` : ""}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+            {(dayViewDate ? (byDate[dayViewDate] ?? []) : []).map(m => {
+              const color = (isOwner && spId === "all" && m.salespersonId)
+                ? { bg: getSpColor(m.salespersonId) }
+                : getEventColor(m.companyName);
+              const spFullName = (isOwner && spId === "all" && m.salespersonId)
+                ? usersMap[m.salespersonId] : null;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => { setDayViewDate(null); openEdit(m); }}
+                  className="flex items-start gap-3 text-left rounded-lg border border-border p-3 hover:bg-accent transition-colors w-full"
+                >
+                  <span className="mt-1 w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color.bg }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">{m.companyName}</div>
+                    {m.productName && <div className="text-xs text-muted-foreground truncate">{m.productName}</div>}
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {m.meetingTime && (
+                        <span className="text-xs text-muted-foreground">🕐 {m.meetingTime}</span>
+                      )}
+                      {m.location && (
+                        <span className="text-xs text-muted-foreground">📍 {m.location}</span>
+                      )}
+                      {spFullName && (
+                        <span className="text-xs text-muted-foreground">👤 {spFullName}</span>
+                      )}
+                    </div>
+                    {m.notes && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.notes}</div>}
+                  </div>
+                  {canEdit && <span className="text-xs text-muted-foreground shrink-0 self-center">Edit →</span>}
+                </button>
+              );
+            })}
+          </div>
+          {canEdit && dayViewDate && (
+            <div className="pt-2 border-t border-border">
+              <button
+                onClick={() => { setDayViewDate(null); openCreate(parseInt(dayViewDate.split("-")[2])); }}
+                className="w-full text-sm text-primary hover:underline font-medium py-1"
+              >
+                + Add meeting on this day
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
