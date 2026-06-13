@@ -190,6 +190,25 @@ interface OwnerControlsContextValue {
   /** True when sourceCurrency === selectedCurrency — no conversion needed. */
   isSameCurrency: boolean;
 
+  /**
+   * Per-currency rate map for "All Regions" mode.
+   * Maps fromCurrency → rate to selectedCurrency (1 fromCurrency = X selectedCurrency).
+   * Populated by calling loadMultiRates().
+   */
+  multiRateMap: Record<string, number>;
+  multiRateLoading: boolean;
+  /**
+   * Fetch rates for multiple currencies → selectedCurrency in one API call.
+   * Call this from report pages when "All Regions" is active.
+   */
+  loadMultiRates: (currencies: string[]) => Promise<void>;
+  /**
+   * Get the conversion rate: 1 fromCurrency = X selectedCurrency.
+   * Uses multiRateMap when available, falls back to conversionRate.
+   * Returns 1 if fromCurrency === selectedCurrency.
+   */
+  getRateFor: (fromCurrency: string) => number;
+
   convertAmount: (n: number) => number;
   formatConverted: (n: number) => string;
   formatConvertedOrEmpty: (n: number) => string;
@@ -208,6 +227,10 @@ const OwnerControlsContext = createContext<OwnerControlsContextValue>({
   rateLoading: false,
   rateEdited: false,
   isSameCurrency: true,
+  multiRateMap: {},
+  multiRateLoading: false,
+  loadMultiRates: async () => {},
+  getRateFor: () => 1,
   convertAmount: (n) => n,
   formatConverted: (n) => n.toLocaleString(),
   formatConvertedOrEmpty: (n) => (n ? n.toLocaleString() : ""),
@@ -327,6 +350,51 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
 
   const isSameCurrency = sourceCurrency === selectedCurrency;
 
+  // ── Multi-currency support for "All Regions" mode ──────────────────────────
+  const [multiRateMap, setMultiRateMap] = useState<Record<string, number>>({});
+  const [multiRateLoading, setMultiRateLoading] = useState(false);
+
+  // Clear map whenever the target display currency changes (rates become stale)
+  useEffect(() => {
+    setMultiRateMap({});
+  }, [selectedCurrency]);
+
+  // One API call: GET /v6/latest/${selectedCurrency} gives "1 selectedCurrency = X other".
+  // Invert each to get "1 other = Y selectedCurrency".
+  const loadMultiRates = useCallback(async (currencies: string[]) => {
+    const unique = [...new Set(currencies.filter(Boolean))];
+    if (unique.length === 0) return;
+    if (unique.every((c) => c === selectedCurrency)) {
+      setMultiRateMap({});
+      return;
+    }
+    setMultiRateLoading(true);
+    try {
+      const res = await fetch(`https://open.er-api.com/v6/latest/${selectedCurrency}`);
+      const data = await res.json();
+      const map: Record<string, number> = {};
+      for (const cur of unique) {
+        if (cur === selectedCurrency) { map[cur] = 1; continue; }
+        const rateFromSelected = data?.rates?.[cur]; // 1 selectedCurrency = X cur
+        if (rateFromSelected && rateFromSelected > 0) {
+          map[cur] = Number((1 / rateFromSelected).toFixed(6)); // 1 cur = Y selectedCurrency
+        }
+      }
+      setMultiRateMap(map);
+    } catch {
+      // keep existing map on error
+    } finally {
+      setMultiRateLoading(false);
+    }
+  }, [selectedCurrency]);
+
+  // Get rate: 1 fromCurrency = X selectedCurrency.
+  // Uses multiRateMap first, falls back to global conversionRate (same-currency-pair fallback).
+  const getRateFor = useCallback((fromCurrency: string): number => {
+    if (!fromCurrency || fromCurrency === selectedCurrency) return 1;
+    return multiRateMap[fromCurrency] ?? conversionRate;
+  }, [multiRateMap, selectedCurrency, conversionRate]);
+
   // convertAmount: multiply by rate to convert sourceCurrency → selectedCurrency
   const convertAmount = useCallback(
     (n: number) => n * conversionRate,
@@ -359,6 +427,10 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
         rateLoading,
         rateEdited,
         isSameCurrency,
+        multiRateMap,
+        multiRateLoading,
+        loadMultiRates,
+        getRateFor,
         convertAmount,
         formatConverted,
         formatConvertedOrEmpty,

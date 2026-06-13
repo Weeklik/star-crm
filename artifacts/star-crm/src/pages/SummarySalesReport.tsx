@@ -35,6 +35,7 @@ interface UserOption {
   id: number;
   email: string;
   name: string | null;
+  currency: string | null;
 }
 
 interface WeekRow {
@@ -82,22 +83,33 @@ export default function SummarySalesReport() {
   const [weekLoading, setWeekLoading] = useState(false);
 
   const {
-    formatConverted, selectedRegion,
+    selectedRegion,
     conversionRate, sourceCurrency, selectedCurrency,
+    getRateFor, loadMultiRates,
   } = useOwnerControls();
 
   const isSameCurrency = sourceCurrency === selectedCurrency;
+  const isAllRegions   = selectedRegion === "all";
   const yr = parseInt(year);
 
-  // Global rate formatter (for totals, averages, summary columns)
-  const fmt  = (n: number) => (n ? formatConverted(n) : "-");
+  // Build salespersonId → currency lookup from the users list
+  const usersMap = useMemo(
+    () => Object.fromEntries(users.map((u) => [u.id, u.currency ?? ""])) as Record<number, string>,
+    [users],
+  );
 
-  // Per-rate formatter (for monthly cells and weekly expansion)
-  // Amounts are in sourceCurrency; rate converts to selectedCurrency
-  const fmtR = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "";
-  const fmtRDash = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "-";
+  // When viewing "All Regions", pre-fetch conversion rates for every salesperson currency
+  useEffect(() => {
+    if (!isAllRegions || users.length === 0) return;
+    const currencies = users.map((u) => u.currency).filter(Boolean) as string[];
+    if (currencies.length > 0) loadMultiRates(currencies);
+  }, [isAllRegions, users, loadMultiRates]);
 
-  // Historical rates for all 12 months of the selected year
+  // Per-amount formatter: uses each row's own currency (not a single global rate)
+  // rate = 1 rowCurrency → X selectedCurrency
+  const fmtAmt = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate) || "-";
+
+  // Historical rates for all 12 months of the selected year (specific-region mode only)
   const months12 = useMemo(
     () => Array.from({ length: 12 }, (_, i) => ({ year: yr, month: i + 1 })),
     [yr],
@@ -160,6 +172,26 @@ export default function SummarySalesReport() {
   const summaryTotalSum          = rows.reduce((s, r) => s + r.summaryTotal, 0);
   const summaryQuotationSum      = rows.reduce((s, r) => s + r.summaryQuotation, 0);
   const summaryOrderConfirmedSum = rows.reduce((s, r) => s + r.summaryOrderConfirmed, 0);
+
+  // For "All Regions" mode: pre-compute totals by summing per-row CONVERTED amounts.
+  // Each salesperson's amounts are in their own currency; getRateFor(currency) converts to selectedCurrency.
+  const convertedTotals = useMemo(() => {
+    if (!isAllRegions) return null;
+    const getR = (spId: number) => getRateFor(usersMap[spId] ?? sourceCurrency);
+    const monthTotals: Record<number, number> = {};
+    for (let m = 1; m <= 12; m++) {
+      monthTotals[m] = rows.reduce((s, r) => s + (r.monthly[m] ?? 0) * getR(r.salespersonId), 0);
+    }
+    return {
+      monthTotals,
+      totalSales:          rows.reduce((s, r) => s + r.totalSales          * getR(r.salespersonId), 0),
+      avgMonthly:          rows.reduce((s, r) => s + r.avgMonthlySales     * getR(r.salespersonId), 0),
+      summaryTotal:        rows.reduce((s, r) => s + r.summaryTotal        * getR(r.salespersonId), 0),
+      summaryQuotation:    rows.reduce((s, r) => s + r.summaryQuotation    * getR(r.salespersonId), 0),
+      summaryOrderConfirmed: rows.reduce((s, r) => s + r.summaryOrderConfirmed * getR(r.salespersonId), 0),
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, isAllRegions, usersMap, getRateFor, sourceCurrency]);
 
   const hasSummary    = summaryStart && summaryEnd;
   const summaryLabel  = hasSummary
@@ -260,7 +292,7 @@ export default function SummarySalesReport() {
                     {MONTHS.map((m, idx) => (
                       <th key={m} className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
                         {m} {year}
-                        {!isSameCurrency && (
+                        {!isSameCurrency && !isAllRegions && (
                           <div className="mt-0.5">
                             <MonthRateCell
                               baseCurrency={sourceCurrency}
@@ -303,9 +335,15 @@ export default function SummarySalesReport() {
                     </tr>
                   ) : (
                     rows.map((row, i) => {
-                      const isExpanded  = expanded?.spId === row.salespersonId;
+                      // Per-row currency and rate for "All Regions" mode
+                      const rowCurrency   = isAllRegions ? (usersMap[row.salespersonId] ?? sourceCurrency) : sourceCurrency;
+                      const rowRate       = isAllRegions ? getRateFor(rowCurrency) : conversionRate;
+                      const rowIsSame     = rowCurrency === selectedCurrency;
+                      const isExpanded    = expanded?.spId === row.salespersonId;
                       const expandedMonth = expanded?.monthIdx ?? null;
-                      const expandedRate  = expandedMonth ? getRate(yr, expandedMonth) : conversionRate;
+                      const expandedRate  = expandedMonth
+                        ? (isAllRegions ? rowRate : getRate(yr, expandedMonth))
+                        : rowRate;
 
                       return (
                         <>
@@ -314,14 +352,20 @@ export default function SummarySalesReport() {
                             key={`row-${row.salespersonId}`}
                             className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
                           >
-                            <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-0 bg-card">{row.name}</td>
-                            <td className="px-3 py-2 text-right">{fmt(Math.round(row.avgMonthlySales))}</td>
-                            <td className="px-3 py-2 text-right font-medium">{fmt(row.totalSales)}</td>
+                            <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-0 bg-card">
+                              {row.name}
+                              {isAllRegions && !rowIsSame && (
+                                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency})</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right">{fmtAmt(Math.round(row.avgMonthlySales), rowRate)}</td>
+                            <td className="px-3 py-2 text-right font-medium">{fmtAmt(row.totalSales, rowRate)}</td>
                             {Array.from({ length: 12 }, (_, idx) => {
-                              const mIdx = idx + 1;
-                              const val  = row.monthly[mIdx] ?? 0;
-                              const active = isExpanded && expandedMonth === mIdx;
-                              const monthRate = getRate(yr, mIdx);
+                              const mIdx     = idx + 1;
+                              const val      = row.monthly[mIdx] ?? 0;
+                              const active   = isExpanded && expandedMonth === mIdx;
+                              // In specific-region mode use historical rate; in "All Regions" use live per-row rate
+                              const cellRate = isAllRegions ? rowRate : getRate(yr, mIdx);
                               return (
                                 <td
                                   key={mIdx}
@@ -339,16 +383,16 @@ export default function SummarySalesReport() {
                                         ? <ChevronRight className="w-3 h-3 shrink-0 opacity-30" />
                                         : null
                                     }
-                                    {isSameCurrency ? fmt(val) : (val ? fmtR(val, monthRate) : "-")}
+                                    {val ? fmtAmt(val, cellRate) : "-"}
                                   </span>
                                 </td>
                               );
                             })}
                             {hasSummary && (
                               <>
-                                <td className="px-3 py-2 text-right bg-blue-500/5 border-l border-border">{fmt(row.summaryTotal)}</td>
-                                <td className="px-3 py-2 text-right bg-blue-500/5">{fmt(row.summaryQuotation)}</td>
-                                <td className="px-3 py-2 text-right bg-blue-500/5">{fmt(row.summaryOrderConfirmed)}</td>
+                                <td className="px-3 py-2 text-right bg-blue-500/5 border-l border-border">{fmtAmt(row.summaryTotal, rowRate)}</td>
+                                <td className="px-3 py-2 text-right bg-blue-500/5">{fmtAmt(row.summaryQuotation, rowRate)}</td>
+                                <td className="px-3 py-2 text-right bg-blue-500/5">{fmtAmt(row.summaryOrderConfirmed, rowRate)}</td>
                               </>
                             )}
                           </tr>
@@ -363,9 +407,9 @@ export default function SummarySalesReport() {
                                     <span className="text-sm font-semibold text-primary">
                                       {row.name} — {MONTHS_FULL[expandedMonth! - 1]} {year} — Weekly Breakdown
                                     </span>
-                                    {!isSameCurrency && (
+                                    {!rowIsSame && (
                                       <span className="text-xs text-muted-foreground ml-2">
-                                        Rate: 1 {sourceCurrency} = {expandedRate.toFixed(4)} {selectedCurrency}
+                                        Rate: 1 {rowCurrency} = {expandedRate.toFixed(4)} {selectedCurrency}
                                       </span>
                                     )}
                                     <button
@@ -426,15 +470,15 @@ export default function SummarySalesReport() {
                                                 </div>
                                               </td>
                                               <td className={`${tdW} text-green-800 dark:text-green-300 font-medium`}>{w.orderClosedCount || ""}</td>
-                                              <td className={`${tdW} text-green-800 dark:text-green-300`}>{fmtR(w.orderClosedAmount, expandedRate)}</td>
-                                              <td className={tdW}>{fmtR(w.downPayment, expandedRate)}</td>
-                                              <td className={`${tdW} font-semibold`}>{fmtR(w.totalPaymentReceipt, expandedRate)}</td>
+                                              <td className={`${tdW} text-green-800 dark:text-green-300`}>{fmtAmt(w.orderClosedAmount, expandedRate)}</td>
+                                              <td className={tdW}>{fmtAmt(w.downPayment, expandedRate)}</td>
+                                              <td className={`${tdW} font-semibold`}>{fmtAmt(w.totalPaymentReceipt, expandedRate)}</td>
                                               <td className="border border-border bg-muted/10" />
                                               <td className={`${tdW} text-yellow-800 dark:text-yellow-300 font-medium`}>{w.quotationSentCount || ""}</td>
-                                              <td className={`${tdW} text-yellow-800 dark:text-yellow-300`}>{fmtR(w.quotationSentAmount, expandedRate)}</td>
+                                              <td className={`${tdW} text-yellow-800 dark:text-yellow-300`}>{fmtAmt(w.quotationSentAmount, expandedRate)}</td>
                                               <td className={`${tdW} text-blue-800 dark:text-blue-300 font-medium`}>{w.orderConfirmedCount || ""}</td>
-                                              <td className={`${tdW} text-blue-800 dark:text-blue-300`}>{fmtR(w.orderConfirmedAmount, expandedRate)}</td>
-                                              <td className={`${tdW} font-semibold`}>{fmtR(w.totalSalesInProcess, expandedRate)}</td>
+                                              <td className={`${tdW} text-blue-800 dark:text-blue-300`}>{fmtAmt(w.orderConfirmedAmount, expandedRate)}</td>
+                                              <td className={`${tdW} font-semibold`}>{fmtAmt(w.totalSalesInProcess, expandedRate)}</td>
                                             </tr>
                                           ))}
                                         </tbody>
@@ -442,15 +486,15 @@ export default function SummarySalesReport() {
                                           <tr className="bg-muted/40 font-semibold border-t-2 border-border">
                                             <td className={`${tdW} text-left`}>Total {MONTHS_FULL[expandedMonth! - 1]}</td>
                                             <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderClosedCount, 0) || ""}</td>
-                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0), expandedRate)}</td>
-                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.downPayment, 0), expandedRate)}</td>
-                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtAmt(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtAmt(weekRows.reduce((s, w) => s + w.downPayment, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtAmt(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0), expandedRate)}</td>
                                             <td className="border border-border bg-muted/10" />
                                             <td className={tdW}>{weekRows.reduce((s, w) => s + w.quotationSentCount, 0) || ""}</td>
-                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtAmt(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0), expandedRate)}</td>
                                             <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderConfirmedCount, 0) || ""}</td>
-                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0), expandedRate)}</td>
-                                            <td className={tdW}>{fmtR(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtAmt(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0), expandedRate)}</td>
+                                            <td className={tdW}>{fmtAmt(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0), expandedRate)}</td>
                                           </tr>
                                         </tfoot>
                                       </table>
@@ -470,22 +514,35 @@ export default function SummarySalesReport() {
                   <tfoot>
                     <tr className="border-t-2 border-border bg-muted/40 font-semibold">
                       <td className="px-3 py-2 sticky left-0 bg-muted/40">Total</td>
-                      <td className="px-3 py-2 text-right">{fmt(Math.round(rows.reduce((s, r) => s + r.avgMonthlySales, 0)))}</td>
-                      <td className="px-3 py-2 text-right">{fmt(totalSalesSum)}</td>
+                      <td className="px-3 py-2 text-right">
+                        {fmtAmt(Math.round(isAllRegions ? (convertedTotals?.avgMonthly ?? 0) : rows.reduce((s, r) => s + r.avgMonthlySales, 0)), 1)}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {fmtAmt(isAllRegions ? (convertedTotals?.totalSales ?? 0) : totalSalesSum, 1)}
+                      </td>
                       {Array.from({ length: 12 }, (_, idx) => {
                         const mIdx = idx + 1;
-                        const val = monthlyTotals[mIdx];
+                        const val  = isAllRegions
+                          ? (convertedTotals?.monthTotals[mIdx] ?? 0)
+                          : monthlyTotals[mIdx];
+                        const rate = isAllRegions ? 1 : getRate(yr, mIdx);
                         return (
                           <td key={mIdx} className="px-3 py-2 text-right">
-                            {isSameCurrency ? fmt(val) : fmtRDash(val, getRate(yr, mIdx))}
+                            {fmtAmt(val, rate)}
                           </td>
                         );
                       })}
                       {hasSummary && (
                         <>
-                          <td className="px-3 py-2 text-right bg-blue-500/10 border-l border-border">{fmt(summaryTotalSum)}</td>
-                          <td className="px-3 py-2 text-right bg-blue-500/10">{fmt(summaryQuotationSum)}</td>
-                          <td className="px-3 py-2 text-right bg-blue-500/10">{fmt(summaryOrderConfirmedSum)}</td>
+                          <td className="px-3 py-2 text-right bg-blue-500/10 border-l border-border">
+                            {fmtAmt(isAllRegions ? (convertedTotals?.summaryTotal ?? 0) : summaryTotalSum, 1)}
+                          </td>
+                          <td className="px-3 py-2 text-right bg-blue-500/10">
+                            {fmtAmt(isAllRegions ? (convertedTotals?.summaryQuotation ?? 0) : summaryQuotationSum, 1)}
+                          </td>
+                          <td className="px-3 py-2 text-right bg-blue-500/10">
+                            {fmtAmt(isAllRegions ? (convertedTotals?.summaryOrderConfirmed ?? 0) : summaryOrderConfirmedSum, 1)}
+                          </td>
                         </>
                       )}
                     </tr>

@@ -50,6 +50,7 @@ interface UserOption {
   id: number;
   email: string;
   name: string | null;
+  currency: string | null;
 }
 
 interface DealDetail {
@@ -300,17 +301,37 @@ export default function SalesBreakdown() {
   const [drillDown,  setDrillDown]  = useState<DrillDown | null>(null);
 
   const {
-    formatConverted, conversionRate,
+    conversionRate,
     sourceCurrency, selectedCurrency,
-    selectedRegion,
+    selectedRegion, getRateFor, loadMultiRates,
   } = useOwnerControls();
 
-  const isSameCurrency = sourceCurrency === selectedCurrency;
+  const isAllRegions = selectedRegion === "all";
 
-  // Formatter using a specific conversion rate (amounts in sourceCurrency → converted to selectedCurrency)
+  // When a specific salesperson is selected in "All Regions" mode, their currency
+  // may differ from sourceCurrency (which defaults to owner's baseCurrency for "all").
+  // Detect it from the users list so we can apply the correct conversion rate.
+  const selectedUser = filterSpId !== "all"
+    ? users.find((u) => String(u.id) === filterSpId)
+    : null;
+  const dataCurrency = isAllRegions && selectedUser?.currency
+    ? selectedUser.currency
+    : sourceCurrency;
+  const effectiveRate = isAllRegions
+    ? getRateFor(dataCurrency)
+    : conversionRate;
+
+  const isSameCurrency = dataCurrency === selectedCurrency;
+
+  // Formatter using a specific conversion rate
   const fmtR = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate);
-  // Formatter using the global live rate
-  const fmt  = (n: number) => (n ? formatConverted(n) : "");
+  const fmt  = (n: number) => (n ? fmtCurrency(n, selectedCurrency, effectiveRate) : "");
+
+  // Load per-currency rates when in "All Regions" + a specific salesperson is selected
+  useEffect(() => {
+    if (!isAllRegions || !selectedUser?.currency) return;
+    loadMultiRates([selectedUser.currency]);
+  }, [isAllRegions, selectedUser?.currency, loadMultiRates]);
 
   useEffect(() => {
     if (me?.role === "owner") {
@@ -354,7 +375,7 @@ export default function SalesBreakdown() {
     isLoading: rateIsLoading,
     isOverridden: rateIsOverridden,
     isCurrentMonth: rateIsCurrent,
-  } = useHistoricalRates(sourceCurrency, selectedCurrency, conversionRate, uniqueMonths);
+  } = useHistoricalRates(dataCurrency, selectedCurrency, effectiveRate, uniqueMonths);
 
   const totOC  = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
   const totOCA = weeks.reduce((s, w) => s + w.orderClosedAmount, 0);
@@ -522,7 +543,7 @@ export default function SalesBreakdown() {
                                 <span className="font-bold text-sm">{monthLabel}</span>
                                 {!isSameCurrency && (
                                   <MonthRateCell
-                                    baseCurrency={sourceCurrency}
+                                    baseCurrency={dataCurrency}
                                     targetCurrency={selectedCurrency}
                                     rate={monthRate}
                                     loading={rateIsLoading(monthYear, monthIdx)}
