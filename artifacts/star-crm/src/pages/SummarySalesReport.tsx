@@ -23,6 +23,7 @@ const MONTHS_FULL = ["January","February","March","April","May","June","July","A
 interface SalespersonRow {
   salespersonId: number;
   name: string;
+  currency: string | null;
   totalSales: number;
   avgMonthlySales: number;
   monthly: Record<number, number>;
@@ -99,12 +100,13 @@ export default function SummarySalesReport() {
     [users, sourceCurrency],
   );
 
-  // Pre-fetch conversion rates for every salesperson currency (all modes, not just all-regions)
+  // Pre-fetch conversion rates whenever rows or display currency changes
+  // Use currencies directly from the row data (most reliable source)
   useEffect(() => {
-    if (users.length === 0) return;
-    const currencies = users.map((u) => u.currency).filter(Boolean) as string[];
+    if (rows.length === 0) return;
+    const currencies = [...new Set(rows.map((r) => r.currency).filter(Boolean))] as string[];
     if (currencies.length > 0) loadMultiRates(currencies);
-  }, [users, loadMultiRates]);
+  }, [rows, loadMultiRates]);
 
   // Per-amount formatter: uses each row's own currency (not a single global rate)
   // rate = 1 rowCurrency → X selectedCurrency
@@ -174,25 +176,24 @@ export default function SummarySalesReport() {
   const summaryQuotationSum      = rows.reduce((s, r) => s + r.summaryQuotation, 0);
   const summaryOrderConfirmedSum = rows.reduce((s, r) => s + r.summaryOrderConfirmed, 0);
 
-  // For "All Regions" mode: pre-compute totals by summing per-row CONVERTED amounts.
-  // Each salesperson's amounts are in their own currency; getRateFor(currency) converts to selectedCurrency.
+  // Pre-compute converted totals: use row.currency directly (reliable, no usersMap indirection).
+  // Works for both "All Regions" and specific-region mode.
   const convertedTotals = useMemo(() => {
-    if (!isAllRegions) return null;
-    const getR = (spId: number) => getRateFor(usersMap[spId] ?? sourceCurrency);
+    const getR = (r: SalespersonRow) => getRateFor(r.currency ?? sourceCurrency);
     const monthTotals: Record<number, number> = {};
     for (let m = 1; m <= 12; m++) {
-      monthTotals[m] = rows.reduce((s, r) => s + (r.monthly[m] ?? 0) * getR(r.salespersonId), 0);
+      monthTotals[m] = rows.reduce((s, r) => s + (r.monthly[m] ?? 0) * getR(r), 0);
     }
     return {
       monthTotals,
-      totalSales:          rows.reduce((s, r) => s + r.totalSales          * getR(r.salespersonId), 0),
-      avgMonthly:          rows.reduce((s, r) => s + r.avgMonthlySales     * getR(r.salespersonId), 0),
-      summaryTotal:        rows.reduce((s, r) => s + r.summaryTotal        * getR(r.salespersonId), 0),
-      summaryQuotation:    rows.reduce((s, r) => s + r.summaryQuotation    * getR(r.salespersonId), 0),
-      summaryOrderConfirmed: rows.reduce((s, r) => s + r.summaryOrderConfirmed * getR(r.salespersonId), 0),
+      totalSales:            rows.reduce((s, r) => s + r.totalSales            * getR(r), 0),
+      avgMonthly:            rows.reduce((s, r) => s + r.avgMonthlySales       * getR(r), 0),
+      summaryTotal:          rows.reduce((s, r) => s + r.summaryTotal          * getR(r), 0),
+      summaryQuotation:      rows.reduce((s, r) => s + r.summaryQuotation      * getR(r), 0),
+      summaryOrderConfirmed: rows.reduce((s, r) => s + r.summaryOrderConfirmed * getR(r), 0),
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, isAllRegions, usersMap, getRateFor, sourceCurrency]);
+  }, [rows, getRateFor, sourceCurrency]);
 
   const hasSummary    = summaryStart && summaryEnd;
   const summaryLabel  = hasSummary
@@ -336,8 +337,8 @@ export default function SummarySalesReport() {
                     </tr>
                   ) : (
                     rows.map((row, i) => {
-                      // Always use per-salesperson currency for correct conversion in all modes
-                      const rowCurrency   = usersMap[row.salespersonId] ?? sourceCurrency;
+                      // Use currency directly from API row — no usersMap indirection
+                      const rowCurrency   = row.currency ?? sourceCurrency;
                       const rowRate       = getRateFor(rowCurrency);
                       const rowIsSame     = rowCurrency === selectedCurrency;
                       const isExpanded    = expanded?.spId === row.salespersonId;
@@ -355,7 +356,7 @@ export default function SummarySalesReport() {
                           >
                             <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-0 bg-card">
                               {row.name}
-                              {isAllRegions && !rowIsSame && (
+                              {!rowIsSame && (
                                 <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency})</span>
                               )}
                             </td>
@@ -516,48 +517,29 @@ export default function SummarySalesReport() {
                     <tr className="border-t-2 border-border bg-muted/40 font-semibold">
                       <td className="px-3 py-2 sticky left-0 bg-muted/40">Total</td>
                       <td className="px-3 py-2 text-right">
-                        {fmtAmt(
-                          Math.round(isAllRegions ? (convertedTotals?.avgMonthly ?? 0) : rows.reduce((s, r) => s + r.avgMonthlySales, 0)),
-                          isAllRegions ? 1 : conversionRate,
-                        )}
+                        {fmtAmt(Math.round(convertedTotals?.avgMonthly ?? 0), 1)}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        {fmtAmt(
-                          isAllRegions ? (convertedTotals?.totalSales ?? 0) : totalSalesSum,
-                          isAllRegions ? 1 : conversionRate,
-                        )}
+                        {fmtAmt(convertedTotals?.totalSales ?? 0, 1)}
                       </td>
                       {Array.from({ length: 12 }, (_, idx) => {
                         const mIdx = idx + 1;
-                        const val  = isAllRegions
-                          ? (convertedTotals?.monthTotals[mIdx] ?? 0)
-                          : monthlyTotals[mIdx];
-                        const rate = isAllRegions ? 1 : getRate(yr, mIdx);
                         return (
                           <td key={mIdx} className="px-3 py-2 text-right">
-                            {fmtAmt(val, rate)}
+                            {fmtAmt(convertedTotals?.monthTotals[mIdx] ?? 0, 1)}
                           </td>
                         );
                       })}
                       {hasSummary && (
                         <>
                           <td className="px-3 py-2 text-right bg-blue-500/10 border-l border-border">
-                            {fmtAmt(
-                              isAllRegions ? (convertedTotals?.summaryTotal ?? 0) : summaryTotalSum,
-                              isAllRegions ? 1 : conversionRate,
-                            )}
+                            {fmtAmt(convertedTotals?.summaryTotal ?? 0, 1)}
                           </td>
                           <td className="px-3 py-2 text-right bg-blue-500/10">
-                            {fmtAmt(
-                              isAllRegions ? (convertedTotals?.summaryQuotation ?? 0) : summaryQuotationSum,
-                              isAllRegions ? 1 : conversionRate,
-                            )}
+                            {fmtAmt(convertedTotals?.summaryQuotation ?? 0, 1)}
                           </td>
                           <td className="px-3 py-2 text-right bg-blue-500/10">
-                            {fmtAmt(
-                              isAllRegions ? (convertedTotals?.summaryOrderConfirmed ?? 0) : summaryOrderConfirmedSum,
-                              isAllRegions ? 1 : conversionRate,
-                            )}
+                            {fmtAmt(convertedTotals?.summaryOrderConfirmed ?? 0, 1)}
                           </td>
                         </>
                       )}

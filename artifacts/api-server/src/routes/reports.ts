@@ -541,7 +541,7 @@ router.get(
     const [yearDeals, summaryDeals, users] = await Promise.all([
       db.select().from(dealsTable).where(and(...yearConditions)),
       summaryQueryPromise,
-      db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email }).from(usersTable),
+      db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, currency: usersTable.currency }).from(usersTable),
     ]);
 
     const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
@@ -594,6 +594,7 @@ router.get(
       return {
         salespersonId: spId,
         name: u?.name ?? u?.email ?? `User ${spId}`,
+        currency: u?.currency ?? null,
         totalSales,
         avgMonthlySales,
         monthly,
