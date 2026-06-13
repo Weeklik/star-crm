@@ -99,12 +99,12 @@ export default function SummarySalesReport() {
     [users, sourceCurrency],
   );
 
-  // When viewing "All Regions", pre-fetch conversion rates for every salesperson currency
+  // Pre-fetch conversion rates for every salesperson currency (all modes, not just all-regions)
   useEffect(() => {
-    if (!isAllRegions || users.length === 0) return;
+    if (users.length === 0) return;
     const currencies = users.map((u) => u.currency).filter(Boolean) as string[];
     if (currencies.length > 0) loadMultiRates(currencies);
-  }, [isAllRegions, users, loadMultiRates]);
+  }, [users, loadMultiRates]);
 
   // Per-amount formatter: uses each row's own currency (not a single global rate)
   // rate = 1 rowCurrency → X selectedCurrency
@@ -336,9 +336,9 @@ export default function SummarySalesReport() {
                     </tr>
                   ) : (
                     rows.map((row, i) => {
-                      // Per-row currency and rate for "All Regions" mode
-                      const rowCurrency   = isAllRegions ? (usersMap[row.salespersonId] ?? sourceCurrency) : sourceCurrency;
-                      const rowRate       = isAllRegions ? getRateFor(rowCurrency) : conversionRate;
+                      // Always use per-salesperson currency for correct conversion in all modes
+                      const rowCurrency   = usersMap[row.salespersonId] ?? sourceCurrency;
+                      const rowRate       = getRateFor(rowCurrency);
                       const rowIsSame     = rowCurrency === selectedCurrency;
                       const isExpanded    = expanded?.spId === row.salespersonId;
                       const expandedMonth = expanded?.monthIdx ?? null;
@@ -516,10 +516,16 @@ export default function SummarySalesReport() {
                     <tr className="border-t-2 border-border bg-muted/40 font-semibold">
                       <td className="px-3 py-2 sticky left-0 bg-muted/40">Total</td>
                       <td className="px-3 py-2 text-right">
-                        {fmtAmt(Math.round(isAllRegions ? (convertedTotals?.avgMonthly ?? 0) : rows.reduce((s, r) => s + r.avgMonthlySales, 0)), 1)}
+                        {fmtAmt(
+                          Math.round(isAllRegions ? (convertedTotals?.avgMonthly ?? 0) : rows.reduce((s, r) => s + r.avgMonthlySales, 0)),
+                          isAllRegions ? 1 : conversionRate,
+                        )}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        {fmtAmt(isAllRegions ? (convertedTotals?.totalSales ?? 0) : totalSalesSum, 1)}
+                        {fmtAmt(
+                          isAllRegions ? (convertedTotals?.totalSales ?? 0) : totalSalesSum,
+                          isAllRegions ? 1 : conversionRate,
+                        )}
                       </td>
                       {Array.from({ length: 12 }, (_, idx) => {
                         const mIdx = idx + 1;
@@ -536,13 +542,22 @@ export default function SummarySalesReport() {
                       {hasSummary && (
                         <>
                           <td className="px-3 py-2 text-right bg-blue-500/10 border-l border-border">
-                            {fmtAmt(isAllRegions ? (convertedTotals?.summaryTotal ?? 0) : summaryTotalSum, 1)}
+                            {fmtAmt(
+                              isAllRegions ? (convertedTotals?.summaryTotal ?? 0) : summaryTotalSum,
+                              isAllRegions ? 1 : conversionRate,
+                            )}
                           </td>
                           <td className="px-3 py-2 text-right bg-blue-500/10">
-                            {fmtAmt(isAllRegions ? (convertedTotals?.summaryQuotation ?? 0) : summaryQuotationSum, 1)}
+                            {fmtAmt(
+                              isAllRegions ? (convertedTotals?.summaryQuotation ?? 0) : summaryQuotationSum,
+                              isAllRegions ? 1 : conversionRate,
+                            )}
                           </td>
                           <td className="px-3 py-2 text-right bg-blue-500/10">
-                            {fmtAmt(isAllRegions ? (convertedTotals?.summaryOrderConfirmed ?? 0) : summaryOrderConfirmedSum, 1)}
+                            {fmtAmt(
+                              isAllRegions ? (convertedTotals?.summaryOrderConfirmed ?? 0) : summaryOrderConfirmedSum,
+                              isAllRegions ? 1 : conversionRate,
+                            )}
                           </td>
                         </>
                       )}
