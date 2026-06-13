@@ -587,6 +587,8 @@ components:
           type: ["string", "null"]
         email:
           type: ["string", "null"]
+        currency:
+          type: ["string", "null"]
         totalDeals:
           type: integer
         totalAgreedAmount:

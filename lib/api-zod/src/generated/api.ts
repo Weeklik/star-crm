@@ -58,9 +58,6 @@ export const ListDealsResponseItem = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
-  lostReason: zod.string().nullish(),
-  dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).nullish(),
-  region: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -83,8 +80,6 @@ export const CreateDealBody = zod.object({
     "Order Confirmed",
     "Order Lost",
   ]),
-  dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).optional(),
-  region: zod.string().nullish(),
   progress: zod
     .number()
     .min(createDealBodyProgressMin)
@@ -97,7 +92,6 @@ export const CreateDealBody = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
-  lostReason: zod.string().nullish(),
 });
 
 /**
@@ -136,9 +130,6 @@ export const GetDealResponse = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
-  lostReason: zod.string().nullish(),
-  dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).nullish(),
-  region: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -161,8 +152,6 @@ export const UpdateDealBody = zod.object({
   stage: zod
     .enum(["Quotation Sent", "Order Closed", "Order Confirmed", "Order Lost"])
     .optional(),
-  dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).optional(),
-  region: zod.string().nullish(),
   progress: zod
     .number()
     .min(updateDealBodyProgressMin)
@@ -176,7 +165,6 @@ export const UpdateDealBody = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
-  lostReason: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
@@ -208,9 +196,6 @@ export const UpdateDealResponse = zod.object({
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
   notes: zod.string().nullish(),
-  lostReason: zod.string().nullish(),
-  dealType: zod.enum(["New Deal", "Recurring", "Dealer"]).nullish(),
-  region: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -231,8 +216,6 @@ export const ListUsersResponseItem = zod.object({
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
   createdAt: zod.coerce.date(),
-  country: zod.string().nullish(),
-  currency: zod.string().nullish(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
 
@@ -273,7 +256,6 @@ export const GetReportSummaryQueryParams = zod.object({
   salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
-  region: zod.string().optional(),
 });
 
 export const GetReportSummaryResponse = zod.object({
@@ -299,13 +281,13 @@ export const GetReportSummaryResponse = zod.object({
 export const GetReportBySalespersonQueryParams = zod.object({
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
-  region: zod.string().optional(),
 });
 
 export const GetReportBySalespersonResponseItem = zod.object({
   salespersonId: zod.number(),
   salespersonName: zod.string().nullish(),
   email: zod.string().nullish(),
+  currency: zod.string().nullish(),
   totalDeals: zod.number(),
   totalAgreedAmount: zod.number(),
   totalReceivedAmount: zod.number(),
@@ -350,7 +332,6 @@ export const GetStageBreakdownQueryParams = zod.object({
   salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
-  region: zod.string().optional(),
 });
 
 export const GetStageBreakdownResponseItem = zod.object({

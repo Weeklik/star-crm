@@ -192,7 +192,7 @@ router.get(
         : await db.select().from(dealsTable);
 
     const users = await db
-      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, currency: usersTable.currency })
       .from(usersTable);
     const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
@@ -205,26 +205,46 @@ router.get(
           salespersonId: sid,
           salespersonName: u?.name ?? null,
           email: u?.email ?? null,
+          currency: u?.currency ?? null,
           totalDeals: 0,
+          // Order Closed only
           totalAgreedAmount: 0,
           totalReceivedAmount: 0,
           totalOutstandingAmount: 0,
           closedDeals: 0,
+          // All stages pipeline
+          agreedAmountAll: 0,
+          // Confirmed
+          confirmedDeals: 0,
+          confirmedAmount: 0,
+          // Lost
           lostDeals: 0,
+          lostAmount: 0,
+          // Quotation Sent
+          quotationSentCount: 0,
+          quotationSentAmount: 0,
           progressSum: 0,
         };
       }
       const p = byPerson[sid];
       p.totalDeals++;
+      p.agreedAmountAll += parseFloat(deal.agreedAmount ?? "0");
+      p.progressSum += deal.progress ?? 0;
       if (deal.stage === "Order Closed") {
         p.totalAgreedAmount += parseFloat(deal.agreedAmount ?? "0");
         p.totalReceivedAmount += parseFloat(deal.receivedAmount ?? "0");
         p.totalOutstandingAmount += parseFloat(deal.outstandingAmount ?? "0");
         p.closedDeals++;
+      } else if (deal.stage === "Order Confirmed") {
+        p.confirmedDeals++;
+        p.confirmedAmount += parseFloat(deal.agreedAmount ?? "0");
+      } else if (deal.stage === "Order Lost") {
+        p.lostDeals++;
+        p.lostAmount += parseFloat(deal.agreedAmount ?? "0");
+      } else if (deal.stage === "Quotation Sent") {
+        p.quotationSentCount++;
+        p.quotationSentAmount += parseFloat(deal.agreedAmount ?? "0");
       }
-      if (deal.stage === "Order Confirmed") p.closedDeals++;
-      if (deal.stage === "Order Lost") p.lostDeals++;
-      p.progressSum += deal.progress ?? 0;
     }
 
     const result = Object.values(byPerson).map((p) => ({
@@ -233,7 +253,8 @@ router.get(
       progressSum: undefined,
     }));
 
-    res.json(GetReportBySalespersonResponse.parse(result));
+    // Send enriched result directly (includes extra fields beyond Zod schema)
+    res.json(result);
   },
 );
 

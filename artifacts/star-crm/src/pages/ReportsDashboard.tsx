@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetMe } from "@workspace/api-client-react";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { useOwnerControls } from "@/contexts/OwnerControlsContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,15 +72,24 @@ interface WeeklyItem {
   orderLostAmount: number;
 }
 
-interface PersonItem {
+interface EnrichedPerson {
   salespersonId: number;
   salespersonName: string | null;
   email: string | null;
+  currency: string | null;
   totalDeals: number;
   totalAgreedAmount: number;
   totalReceivedAmount: number;
+  totalOutstandingAmount: number;
   closedDeals: number;
+  confirmedDeals: number;
+  confirmedAmount: number;
   lostDeals: number;
+  lostAmount: number;
+  quotationSentCount: number;
+  quotationSentAmount: number;
+  agreedAmountAll: number;
+  avgProgress: number;
 }
 
 interface UserOption {
@@ -90,7 +98,7 @@ interface UserOption {
   email: string;
 }
 
-type DateRange = "today" | "yesterday" | "last7" | "last30";
+type DateRange = "fullyear" | "h1" | "h2" | "last30" | "last7";
 
 const STAGE_COLORS: Record<string, string> = {
   "Quotation Sent": "#a78bfa",
@@ -99,29 +107,17 @@ const STAGE_COLORS: Record<string, string> = {
   "Order Lost": "#f87171",
 };
 
-const DATE_OPTIONS: { key: DateRange; label: string }[] = [
-  { key: "today", label: "Today" },
-  { key: "yesterday", label: "Yesterday" },
-  { key: "last7", label: "Last 7 Days" },
-  { key: "last30", label: "Last 30 Days" },
-];
-
-function getDateBounds(range: DateRange): { startDate: string; endDate: string } {
+function getDateBounds(range: DateRange, year: number): { startDate: string; endDate: string } {
+  if (range === "fullyear") return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
+  if (range === "h1")       return { startDate: `${year}-01-01`, endDate: `${year}-06-30` };
+  if (range === "h2")       return { startDate: `${year}-07-01`, endDate: `${year}-12-31` };
   const now = new Date();
   const pad = (d: Date) => d.toISOString().split("T")[0];
-  if (range === "today") return { startDate: pad(now), endDate: pad(now) };
-  if (range === "yesterday") {
-    const y = new Date(now);
-    y.setDate(y.getDate() - 1);
-    return { startDate: pad(y), endDate: pad(y) };
-  }
   if (range === "last7") {
-    const s = new Date(now);
-    s.setDate(s.getDate() - 6);
+    const s = new Date(now); s.setDate(s.getDate() - 6);
     return { startDate: pad(s), endDate: pad(now) };
   }
-  const s = new Date(now);
-  s.setDate(s.getDate() - 29);
+  const s = new Date(now); s.setDate(s.getDate() - 29);
   return { startDate: pad(s), endDate: pad(now) };
 }
 
@@ -141,19 +137,25 @@ const TOOLTIP_STYLE = {
 
 export default function ReportsDashboard() {
   const { data: me } = useGetMe();
-  const { formatConverted, convertAmount, selectedRegion } = useOwnerControls();
+  const {
+    formatConverted, selectedRegion, selectedYear,
+    getRateFor, loadMultiRates, selectedCurrency,
+  } = useOwnerControls();
 
   const isOwner = me?.role === "owner";
 
-  const [dateRange, setDateRange] = useState<DateRange>("last30");
+  const [dateRange, setDateRange] = useState<DateRange>("fullyear");
   const [selectedSpId, setSelectedSpId] = useState<string>("all");
   const [users, setUsers] = useState<UserOption[]>([]);
 
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [stageData, setStageData] = useState<StageItem[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyItem[]>([]);
-  const [byPerson, setByPerson] = useState<PersonItem[]>([]);
+  const [byPerson, setByPerson] = useState<EnrichedPerson[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // When year changes, reset to full year view
+  useEffect(() => { setDateRange("fullyear"); }, [selectedYear]);
 
   useEffect(() => {
     if (isOwner) {
@@ -165,12 +167,12 @@ export default function ReportsDashboard() {
   }, [isOwner]);
 
   const buildQs = useCallback(() => {
-    const { startDate, endDate } = getDateBounds(dateRange);
+    const { startDate, endDate } = getDateBounds(dateRange, selectedYear);
     const p = new URLSearchParams({ startDate, endDate });
     if (isOwner && selectedSpId !== "all") p.set("salespersonId", selectedSpId);
     if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
     return p.toString();
-  }, [dateRange, selectedSpId, isOwner, selectedRegion]);
+  }, [dateRange, selectedSpId, isOwner, selectedRegion, selectedYear]);
 
   useEffect(() => {
     if (!me) return;
@@ -188,11 +190,49 @@ export default function ReportsDashboard() {
         setSummary(sum && !sum.error ? sum : null);
         setStageData(Array.isArray(stages) ? stages : []);
         setWeeklyData(Array.isArray(weekly) ? weekly : []);
-        setByPerson(Array.isArray(persons) ? persons : []);
+        const arr: EnrichedPerson[] = Array.isArray(persons) ? persons : [];
+        setByPerson(arr);
+        // Load multi-rates for all-regions currency conversion
+        if (isOwner && selectedSpId === "all" && selectedRegion === "all" && arr.length > 0) {
+          const currencies = [...new Set(arr.map((p) => p.currency).filter(Boolean))] as string[];
+          if (currencies.length > 0) loadMultiRates(currencies);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [me, buildQs, isOwner, selectedSpId]);
+  }, [me, buildQs, isOwner, selectedSpId, selectedRegion, loadMultiRates]);
+
+  // Properly converted totals for "All Regions" + "All Salespersons"
+  const allRegionsTotals = useMemo(() => {
+    if (!isOwner || selectedRegion !== "all" || selectedSpId !== "all" || byPerson.length === 0) return null;
+    const sum  = (field: keyof EnrichedPerson) =>
+      byPerson.reduce((s, p) => s + ((p[field] as number) ?? 0) * getRateFor(p.currency ?? ""), 0);
+    const cnt  = (field: keyof EnrichedPerson) =>
+      byPerson.reduce((s, p) => s + ((p[field] as number) ?? 0), 0);
+    return {
+      totalDeals:          cnt("totalDeals"),
+      totalAgreedAmount:   sum("agreedAmountAll"),
+      totalReceivedAmount: sum("totalReceivedAmount"),
+      totalOutstandingAmount: sum("totalOutstandingAmount"),
+      closedDeals:         cnt("closedDeals"),
+      closedAmount:        sum("totalAgreedAmount"),
+      quotationSentCount:  cnt("quotationSentCount"),
+      lostDeals:           cnt("lostDeals"),
+    };
+  }, [byPerson, getRateFor, isOwner, selectedRegion, selectedSpId]);
+
+  const useConverted = isOwner && selectedRegion === "all" && selectedSpId === "all" && !!allRegionsTotals;
+
+  const kpiSrc = useConverted ? allRegionsTotals! : summary;
+
+  const fmtAmt = useCallback((n: number) => {
+    if (useConverted) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency", currency: selectedCurrency, maximumFractionDigits: 0,
+      }).format(n);
+    }
+    return formatConverted(n);
+  }, [useConverted, selectedCurrency, formatConverted]);
 
   if (!me || loading) {
     return (
@@ -203,8 +243,8 @@ export default function ReportsDashboard() {
   }
 
   const winRate =
-    summary && summary.quotationSentCount > 0
-      ? Math.round((summary.closedDeals / summary.quotationSentCount) * 100)
+    kpiSrc && (kpiSrc.quotationSentCount ?? (summary?.quotationSentCount ?? 0)) > 0
+      ? Math.round(((kpiSrc.closedDeals ?? 0) / (kpiSrc.quotationSentCount ?? (summary?.quotationSentCount ?? 1))) * 100)
       : 0;
 
   const pieData = stageData
@@ -212,12 +252,12 @@ export default function ReportsDashboard() {
     .map((s) => ({ name: s.stage, value: s.count, amount: s.totalAgreedAmount }));
 
   const topPersons = [...byPerson]
-    .sort((a, b) => b.totalAgreedAmount - a.totalAgreedAmount)
+    .sort((a, b) => (b.agreedAmountAll ?? b.totalAgreedAmount) - (a.agreedAmountAll ?? a.totalAgreedAmount))
     .slice(0, 8)
     .map((p) => ({
       name: (p.salespersonName || p.email || "Unknown").split(" ")[0],
-      agreed: Math.round(p.totalAgreedAmount),
-      received: Math.round(p.totalReceivedAmount),
+      agreed: Math.round((p.agreedAmountAll ?? p.totalAgreedAmount) * getRateFor(p.currency ?? "")),
+      received: Math.round(p.totalReceivedAmount * getRateFor(p.currency ?? "")),
       deals: p.totalDeals,
     }));
 
@@ -228,7 +268,7 @@ export default function ReportsDashboard() {
       <div style={TOOLTIP_STYLE} className="p-3 shadow-xl">
         <p className="font-semibold mb-1">{d.name}</p>
         <p className="text-muted-foreground">{d.value} deals</p>
-        <p style={{ color: STAGE_COLORS[d.name] }}>{formatConverted(d.amount)}</p>
+        <p style={{ color: STAGE_COLORS[d.name] }}>{fmtAmt(d.amount)}</p>
       </div>
     );
   };
@@ -240,12 +280,8 @@ export default function ReportsDashboard() {
         <p className="font-semibold mb-2">{label}</p>
         {payload.map((p: any) => (
           <div key={p.name} className="flex justify-between gap-6 py-0.5">
-            <span style={{ color: p.color }} className="text-xs">
-              {p.name}
-            </span>
-            <span className="text-xs font-medium">
-              {formatConverted(p.value ?? 0)}
-            </span>
+            <span style={{ color: p.color }} className="text-xs">{p.name}</span>
+            <span className="text-xs font-medium">{fmtAmt(p.value ?? 0)}</span>
           </div>
         ))}
       </div>
@@ -260,7 +296,7 @@ export default function ReportsDashboard() {
         {payload.map((p: any) => (
           <div key={p.name} className="flex justify-between gap-4 py-0.5">
             <span style={{ color: p.color }} className="text-xs">{p.name}</span>
-            <span className="text-xs font-medium">{formatConverted(p.value ?? 0)}</span>
+            <span className="text-xs font-medium">{fmtAmt(p.value ?? 0)}</span>
           </div>
         ))}
       </div>
@@ -283,8 +319,8 @@ export default function ReportsDashboard() {
   const kpiCards = [
     {
       label: "Total Orders",
-      value: String(summary?.totalDeals ?? 0),
-      sub: `${summary?.lostDeals ?? 0} lost`,
+      value: String(kpiSrc?.totalDeals ?? 0),
+      sub: `${kpiSrc?.lostDeals ?? 0} lost`,
       icon: Briefcase,
       color: "violet",
       gradient: "from-violet-500/15",
@@ -293,7 +329,7 @@ export default function ReportsDashboard() {
     },
     {
       label: "Pipeline Value",
-      value: fmtK(convertAmount(summary?.totalAgreedAmount ?? 0)),
+      value: fmtK(useConverted ? (allRegionsTotals?.totalAgreedAmount ?? 0) : (summary?.totalAgreedAmount ?? 0)),
       sub: "Total agreed",
       icon: DollarSign,
       color: "blue",
@@ -303,7 +339,7 @@ export default function ReportsDashboard() {
     },
     {
       label: "Received",
-      value: fmtK(convertAmount(summary?.totalReceivedAmount ?? 0)),
+      value: fmtK(useConverted ? (allRegionsTotals?.totalReceivedAmount ?? 0) : (summary?.totalReceivedAmount ?? 0)),
       sub: "Collected",
       icon: TrendingUp,
       color: "emerald",
@@ -313,7 +349,7 @@ export default function ReportsDashboard() {
     },
     {
       label: "Outstanding",
-      value: fmtK(convertAmount(summary?.totalOutstandingAmount ?? 0)),
+      value: fmtK(useConverted ? (allRegionsTotals?.totalOutstandingAmount ?? 0) : (summary?.totalOutstandingAmount ?? 0)),
       sub: "Pending",
       icon: AlertCircle,
       color: "amber",
@@ -324,13 +360,21 @@ export default function ReportsDashboard() {
     {
       label: "Close Rate",
       value: `${winRate}%`,
-      sub: `${summary?.closedDeals ?? 0} closed`,
+      sub: `${kpiSrc?.closedDeals ?? 0} closed`,
       icon: Target,
       color: "pink",
       gradient: "from-pink-500/15",
       iconBg: "bg-pink-500/10",
       iconColor: "text-pink-400",
     },
+  ];
+
+  const dateRangeOptions = [
+    { key: "fullyear" as DateRange, label: `Full ${selectedYear}` },
+    { key: "h1"       as DateRange, label: "H1" },
+    { key: "h2"       as DateRange, label: "H2" },
+    { key: "last30"   as DateRange, label: "Last 30 Days" },
+    { key: "last7"    as DateRange, label: "Last 7 Days" },
   ];
 
   const showPersonChart = isOwner && selectedSpId === "all";
@@ -344,12 +388,12 @@ export default function ReportsDashboard() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reports Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Analytics overview · {DATE_OPTIONS.find((o) => o.key === dateRange)?.label}
+            Analytics overview · {dateRangeOptions.find((o) => o.key === dateRange)?.label}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
-          {DATE_OPTIONS.map(({ key, label }) => (
+          {dateRangeOptions.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setDateRange(key)}
@@ -436,11 +480,7 @@ export default function ReportsDashboard() {
                     label={renderCustomPieLabel}
                   >
                     {pieData.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={STAGE_COLORS[entry.name] ?? "#94a3b8"}
-                        stroke="transparent"
-                      />
+                      <Cell key={entry.name} fill={STAGE_COLORS[entry.name] ?? "#94a3b8"} stroke="transparent" />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
@@ -465,7 +505,7 @@ export default function ReportsDashboard() {
             </CardTitle>
             <p className="text-xs text-muted-foreground">
               {showPersonChart
-                ? "Orders closed & received amounts by salesperson"
+                ? "Pipeline & received amounts by salesperson (converted)"
                 : "Agreed amount per deal stage"}
             </p>
           </CardHeader>
@@ -483,35 +523,12 @@ export default function ReportsDashboard() {
                     margin={{ left: 0, right: 48, top: 4, bottom: 4 }}
                     barCategoryGap="25%"
                   >
-                    <CartesianGrid
-                      horizontal={false}
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                      strokeOpacity={0.6}
-                    />
-                    <XAxis
-                      type="number"
-                      tickFormatter={fmtK}
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={56}
-                    />
+                    <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                    <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={56} />
                     <Tooltip content={<CustomBarTooltip />} />
-                    <Bar dataKey="agreed" name="Orders Closed" fill="#a78bfa" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                      <LabelList
-                        dataKey="agreed"
-                        position="right"
-                        formatter={fmtK}
-                        style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                      />
+                    <Bar dataKey="agreed" name="Pipeline" fill="#a78bfa" radius={[0, 4, 4, 0]} maxBarSize={14}>
+                      <LabelList dataKey="agreed" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                     </Bar>
                     <Bar dataKey="received" name="Received" fill="#34d399" radius={[0, 4, 4, 0]} maxBarSize={14} />
                   </BarChart>
@@ -524,48 +541,16 @@ export default function ReportsDashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={270}>
-                  <BarChart
-                    data={stageData}
-                    margin={{ left: 0, right: 16, top: 20, bottom: 4 }}
-                    barCategoryGap="28%"
-                  >
-                    <CartesianGrid
-                      vertical={false}
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                      strokeOpacity={0.6}
-                    />
-                    <XAxis
-                      dataKey="stage"
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tickFormatter={fmtK}
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
+                  <BarChart data={stageData} margin={{ left: 0, right: 16, top: 20, bottom: 4 }} barCategoryGap="28%">
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                    <XAxis dataKey="stage" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <Tooltip content={<CustomBarTooltip />} />
-                    <Bar
-                      dataKey="totalAgreedAmount"
-                      name="Agreed"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={56}
-                    >
+                    <Bar dataKey="totalAgreedAmount" name="Agreed" radius={[6, 6, 0, 0]} maxBarSize={56}>
                       {stageData.map((entry) => (
-                        <Cell
-                          key={entry.stage}
-                          fill={STAGE_COLORS[entry.stage] ?? "#94a3b8"}
-                        />
+                        <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] ?? "#94a3b8"} />
                       ))}
-                      <LabelList
-                        dataKey="totalAgreedAmount"
-                        position="top"
-                        formatter={fmtK}
-                        style={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                      />
+                      <LabelList dataKey="totalAgreedAmount" position="top" formatter={fmtK} style={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -590,91 +575,62 @@ export default function ReportsDashboard() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={320}>
-              <ComposedChart
-                data={weeklyData}
-                margin={{ top: 24, right: 56, left: 0, bottom: 4 }}
-                barCategoryGap="30%"
-              >
-                <CartesianGrid
-                  vertical={false}
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  strokeOpacity={0.5}
-                />
-                <XAxis
-                  dataKey="weekLabel"
-                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  yAxisId="amount"
-                  tickFormatter={fmtK}
-                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={48}
-                />
+              <ComposedChart data={weeklyData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="30%">
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="amount" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
                 <Tooltip content={<CustomWeeklyTooltip />} />
                 <Legend
                   iconType="circle"
                   iconSize={8}
                   wrapperStyle={{ paddingTop: "12px" }}
-                  formatter={(value) => (
-                    <span className="text-xs text-foreground/80">{value}</span>
-                  )}
+                  formatter={(value) => <span className="text-xs text-foreground/80">{value}</span>}
                 />
-
-                <Bar
-                  yAxisId="amount"
-                  dataKey="orderClosedAmount"
-                  name="Order Closed"
-                  fill="#a78bfa"
-                  fillOpacity={0.85}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={52}
-                >
-                  <LabelList
-                    dataKey="orderClosedAmount"
-                    position="top"
-                    formatter={fmtK}
-                    style={{ fontSize: 10, fill: "#a78bfa", fontWeight: 600 }}
-                  />
-                </Bar>
-
-                <Bar
-                  yAxisId="amount"
-                  dataKey="orderClosedReceivedAmount"
-                  name="Received"
-                  fill="#34d399"
-                  fillOpacity={0.85}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={52}
-                >
-                  <LabelList
-                    dataKey="orderClosedReceivedAmount"
-                    position="top"
-                    formatter={fmtK}
-                    style={{ fontSize: 10, fill: "#059669", fontWeight: 600 }}
-                  />
-                </Bar>
-
-                <Line
-                  yAxisId="amount"
-                  type="monotone"
-                  dataKey="orderClosedAmount"
-                  name="Trend"
-                  stroke="#60a5fa"
-                  strokeWidth={2.5}
-                  dot={{ fill: "#60a5fa", r: 4, strokeWidth: 2, stroke: "hsl(var(--card))" }}
-                  activeDot={{ r: 6, strokeWidth: 2, stroke: "hsl(var(--card))" }}
-                  legendType="none"
-                />
+                <Bar yAxisId="amount" dataKey="orderClosedAmount" name="Order Closed" fill="#a78bfa" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
+                <Bar yAxisId="amount" dataKey="orderConfirmedAmount" name="Order Confirmed" fill="#34d399" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
+                <Bar yAxisId="amount" dataKey="orderLostAmount" name="Order Lost" fill="#f87171" fillOpacity={0.75} radius={[4, 4, 0, 0]} maxBarSize={32} />
+                <Line yAxisId="amount" type="monotone" dataKey="orderClosedReceivedAmount" name="Received" stroke="#fbbf24" strokeWidth={2.5} dot={{ fill: "#fbbf24", r: 4 }} activeDot={{ r: 6 }} />
               </ComposedChart>
             </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
+
+      {/* ── Export Bar ── */}
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => window.print()}
+          className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-secondary transition-colors"
+        >
+          Export PDF
+        </button>
+        <button
+          onClick={() => {
+            const rows = [
+              ["Period", dateRangeOptions.find((o) => o.key === dateRange)?.label ?? dateRange],
+              ["Total Orders", String(kpiSrc?.totalDeals ?? 0)],
+              ["Pipeline Value", String(useConverted ? allRegionsTotals?.totalAgreedAmount : summary?.totalAgreedAmount ?? 0)],
+              ["Received", String(useConverted ? allRegionsTotals?.totalReceivedAmount : summary?.totalReceivedAmount ?? 0)],
+              ["Outstanding", String(useConverted ? allRegionsTotals?.totalOutstandingAmount : summary?.totalOutstandingAmount ?? 0)],
+              ["Close Rate", `${winRate}%`],
+              [],
+              ["Stage", "Count", "Agreed Amount"],
+              ...stageData.map((s) => [s.stage, String(s.count), String(s.totalAgreedAmount)]),
+            ];
+            const csv = rows.map((r) => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `reports-${selectedYear}-${dateRange}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        >
+          Export Excel
+        </button>
+      </div>
     </div>
     </div>
   );

@@ -169,6 +169,8 @@ interface OwnerControlsContextValue {
   selectedRegion: string;
   setSelectedRegion: (r: string) => void;
   regions: RegionOption[];
+  selectedYear: number;
+  setSelectedYear: (y: number) => void;
 
   /** Owner's profile currency — always fixed to their account setting. */
   baseCurrency: string;
@@ -234,6 +236,8 @@ const OwnerControlsContext = createContext<OwnerControlsContextValue>({
   convertAmount: (n) => n,
   formatConverted: (n) => n.toLocaleString(),
   formatConvertedOrEmpty: (n) => (n ? n.toLocaleString() : ""),
+  selectedYear: new Date().getFullYear(),
+  setSelectedYear: () => {},
 });
 
 function fmt(n: number, currency: string): string {
@@ -258,6 +262,7 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
   const [regions, setRegions] = useState<RegionOption[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // sourceCurrency = natural currency of the current view (region's or owner's)
   const [sourceCurrency, setSourceCurrencyState] = useState(baseCurrency);
   // selectedCurrency = what the user wants amounts displayed in
@@ -434,6 +439,8 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
         convertAmount,
         formatConverted,
         formatConvertedOrEmpty,
+        selectedYear,
+        setSelectedYear,
       }}
     >
       {children}

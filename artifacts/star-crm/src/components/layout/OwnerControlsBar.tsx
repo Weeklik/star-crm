@@ -1,16 +1,14 @@
 import { useState } from "react";
-import { Globe, DollarSign, Loader2, Pencil } from "lucide-react";
+import { Globe, DollarSign, Loader2, Pencil, CalendarDays } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useOwnerControls, CURRENCIES, type RegionOption } from "@/contexts/OwnerControlsContext";
+
+const YEAR_OPTIONS = [2024, 2025, 2026, 2027, 2028];
 
 export function OwnerControlsBar() {
   const {
@@ -18,6 +16,7 @@ export function OwnerControlsBar() {
     sourceCurrency, selectedCurrency, setSelectedCurrency,
     conversionRate, setConversionRate,
     rateLoading, rateEdited, isSameCurrency,
+    selectedYear, setSelectedYear,
   } = useOwnerControls();
 
   const [rateInput, setRateInput] = useState<string>("");
@@ -38,6 +37,24 @@ export function OwnerControlsBar() {
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3 border-b border-border bg-muted/30">
+      {/* Year filter */}
+      <div className="flex items-center gap-2 min-w-0">
+        <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
+        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Year</Label>
+        <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+          <SelectTrigger className="h-7 text-xs w-24 bg-background">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {YEAR_OPTIONS.map((y) => (
+              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="h-4 w-px bg-border hidden sm:block" />
+
       {/* Region filter */}
       <div className="flex items-center gap-2 min-w-0">
         <Globe className="w-4 h-4 text-muted-foreground shrink-0" />

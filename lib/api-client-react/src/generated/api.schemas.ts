@@ -28,10 +28,6 @@ export interface Deal {
   companyName: string;
   productItem: string;
   stage: DealStage;
-  /** @nullable */
-  dealType?: string | null;
-  /** @nullable */
-  region?: string | null;
   /**
    * @minimum 0
    * @maximum 100
@@ -48,8 +44,6 @@ export interface Deal {
   latestClosingDate?: string | null;
   /** @nullable */
   notes?: string | null;
-  /** @nullable */
-  lostReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -173,6 +167,8 @@ export interface SalespersonReport {
   salespersonName?: string | null;
   /** @nullable */
   email?: string | null;
+  /** @nullable */
+  currency?: string | null;
   totalDeals: number;
   totalAgreedAmount: number;
   totalReceivedAmount: number;
