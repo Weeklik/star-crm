@@ -92,10 +92,11 @@ export default function SummarySalesReport() {
   const isAllRegions   = selectedRegion === "all";
   const yr = parseInt(year);
 
-  // Build salespersonId → currency lookup from the users list
+  // Build salespersonId → currency lookup from the users list.
+  // Fall back to sourceCurrency (not "") so getRateFor() always gets a valid code.
   const usersMap = useMemo(
-    () => Object.fromEntries(users.map((u) => [u.id, u.currency ?? ""])) as Record<number, string>,
-    [users],
+    () => Object.fromEntries(users.map((u) => [u.id, u.currency ?? sourceCurrency])) as Record<number, string>,
+    [users, sourceCurrency],
   );
 
   // When viewing "All Regions", pre-fetch conversion rates for every salesperson currency
