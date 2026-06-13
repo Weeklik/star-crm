@@ -264,38 +264,52 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
                     </span>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "3px", overflow: "hidden" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden" }}>
                     {evts.slice(0, 3).map(m => {
                       // In "all" mode color by salesperson; otherwise by company
                       const color = (isOwner && spId === "all" && m.salespersonId)
                         ? { bg: getSpColor(m.salespersonId), hover: getSpColor(m.salespersonId) }
                         : getEventColor(m.companyName);
-                      const spName = (isOwner && spId === "all" && m.salespersonId)
+                      const spFullName = (isOwner && spId === "all" && m.salespersonId)
                         ? usersMap[m.salespersonId]
                         : null;
+                      // Abbreviate salesperson to initials (e.g. "John Doe" → "JD")
+                      const spInitials = spFullName
+                        ? spFullName.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+                        : null;
+                      // Shorten company name: first word, max 10 chars
+                      const shortCompany = (m.companyName ?? "").split(/[\s,.(]/)[0].slice(0, 10);
+                      // Shorten time to HH:MM only
+                      const shortTime = m.meetingTime ? m.meetingTime.slice(0, 5) : null;
                       return (
                         <div
                           key={m.id}
                           onClick={e => { e.stopPropagation(); openEdit(m); }}
-                          title={[spName, m.companyName, m.meetingTime, m.location].filter(Boolean).join(" · ")}
+                          title={[spFullName, m.companyName, m.meetingTime, m.location].filter(Boolean).join(" · ")}
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = color.hover}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.backgroundColor = color.bg}
                           style={{
-                            display: "flex", alignItems: "center", gap: "5px",
-                            padding: "3px 7px", borderRadius: "5px",
-                            fontSize: "11px", fontWeight: 600,
+                            display: "flex", alignItems: "center", gap: "3px",
+                            padding: "2px 5px", borderRadius: "4px",
+                            fontSize: "10px", fontWeight: 600,
                             backgroundColor: color.bg, color: "#fff",
                             cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap",
                             transition: "background-color 0.12s",
                           }}
                         >
-                          {m.meetingTime && (
-                            <span style={{ flexShrink: 0, opacity: 0.85, fontSize: "10px", fontWeight: 500 }}>
-                              {m.meetingTime}
+                          {spInitials && (
+                            <span style={{ flexShrink: 0, opacity: 0.9, fontSize: "9px",
+                              background: "rgba(0,0,0,0.18)", borderRadius: "3px", padding: "0 3px" }}>
+                              {spInitials}
                             </span>
                           )}
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
-                            {spName ? `[${spName}] ` : ""}{m.companyName}
+                          {shortTime && (
+                            <span style={{ flexShrink: 0, opacity: 0.85, fontSize: "9px", fontWeight: 500 }}>
+                              {shortTime}
+                            </span>
+                          )}
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>
+                            {shortCompany}
                           </span>
                         </div>
                       );
