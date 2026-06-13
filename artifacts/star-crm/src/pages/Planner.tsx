@@ -163,9 +163,9 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
   });
 
   return (
-    <div>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* ── Month navigation ── */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card flex-shrink-0">
         <div className="flex items-center gap-1">
           <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-accent transition-colors" aria-label="Previous month">
             <ChevronLeft className="w-5 h-5 text-muted-foreground" />
@@ -197,7 +197,7 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
 
       {/* ── Salesperson legend (only in "all" mode) ── */}
       {isOwner && spId === "all" && users.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 px-6 py-2 border-b border-border bg-muted/20 text-xs">
+        <div className="flex flex-wrap items-center gap-2 px-6 py-2 border-b border-border bg-muted/20 text-xs flex-shrink-0">
           <span className="text-muted-foreground font-medium mr-1">Salespersons:</span>
           {users.map(u => (
             <span key={u.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-white font-medium"
@@ -209,7 +209,7 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
       )}
 
       {/* ── Day-of-week header row ── */}
-      <div className="border-b border-border bg-muted/30" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+      <div className="border-b border-border bg-muted/30 flex-shrink-0" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
         {DAY_SHORT.map((d, i) => (
           <div key={d} className="py-2.5 text-center text-xs font-semibold uppercase tracking-widest"
             style={{ color: i === 0 || i === 6 ? "var(--muted-foreground)" : "var(--foreground)", opacity: i === 0 || i === 6 ? 0.5 : 0.7 }}>
@@ -218,7 +218,8 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
         ))}
       </div>
 
-      {/* ── Calendar cells ── */}
+      {/* ── Calendar cells (scrollable) ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       <div className="border-l border-border" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
         {cells.map((day, idx) => {
           const col      = idx % 7;
@@ -311,6 +312,7 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
           );
         })}
       </div>
+      </div>{/* end scrollable calendar area */}
 
       <MeetingModal
         open={modalOpen} onClose={() => setModalOpen(false)}
