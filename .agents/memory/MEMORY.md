@@ -1,0 +1,1 @@
+- [Neon vs local DB](neon-vs-local-db.md) — API server uses NEON_DATABASE_URL; always run ALTER TABLE against that, not $DATABASE_URL.
