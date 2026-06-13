@@ -131,6 +131,8 @@ router.post(
         name: z.string().min(1),
         email: z.string().email(),
         password: z.string().min(6),
+        country: z.string().length(2).nullable().optional(),
+        currency: z.string().min(3).max(3).optional(),
       })
       .safeParse(req.body);
 
@@ -160,6 +162,8 @@ router.post(
         email: body.data.email.toLowerCase(),
         passwordHash,
         role: "salesperson",
+        country: body.data.country ?? null,
+        currency: body.data.currency ?? "USD",
       })
       .returning(safeUserFields);
 

@@ -66,6 +66,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
   { code: "SE", name: "Sweden", currency: "SEK" },
   { code: "SG", name: "Singapore", currency: "SGD" },
   { code: "TH", name: "Thailand", currency: "THB" },
+  { code: "TN", name: "Tunisia", currency: "TND" },
   { code: "TR", name: "Turkey", currency: "TRY" },
   { code: "TW", name: "Taiwan", currency: "TWD" },
   { code: "US", name: "United States", currency: "USD" },
@@ -77,7 +78,7 @@ const CURRENCIES = [
   "AED","ARS","AUD","BDT","BHD","BRL","CAD","CHF","CLP","CNY","COP","DKK","EGP",
   "EUR","GBP","HKD","IDR","ILS","INR","JPY","KES","KRW","KWD","LKR","MXN","MYR",
   "NGN","NOK","NZD","OMR","PHP","PKR","PLN","QAR","RUB","SAR","SEK","SGD","THB",
-  "TRY","TWD","USD","VND","ZAR",
+  "TND","TRY","TWD","USD","VND","ZAR",
 ];
 
 const selectClass =
@@ -108,6 +109,8 @@ export default function Users() {
   const [addEmail, setAddEmail] = useState("");
   const [addPassword, setAddPassword] = useState("");
   const [addShowPw, setAddShowPw] = useState(false);
+  const [addCountry, setAddCountry] = useState("");
+  const [addCurrency, setAddCurrency] = useState("USD");
   const [addSaving, setAddSaving] = useState(false);
 
   function resetAdd() {
@@ -115,6 +118,14 @@ export default function Users() {
     setAddEmail("");
     setAddPassword("");
     setAddShowPw(false);
+    setAddCountry("");
+    setAddCurrency("USD");
+  }
+
+  function handleAddCountryChange(code: string) {
+    setAddCountry(code);
+    const match = COUNTRIES.find((c) => c.code === code);
+    if (match) setAddCurrency(match.currency);
   }
 
   async function handleAddSalesperson() {
@@ -125,7 +136,13 @@ export default function Users() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: addName.trim(), email: addEmail.trim(), password: addPassword }),
+        body: JSON.stringify({
+          name: addName.trim(),
+          email: addEmail.trim(),
+          password: addPassword,
+          country: addCountry || null,
+          currency: addCurrency,
+        }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Failed to create user");
@@ -405,6 +422,48 @@ export default function Users() {
                 <p className="text-xs text-destructive">Password must be at least 6 characters.</p>
               )}
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="add-country">Country</Label>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <select
+                    id="add-country"
+                    value={addCountry}
+                    onChange={(e) => handleAddCountryChange(e.target.value)}
+                    disabled={addSaving}
+                    className={`${selectClass} pl-9`}
+                  >
+                    <option value="">— Select —</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="add-currency">Currency</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <select
+                    id="add-currency"
+                    value={addCurrency}
+                    onChange={(e) => setAddCurrency(e.target.value)}
+                    disabled={addSaving}
+                    className={`${selectClass} pl-9`}
+                  >
+                    {CURRENCIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Selecting a country auto-fills the currency. All their deal amounts will be shown in this currency.
+            </p>
           </div>
 
           <DialogFooter>
