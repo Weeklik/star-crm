@@ -113,12 +113,15 @@ router.get(
     const lostDealsList = deals.filter((d) => d.stage === "Order Lost");
     const lostDeals = lostDealsList.length;
     const lostAmount = lostDealsList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 90);
-    const cutoffDate = cutoff.toISOString().slice(0, 10);
-    const quotationSentList = deals.filter(
-      (d) => d.stage === "Quotation Sent" && (d.dealStartDate ?? "") > cutoffDate,
-    );
+    // When an explicit date range is given the range itself acts as the window.
+    // Only fall back to a 90-day rolling cutoff when no startDate filter was applied.
+    const quotationSentList = deals.filter((d) => {
+      if (d.stage !== "Quotation Sent") return false;
+      if (startDate) return true; // already scoped by date range
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      return (d.dealStartDate ?? "") > cutoff.toISOString().slice(0, 10);
+    });
     const quotationSentCount = quotationSentList.length;
     const quotationSentAmount = quotationSentList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
     const avgProgress =
@@ -229,11 +232,11 @@ router.get(
       const p = byPerson[sid];
       p.totalDeals++;
       p.agreedAmountAll += parseFloat(deal.agreedAmount ?? "0");
+      p.totalReceivedAmount += parseFloat(deal.receivedAmount ?? "0");
+      p.totalOutstandingAmount += parseFloat(deal.outstandingAmount ?? "0");
       p.progressSum += deal.progress ?? 0;
       if (deal.stage === "Order Closed") {
         p.totalAgreedAmount += parseFloat(deal.agreedAmount ?? "0");
-        p.totalReceivedAmount += parseFloat(deal.receivedAmount ?? "0");
-        p.totalOutstandingAmount += parseFloat(deal.outstandingAmount ?? "0");
         p.closedDeals++;
       } else if (deal.stage === "Order Confirmed") {
         p.confirmedDeals++;
