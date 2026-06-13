@@ -301,14 +301,14 @@ export default function SalesBreakdown() {
 
   const {
     formatConverted, conversionRate,
-    baseCurrency, selectedCurrency,
+    sourceCurrency, selectedCurrency,
     selectedRegion,
   } = useOwnerControls();
 
-  const isSameCurrency = baseCurrency === selectedCurrency;
+  const isSameCurrency = sourceCurrency === selectedCurrency;
 
-  // Formatter using a specific conversion rate
-  const fmtR = (n: number, rate: number) => fmtCurrency(n, baseCurrency, rate);
+  // Formatter using a specific conversion rate (amounts in sourceCurrency → converted to selectedCurrency)
+  const fmtR = (n: number, rate: number) => fmtCurrency(n, selectedCurrency, rate);
   // Formatter using the global live rate
   const fmt  = (n: number) => (n ? formatConverted(n) : "");
 
@@ -354,7 +354,7 @@ export default function SalesBreakdown() {
     isLoading: rateIsLoading,
     isOverridden: rateIsOverridden,
     isCurrentMonth: rateIsCurrent,
-  } = useHistoricalRates(selectedCurrency, baseCurrency, conversionRate, uniqueMonths);
+  } = useHistoricalRates(sourceCurrency, selectedCurrency, conversionRate, uniqueMonths);
 
   const totOC  = weeks.reduce((s, w) => s + w.orderClosedCount, 0);
   const totOCA = weeks.reduce((s, w) => s + w.orderClosedAmount, 0);
@@ -522,8 +522,8 @@ export default function SalesBreakdown() {
                                 <span className="font-bold text-sm">{monthLabel}</span>
                                 {!isSameCurrency && (
                                   <MonthRateCell
-                                    baseCurrency={selectedCurrency}
-                                    targetCurrency={baseCurrency}
+                                    baseCurrency={sourceCurrency}
+                                    targetCurrency={selectedCurrency}
                                     rate={monthRate}
                                     loading={rateIsLoading(monthYear, monthIdx)}
                                     overridden={rateIsOverridden(monthYear, monthIdx)}

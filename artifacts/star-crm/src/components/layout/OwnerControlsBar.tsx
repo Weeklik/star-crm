@@ -15,9 +15,9 @@ import { useOwnerControls, CURRENCIES, type RegionOption } from "@/contexts/Owne
 export function OwnerControlsBar() {
   const {
     selectedRegion, setSelectedRegion, regions,
-    baseCurrency, selectedCurrency, setSelectedCurrency,
+    sourceCurrency, selectedCurrency, setSelectedCurrency,
     conversionRate, setConversionRate,
-    rateLoading, rateEdited,
+    rateLoading, rateEdited, isSameCurrency,
   } = useOwnerControls();
 
   const [rateInput, setRateInput] = useState<string>("");
@@ -35,7 +35,6 @@ export function OwnerControlsBar() {
   }
 
   const displayRate = editingRate ? rateInput : conversionRate.toFixed(4);
-  const isSameCurrency = selectedCurrency === baseCurrency;
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3 border-b border-border bg-muted/30">
@@ -82,7 +81,7 @@ export function OwnerControlsBar() {
 
         {!isSameCurrency && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="whitespace-nowrap">1 {selectedCurrency} =</span>
+            <span className="whitespace-nowrap">1 {sourceCurrency} =</span>
             {rateLoading ? (
               <Loader2 className="w-3 h-3 animate-spin" />
             ) : editingRate ? (
@@ -104,7 +103,7 @@ export function OwnerControlsBar() {
                 <Pencil className="w-3 h-3 opacity-50" />
               </button>
             )}
-            <span className="whitespace-nowrap">{baseCurrency}</span>
+            <span className="whitespace-nowrap">{selectedCurrency}</span>
             {rateEdited && (
               <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500/50 text-amber-600 dark:text-amber-400">
                 custom

@@ -378,7 +378,7 @@ function buildColumnMap(sheetKeys: string[]): Record<string, string> {
 }
 
 function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; skipped: number; detectedHeaders: string[] } {
-  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true, cellDates: true });
+  const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: true });
   if (json.length === 0) return { rows: [], skipped: 0, detectedHeaders: [] };
 
   const detectedHeaders = Object.keys(json[0]);
