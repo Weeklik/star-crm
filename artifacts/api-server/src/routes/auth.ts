@@ -59,7 +59,16 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   req.session.userId = user.id;
   req.session.cachedUser = safeUser as CachedUser;
 
-  res.json(safeUser);
+  // Explicitly save the session before responding so the store is guaranteed
+  // to have the session by the time the client makes its next request.
+  req.session.save((err) => {
+    if (err) {
+      logger.error({ err }, "Session save failed on login");
+      res.status(500).json({ error: "Session error" });
+      return;
+    }
+    res.json(safeUser);
+  });
 });
 
 router.post("/auth/logout", requireAuth, async (req, res): Promise<void> => {

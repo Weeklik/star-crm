@@ -75,10 +75,11 @@ export default defineConfig({
     fs: {
       strict: true,
     },
-    hmr: {
-      clientPort: 443,
-      protocol: "wss",
-    },
+    // On Replit the preview iframe connects over WSS on port 443.
+    // Locally no such tunnel exists, so skip the override to let Vite use its default HMR.
+    ...(process.env.REPL_ID
+      ? { hmr: { clientPort: 443, protocol: "wss" as const } }
+      : {}),
     // On Replit the shared reverse proxy routes /api → port 8080 automatically.
     // Locally there is no such proxy, so Vite forwards /api calls to the API server.
     ...(process.env.REPL_ID
