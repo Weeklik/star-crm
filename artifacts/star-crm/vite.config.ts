@@ -79,6 +79,18 @@ export default defineConfig({
       clientPort: 443,
       protocol: "wss",
     },
+    // On Replit the shared reverse proxy routes /api → port 8080 automatically.
+    // Locally there is no such proxy, so Vite forwards /api calls to the API server.
+    ...(process.env.REPL_ID
+      ? {}
+      : {
+          proxy: {
+            "/api": {
+              target: "http://localhost:8080",
+              changeOrigin: true,
+            },
+          },
+        }),
   },
   preview: {
     port,
