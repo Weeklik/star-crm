@@ -516,7 +516,7 @@ router.get(
       );
     }
 
-    type YearDeal = Awaited<ReturnType<typeof db.select>>[0] & Record<string, unknown>;
+    type YearDeal = typeof dealsTable.$inferSelect;
     let summaryQueryPromise: Promise<YearDeal[]> = Promise.resolve([]);
     if (summaryStart && summaryEnd) {
       const sumConditions: SQL[] = [

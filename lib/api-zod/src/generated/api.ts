@@ -57,7 +57,11 @@ export const ListDealsResponseItem = zod.object({
   outstandingAmount: zod.number(),
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
+  dealType: zod.string(),
+  region: zod.string().nullish(),
+  currency: zod.string(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -91,7 +95,11 @@ export const CreateDealBody = zod.object({
   outstandingAmount: zod.number(),
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
+  dealType: zod.string().optional(),
+  region: zod.string().nullish(),
+  currency: zod.string().optional(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
 });
 
 /**
@@ -129,7 +137,11 @@ export const GetDealResponse = zod.object({
   outstandingAmount: zod.number(),
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
+  dealType: zod.string(),
+  region: zod.string().nullish(),
+  currency: zod.string(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -164,7 +176,11 @@ export const UpdateDealBody = zod.object({
   outstandingAmount: zod.number().optional(),
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
+  dealType: zod.string().optional(),
+  region: zod.string().nullish(),
+  currency: zod.string().optional(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
@@ -195,7 +211,11 @@ export const UpdateDealResponse = zod.object({
   outstandingAmount: zod.number(),
   earliestClosingDate: zod.coerce.date().nullish(),
   latestClosingDate: zod.coerce.date().nullish(),
+  dealType: zod.string(),
+  region: zod.string().nullish(),
+  currency: zod.string(),
   notes: zod.string().nullish(),
+  lostReason: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -256,6 +276,7 @@ export const GetReportSummaryQueryParams = zod.object({
   salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
+  region: zod.coerce.string().optional(),
 });
 
 export const GetReportSummaryResponse = zod.object({
@@ -281,6 +302,7 @@ export const GetReportSummaryResponse = zod.object({
 export const GetReportBySalespersonQueryParams = zod.object({
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
+  region: zod.coerce.string().optional(),
 });
 
 export const GetReportBySalespersonResponseItem = zod.object({
@@ -332,6 +354,7 @@ export const GetStageBreakdownQueryParams = zod.object({
   salespersonId: zod.coerce.number().optional(),
   startDate: zod.date().optional(),
   endDate: zod.date().optional(),
+  region: zod.coerce.string().optional(),
 });
 
 export const GetStageBreakdownResponseItem = zod.object({

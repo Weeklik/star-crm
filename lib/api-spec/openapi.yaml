@@ -240,6 +240,11 @@ paths:
           schema:
             type: string
             format: date
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Summary report
@@ -266,6 +271,11 @@ paths:
           schema:
             type: string
             format: date
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Per-salesperson stats
@@ -327,6 +337,11 @@ paths:
           schema:
             type: string
             format: date
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: Stage breakdown
@@ -388,7 +403,15 @@ components:
         latestClosingDate:
           type: ["string", "null"]
           format: date
+        dealType:
+          type: string
+        region:
+          type: ["string", "null"]
+        currency:
+          type: string
         notes:
+          type: ["string", "null"]
+        lostReason:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -404,12 +427,14 @@ components:
         - companyName
         - productItem
         - stage
+        - dealType
         - progress
         - salesStatus
         - vatApplicable
         - agreedAmount
         - receivedAmount
         - outstandingAmount
+        - currency
         - createdAt
         - updatedAt
 
@@ -448,7 +473,15 @@ components:
         latestClosingDate:
           type: ["string", "null"]
           format: date
+        dealType:
+          type: string
+        region:
+          type: ["string", "null"]
+        currency:
+          type: string
         notes:
+          type: ["string", "null"]
+        lostReason:
           type: ["string", "null"]
       required:
         - dealStartDate
@@ -498,7 +531,15 @@ components:
         latestClosingDate:
           type: ["string", "null"]
           format: date
+        dealType:
+          type: string
+        region:
+          type: ["string", "null"]
+        currency:
+          type: string
         notes:
+          type: ["string", "null"]
+        lostReason:
           type: ["string", "null"]
 
     User:

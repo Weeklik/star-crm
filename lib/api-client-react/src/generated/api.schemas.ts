@@ -42,8 +42,14 @@ export interface Deal {
   earliestClosingDate?: string | null;
   /** @nullable */
   latestClosingDate?: string | null;
+  dealType: string;
+  /** @nullable */
+  region?: string | null;
+  currency: string;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  lostReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,8 +84,14 @@ export interface CreateDealBody {
   earliestClosingDate?: string | null;
   /** @nullable */
   latestClosingDate?: string | null;
+  dealType?: string;
+  /** @nullable */
+  region?: string | null;
+  currency?: string;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  lostReason?: string | null;
 }
 
 export type UpdateDealBodyStage =
@@ -112,8 +124,14 @@ export interface UpdateDealBody {
   earliestClosingDate?: string | null;
   /** @nullable */
   latestClosingDate?: string | null;
+  dealType?: string;
+  /** @nullable */
+  region?: string | null;
+  currency?: string;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  lostReason?: string | null;
 }
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
@@ -211,11 +229,13 @@ export type GetReportSummaryParams = {
   salespersonId?: number;
   startDate?: string;
   endDate?: string;
+  region?: string;
 };
 
 export type GetReportBySalespersonParams = {
   startDate?: string;
   endDate?: string;
+  region?: string;
 };
 
 export type GetWeeklyReportParams = {
@@ -230,4 +250,5 @@ export type GetStageBreakdownParams = {
   salespersonId?: number;
   startDate?: string;
   endDate?: string;
+  region?: string;
 };
