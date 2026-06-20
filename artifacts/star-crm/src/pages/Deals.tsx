@@ -1199,7 +1199,7 @@ export default function Deals() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New Deal">New Order</SelectItem>
+                  <SelectItem value="New Deal">New Customer</SelectItem>
                   <SelectItem value="Recurring">Recurring</SelectItem>
                   <SelectItem value="Dealer">Dealer</SelectItem>
                 </SelectContent>
