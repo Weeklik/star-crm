@@ -489,7 +489,6 @@ components:
         - companyName
         - productItem
         - stage
-        - progress
         - salesStatus
         - vatApplicable
         - agreedAmount

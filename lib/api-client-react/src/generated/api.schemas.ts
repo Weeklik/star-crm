@@ -74,7 +74,7 @@ export interface CreateDealBody {
    * @minimum 0
    * @maximum 100
    */
-  progress: number;
+  progress?: number;
   salesStatus: string;
   vatApplicable: boolean;
   agreedAmount: number;

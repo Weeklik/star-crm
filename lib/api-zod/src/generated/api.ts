@@ -87,7 +87,8 @@ export const CreateDealBody = zod.object({
   progress: zod
     .number()
     .min(createDealBodyProgressMin)
-    .max(createDealBodyProgressMax),
+    .max(createDealBodyProgressMax)
+    .optional(),
   salesStatus: zod.string(),
   vatApplicable: zod.boolean(),
   agreedAmount: zod.number(),

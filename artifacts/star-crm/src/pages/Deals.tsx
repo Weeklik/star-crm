@@ -104,7 +104,6 @@ interface DealFormState {
   stage: Stage;
   dealType: "New Deal" | "Recurring" | "Dealer";
   region: string;
-  progress: number;
   salesStatus: string;
   vatApplicable: boolean;
   agreedAmount: number;
@@ -131,7 +130,6 @@ const emptyForm = (): DealFormState => ({
   stage: "Quotation Sent",
   dealType: "New Deal",
   region: "",
-  progress: 0,
   salesStatus: "25%",
   vatApplicable: false,
   agreedAmount: 0,
@@ -152,7 +150,6 @@ function toPayload(f: DealFormState) {
     stage: f.stage,
     dealType: f.dealType,
     region: f.region || undefined,
-    progress: Number(f.progress),
     salesStatus: f.salesStatus,
     vatApplicable: f.vatApplicable,
     agreedAmount: Number(f.agreedAmount),
@@ -327,9 +324,6 @@ const FIELD_ALIASES: Record<string, string> = {
   // Stage / Status
   "stage status": "stage", "stage": "stage", "status": "stage",
   "deal stage": "stage", "current stage": "stage",
-  // Progress %
-  "progress": "progress", "completion": "progress",
-  "progress percent": "progress", "completion percent": "progress",
   // VAT
   "vat applicable yes no": "vatApplicable", "vat applicable": "vatApplicable",
   "vat": "vatApplicable", "vat yes no": "vatApplicable",
@@ -395,15 +389,6 @@ function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; skipped: numbe
     const stageRaw = str(row, "stage");
     const stage: Stage = stageRaw ? normaliseStage(stageRaw) : "Quotation Sent";
 
-    const progressRaw = str(row, "progress");
-    const progressNum = parseFloat(progressRaw.replace(/[^0-9.]/g, "")) || 0;
-    // Normalise: Excel may store as fraction (0.2 = 20%) or whole number (20 = 20%)
-    const progress = Math.round(
-      progressNum > 0 && progressNum <= 1
-        ? progressNum * 100
-        : Math.min(100, Math.max(0, progressNum))
-    );
-
     return {
       _rowIndex: idx + 2,
       name:              str(row, "name"),
@@ -411,8 +396,7 @@ function parseExcelRows(ws: XLSX.WorkSheet): { rows: ImportRow[]; skipped: numbe
       productItem:       str(row, "productItem"),
       dealStartDate:     parseExcelDate(get(row, "dealStartDate")) || new Date().toISOString().split("T")[0],
       stage,
-      progress,
-      salesStatus:       "Active",
+      salesStatus:       "25%",
       vatApplicable:     /^yes$/i.test(str(row, "vatApplicable")),
       agreedAmount:      parseAmount(get(row, "agreedAmount")),
       receivedAmount:    parseAmount(get(row, "receivedAmount")),
@@ -584,7 +568,6 @@ export default function Deals() {
       stage: deal.stage as Stage,
       dealType: (deal.dealType as "New Deal" | "Recurring" | "Dealer") ?? "New Deal",
       region: deal.region ?? "",
-      progress: deal.progress,
       salesStatus: deal.salesStatus,
       vatApplicable: deal.vatApplicable,
       agreedAmount: deal.agreedAmount,
@@ -1132,9 +1115,6 @@ export default function Deals() {
                 onValueChange={(v) => {
                   const stage = v as Stage;
                   set("stage", stage);
-                  if (stage === "Quotation Sent") set("progress", 20);
-                  else if (stage === "Order Confirmed") set("progress", 90);
-                  else if (stage === "Order Closed") set("progress", 100);
                   if (stage !== "Order Lost") set("lostReason", "");
                 }}
               >
@@ -1229,16 +1209,6 @@ export default function Deals() {
                   <SelectItem value="100%">100%</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Progress ({form.progress}%)</Label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={form.progress}
-                onChange={(e) => set("progress", Math.min(100, Math.max(0, Number(e.target.value))))}
-              />
             </div>
             <div className="space-y-1.5">
               <Label>Price ($)</Label>
