@@ -817,7 +817,7 @@ export default function Planner() {
         <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
           {([
             { key: "calendar" as Tab, label: "Calendar",      Icon: CalendarDays },
-            { key: "targets"  as Tab, label: "Sales Targets", Icon: Target },
+            { key: "targets"  as Tab, label: "Meeting Targets", Icon: Target },
           ]).map(({ key, label, Icon }) => (
             <button key={key} onClick={() => handleTabChange(key)}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all
