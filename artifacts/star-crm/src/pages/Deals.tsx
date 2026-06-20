@@ -1092,7 +1092,7 @@ export default function Deals() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5">
-              <Label>Order Name *</Label>
+              <Label>Customer Name *</Label>
               <AutocompleteInput
                 value={form.name}
                 onChange={(v) => set("name", v)}
