@@ -1201,7 +1201,7 @@ export default function Deals() {
                 <SelectContent>
                   <SelectItem value="New Deal">New Customer</SelectItem>
                   <SelectItem value="Recurring">Existing Customer</SelectItem>
-                  <SelectItem value="Dealer">Dealer</SelectItem>
+                  <SelectItem value="Dealer">Dealer Customer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
