@@ -1235,7 +1235,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Agreed Amount ($)</Label>
+              <Label>Price ($)</Label>
               <Input
                 type="number"
                 min={0}
