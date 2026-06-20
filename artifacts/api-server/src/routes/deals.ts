@@ -310,7 +310,7 @@ router.post("/deals/bulk", requireAuth, async (req, res): Promise<void> => {
       productItem: String(deal.productItem ?? "").trim(),
       stage,
       progress,
-      salesStatus: String(deal.salesStatus ?? "Active").trim() || "Active",
+      salesStatus: String(deal.salesStatus ?? "25%").trim() || "25%",
       vatApplicable: deal.vatApplicable === true || deal.vatApplicable === "true",
       agreedAmount: String(agreed),
       receivedAmount: String(received),
