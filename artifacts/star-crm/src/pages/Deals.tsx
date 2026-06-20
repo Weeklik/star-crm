@@ -1217,7 +1217,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Sales Status</Label>
+              <Label>Sales Chances</Label>
               <Input
                 value={form.salesStatus}
                 onChange={(e) => set("salesStatus", e.target.value)}
