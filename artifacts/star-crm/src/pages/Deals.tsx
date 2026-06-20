@@ -132,7 +132,7 @@ const emptyForm = (): DealFormState => ({
   dealType: "New Deal",
   region: "",
   progress: 0,
-  salesStatus: "Active",
+  salesStatus: "25%",
   vatApplicable: false,
   agreedAmount: 0,
   receivedAmount: 0,
@@ -1218,11 +1218,17 @@ export default function Deals() {
             </div>
             <div className="space-y-1.5">
               <Label>Sales Chances</Label>
-              <Input
-                value={form.salesStatus}
-                onChange={(e) => set("salesStatus", e.target.value)}
-                placeholder="e.g. Active"
-              />
+              <Select value={form.salesStatus} onValueChange={(v) => set("salesStatus", v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select chances" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25%">25%</SelectItem>
+                  <SelectItem value="50%">50%</SelectItem>
+                  <SelectItem value="75%">75%</SelectItem>
+                  <SelectItem value="100%">100%</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Progress ({form.progress}%)</Label>
