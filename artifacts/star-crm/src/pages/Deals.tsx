@@ -1280,11 +1280,16 @@ export default function Deals() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select a country…" />
                 </SelectTrigger>
-                <SelectContent className="max-h-64">
+                <SelectContent>
                   <SelectItem value="__none__">— None —</SelectItem>
-                  {WORLD_COUNTRIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
+                  <SelectItem value="Dubai">Dubai</SelectItem>
+                  <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
+                  <SelectItem value="Sharjah">Sharjah</SelectItem>
+                  <SelectItem value="Ajman">Ajman</SelectItem>
+                  <SelectItem value="Umm Al Quwain">Umm Al Quwain</SelectItem>
+                  <SelectItem value="Ras Al Khaimah">Ras Al Khaimah</SelectItem>
+                  <SelectItem value="Fujairah">Fujairah</SelectItem>
+                  <SelectItem value="Qatar">Qatar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
