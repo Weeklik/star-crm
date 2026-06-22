@@ -6,109 +6,14 @@ import { useAuth } from "./AuthContext";
  * Used to auto-select the display currency when a region is chosen.
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  // United Arab Emirates
-  "United Arab Emirates": "AED", "UAE": "AED", "AE": "AED", "Emirates": "AED",
-  // Saudi Arabia
-  "Saudi Arabia": "SAR", "KSA": "SAR", "SA": "SAR",
-  // Kuwait
-  "Kuwait": "KWD", "KW": "KWD",
-  // Qatar
-  "Qatar": "QAR", "QA": "QAR",
-  // Bahrain
-  "Bahrain": "BHD", "BH": "BHD",
-  // Oman
-  "Oman": "OMR", "OM": "OMR",
-  // Egypt
-  "Egypt": "EGP", "EG": "EGP",
-  // India
-  "India": "INR", "IN": "INR",
-  // Pakistan
-  "Pakistan": "PKR", "PK": "PKR",
-  // Bangladesh
-  "Bangladesh": "BDT", "BD": "BDT",
-  // United Kingdom
-  "United Kingdom": "GBP", "UK": "GBP", "GB": "GBP", "Britain": "GBP", "England": "GBP",
-  // United States
-  "United States": "USD", "USA": "USD", "US": "USD", "America": "USD",
-  // Euro zone
-  "Germany": "EUR", "DE": "EUR",
-  "France": "EUR", "FR": "EUR",
-  "Italy": "EUR", "IT": "EUR",
-  "Spain": "EUR", "ES": "EUR",
-  "Netherlands": "EUR", "NL": "EUR",
-  "Belgium": "EUR", "BE": "EUR",
-  "Portugal": "EUR", "PT": "EUR",
-  "Austria": "EUR", "AT": "EUR",
-  "Ireland": "EUR", "IE": "EUR",
-  "Greece": "EUR", "GR": "EUR",
-  "Finland": "EUR", "FI": "EUR",
-  "Europe": "EUR", "EU": "EUR",
-  // Japan
-  "Japan": "JPY", "JP": "JPY",
-  // China
-  "China": "CNY", "CN": "CNY", "PRC": "CNY",
-  // Canada
-  "Canada": "CAD", "CA": "CAD",
-  // Australia
-  "Australia": "AUD", "AU": "AUD",
-  // Switzerland
-  "Switzerland": "CHF", "CH": "CHF",
-  // Singapore
-  "Singapore": "SGD", "SG": "SGD",
-  // Hong Kong
-  "Hong Kong": "HKD", "HK": "HKD",
-  // Malaysia
-  "Malaysia": "MYR", "MY": "MYR",
-  // Thailand
-  "Thailand": "THB", "TH": "THB",
-  // Philippines
-  "Philippines": "PHP", "PH": "PHP",
-  // Indonesia
-  "Indonesia": "IDR", "ID": "IDR",
-  // South Korea
-  "South Korea": "KRW", "Korea": "KRW", "KR": "KRW",
-  // Nigeria
-  "Nigeria": "NGN", "NG": "NGN",
-  // South Africa
-  "South Africa": "ZAR", "ZA": "ZAR",
-  // Turkey
-  "Turkey": "TRY", "Türkiye": "TRY", "TR": "TRY",
-  // Mexico
-  "Mexico": "MXN", "MX": "MXN",
-  // Brazil
-  "Brazil": "BRL", "BR": "BRL",
-  // Sweden
-  "Sweden": "SEK", "SE": "SEK",
-  // Norway
-  "Norway": "NOK", "NO": "NOK",
-  // Denmark
-  "Denmark": "DKK", "DK": "DKK",
-  // Poland
-  "Poland": "PLN", "PL": "PLN",
-  // Czech Republic
-  "Czech Republic": "CZK", "Czechia": "CZK", "CZ": "CZK",
-  // Hungary
-  "Hungary": "HUF", "HU": "HUF",
-  // Russia
-  "Russia": "RUB", "RU": "RUB",
-  // Kenya
-  "Kenya": "KES", "KE": "KES",
-  // Israel
-  "Israel": "ILS", "IL": "ILS",
-  // Sri Lanka
-  "Sri Lanka": "LKR", "LK": "LKR",
-  // New Zealand
-  "New Zealand": "NZD", "NZ": "NZD",
-  // Taiwan
-  "Taiwan": "TWD", "TW": "TWD",
-  // Vietnam
-  "Vietnam": "VND", "VN": "VND",
-  // Argentina
-  "Argentina": "ARS", "AR": "ARS",
-  // Chile
-  "Chile": "CLP", "CL": "CLP",
-  // Colombia
-  "Colombia": "COP", "CO": "COP",
+  "Dubai":          "AED",
+  "Abu Dhabi":      "AED",
+  "Sharjah":        "AED",
+  "Ajman":          "AED",
+  "Umm Al Quwain":  "AED",
+  "Ras Al Khaimah": "AED",
+  "Fujairah":       "AED",
+  "Qatar":          "QAR",
 };
 
 export const CURRENCIES: { code: string; name: string }[] = [
@@ -261,7 +166,16 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   const baseCurrency = user?.currency ?? "USD";
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
-  const [regions, setRegions] = useState<RegionOption[]>([]);
+  const regions: RegionOption[] = [
+    { country: "Dubai",          currency: "AED" },
+    { country: "Abu Dhabi",      currency: "AED" },
+    { country: "Sharjah",        currency: "AED" },
+    { country: "Ajman",          currency: "AED" },
+    { country: "Umm Al Quwain",  currency: "AED" },
+    { country: "Ras Al Khaimah", currency: "AED" },
+    { country: "Fujairah",       currency: "AED" },
+    { country: "Qatar",          currency: "QAR" },
+  ];
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // sourceCurrency = natural currency of the current view (region's or owner's)
   const [sourceCurrency, setSourceCurrencyState] = useState(baseCurrency);
@@ -281,14 +195,6 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
     }
   }, [baseCurrency, currencyUserSet]);
 
-  // Fetch distinct regions (with currencies) from API
-  useEffect(() => {
-    if (user?.role !== "owner") return;
-    fetch("/api/lookup/regions", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data: RegionOption[]) => setRegions(data))
-      .catch(() => {});
-  }, [user?.role]);
 
   // When a region is selected:
   //   sourceCurrency → region's native currency (data is in that currency)
