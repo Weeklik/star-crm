@@ -6,14 +6,8 @@ import { useAuth } from "./AuthContext";
  * Used to auto-select the display currency when a region is chosen.
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  "Dubai":          "AED",
-  "Abu Dhabi":      "AED",
-  "Sharjah":        "AED",
-  "Ajman":          "AED",
-  "Umm Al Quwain":  "AED",
-  "Ras Al Khaimah": "AED",
-  "Fujairah":       "AED",
-  "Qatar":          "QAR",
+  "United Arab Emirates": "AED",
+  "Qatar":                "QAR",
 };
 
 export const CURRENCIES: { code: string; name: string }[] = [
@@ -167,14 +161,8 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
   const regions: RegionOption[] = [
-    { country: "Dubai",          currency: "AED" },
-    { country: "Abu Dhabi",      currency: "AED" },
-    { country: "Sharjah",        currency: "AED" },
-    { country: "Ajman",          currency: "AED" },
-    { country: "Umm Al Quwain",  currency: "AED" },
-    { country: "Ras Al Khaimah", currency: "AED" },
-    { country: "Fujairah",       currency: "AED" },
-    { country: "Qatar",          currency: "QAR" },
+    { country: "United Arab Emirates", currency: "AED" },
+    { country: "Qatar",                currency: "QAR" },
   ];
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // sourceCurrency = natural currency of the current view (region's or owner's)

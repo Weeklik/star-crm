@@ -1250,13 +1250,7 @@ export default function Deals() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— None —</SelectItem>
-                  <SelectItem value="Dubai">Dubai</SelectItem>
-                  <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
-                  <SelectItem value="Sharjah">Sharjah</SelectItem>
-                  <SelectItem value="Ajman">Ajman</SelectItem>
-                  <SelectItem value="Umm Al Quwain">Umm Al Quwain</SelectItem>
-                  <SelectItem value="Ras Al Khaimah">Ras Al Khaimah</SelectItem>
-                  <SelectItem value="Fujairah">Fujairah</SelectItem>
+                  <SelectItem value="United Arab Emirates">United Arab Emirates</SelectItem>
                   <SelectItem value="Qatar">Qatar</SelectItem>
                 </SelectContent>
               </Select>
