@@ -165,6 +165,8 @@ export default function SummarySalesReport() {
       .finally(() => setWeekLoading(false));
   }
 
+  const currentMonth = new Date().getMonth() + 1; // 1-indexed
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
 
   const totalSalesSum       = rows.reduce((s, r) => s + r.totalSales, 0);
@@ -194,6 +196,11 @@ export default function SummarySalesReport() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, getRateFor, sourceCurrency]);
+
+  const sortedRows = useMemo(
+    () => [...rows].sort((a, b) => (b.monthly[currentMonth] ?? 0) - (a.monthly[currentMonth] ?? 0)),
+    [rows, currentMonth]
+  );
 
   const hasSummary    = summaryStart && summaryEnd;
   const summaryLabel  = hasSummary
@@ -336,7 +343,7 @@ export default function SummarySalesReport() {
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row, i) => {
+                    sortedRows.map((row, i) => {
                       // Use currency directly from API row — no usersMap indirection
                       const rowCurrency   = row.currency ?? sourceCurrency;
                       const rowRate       = getRateFor(rowCurrency);
