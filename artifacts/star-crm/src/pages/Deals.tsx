@@ -6,6 +6,7 @@ import {
   useDeleteDeal,
   getListDealsQueryKey,
 } from "@workspace/api-client-react";
+import type { Deal } from "@workspace/api-client-react";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -450,6 +451,33 @@ function downloadTemplate() {
   XLSX.writeFile(wb, "star-crm-deals-template.xlsx");
 }
 
+function exportDealsToExcel(deals: Deal[] | undefined) {
+  if (!deals?.length) return;
+  const rows = deals.map((d) => ({
+    "Order Start Date":    d.dealStartDate ? String(d.dealStartDate).split("T")[0] : "",
+    "Customer Name":       d.name,
+    "Company Name":        d.companyName,
+    "Product / Item":      d.productItem,
+    "Stage":               d.stage,
+    "Order Type":          d.dealType ?? "",
+    "Region":              d.region ?? "",
+    "Sales Chances":       d.salesStatus ?? "",
+    "VAT Applicable":      d.vatApplicable ? "Yes" : "No",
+    "Price":               Number(d.agreedAmount) || 0,
+    "Received Amount":     Number(d.receivedAmount) || 0,
+    "Outstanding Amount":  Number(d.outstandingAmount) || 0,
+    "Earliest Closing Date": d.earliestClosingDate ? String(d.earliestClosingDate).split("T")[0] : "",
+    "Latest Closing Date":   d.latestClosingDate   ? String(d.latestClosingDate).split("T")[0]   : "",
+    "Notes":               d.notes ?? "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = Object.keys(rows[0]).map((h) => ({ wch: Math.max(h.length + 2, 16) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Orders");
+  const today = new Date().toISOString().split("T")[0];
+  XLSX.writeFile(wb, `orders-${today}.xlsx`);
+}
+
 export default function Deals() {
   const { data: me } = useGetMe();
   const queryClient = useQueryClient();
@@ -790,6 +818,10 @@ export default function Deals() {
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="w-4 h-4 mr-2" />
             Import Excel
+          </Button>
+          <Button variant="outline" onClick={() => exportDealsToExcel(filteredDeals)} title="Export current orders to Excel">
+            <Download className="w-4 h-4 mr-2" />
+            Export Excel
           </Button>
           <Button className="shrink-0" onClick={openAdd} data-testid="btn-add-deal">
             <Plus className="w-4 h-4 mr-2" />
