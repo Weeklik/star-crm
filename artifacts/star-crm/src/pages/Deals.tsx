@@ -1,6 +1,7 @@
 import {
   useGetMe,
   useListDeals,
+  useListUsers,
   useCreateDeal,
   useUpdateDeal,
   useDeleteDeal,
@@ -482,6 +483,12 @@ export default function Deals() {
   const { data: me } = useGetMe();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isOwner = me?.role === "owner";
+
+  const { data: users } = useListUsers({ query: { enabled: isOwner } } as any);
+  const salespersons = users?.filter((u) => u.role === "salesperson") ?? [];
+
+  const [filterSpId, setFilterSpId] = useState<string>("all");
 
   const { data: deals, isLoading } = useListDeals(
     me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
@@ -529,7 +536,8 @@ export default function Deals() {
       const matchesFrom  = !dateFrom     || dateStr >= dateFrom;
       const matchesTo    = !dateTo       || dateStr <= dateTo;
       const matchesStage = !stageFilter  || d.stage === stageFilter;
-      return matchesSearch && matchesFrom && matchesTo && matchesStage;
+      const matchesSp    = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
+      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp;
     })
     .slice()
     .sort((a, b) => {
@@ -880,6 +888,20 @@ export default function Deals() {
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+
+        {/* Salesperson filter — owner only */}
+        {isOwner && salespersons.length > 0 && (
+          <select
+            value={filterSpId}
+            onChange={(e) => { setFilterSpId(e.target.value); setPage(1); }}
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
+          >
+            <option value="all">All Salespersons</option>
+            {salespersons.map((u) => (
+              <option key={u.id} value={String(u.id)}>{u.name ?? u.email}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* ── Stat boxes ── */}
