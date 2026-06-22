@@ -7,7 +7,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { OwnerControlsProvider } from "@/contexts/OwnerControlsContext";
-import { Star } from "lucide-react";
 
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -28,7 +27,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 function AuthLoadingScreen() {
   return (
     <div className="min-h-screen bg-[#0a0d14] flex flex-col items-center justify-center gap-4">
-      <Star className="w-10 h-10 text-amber-400 animate-pulse" />
+      <img src="/logo.png" alt="Star Sewing Machines" className="w-16 h-16 object-contain animate-pulse" />
       <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
     </div>
   );
