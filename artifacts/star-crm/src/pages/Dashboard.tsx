@@ -32,7 +32,6 @@ import {
   DollarSign,
   Briefcase,
   Target,
-  AlertCircle,
   Users,
 } from "lucide-react";
 
@@ -214,7 +213,11 @@ export default function Dashboard() {
       closedDeals:            cnt("closedDeals"),
       closedAmount:           sum("totalAgreedAmount"),
       quotationSentCount:     cnt("quotationSentCount"),
+      quotationSentAmount:    sum("quotationSentAmount"),
+      confirmedDeals:         cnt("confirmedDeals"),
+      confirmedAmount:        sum("confirmedAmount"),
       lostDeals:              cnt("lostDeals"),
+      lostAmount:             sum("lostAmount"),
     };
   }, [byPerson, getRateFor, isOwner, selectedRegion, selectedSpId]);
 
@@ -238,10 +241,9 @@ export default function Dashboard() {
     );
   }
 
-  const winRate =
-    kpiSrc && (kpiSrc.quotationSentCount ?? (summary?.quotationSentCount ?? 0)) > 0
-      ? Math.round(((kpiSrc.closedDeals ?? 0) / (kpiSrc.quotationSentCount ?? (summary?.quotationSentCount ?? 1))) * 100)
-      : 0;
+  const quotationSentAmt = useConverted
+    ? (allRegionsTotals?.quotationSentAmount ?? 0)
+    : (stageData.find((s) => s.stage === "Quotation Sent")?.totalAgreedAmount ?? 0);
 
   const pieData = stageData
     .filter((s) => s.count > 0)
@@ -314,45 +316,45 @@ export default function Dashboard() {
 
   const kpiCards = [
     {
-      label: "Total Orders",
-      value: String(kpiSrc?.totalDeals ?? 0),
-      sub: `${kpiSrc?.lostDeals ?? 0} lost`,
+      label: "Quotation Sent",
+      value: String(useConverted ? (allRegionsTotals?.quotationSentCount ?? 0) : (summary?.quotationSentCount ?? 0)),
+      sub: fmtAmt(quotationSentAmt),
       icon: Briefcase,
       gradient: "from-violet-500/15",
       iconBg: "bg-violet-500/10",
       iconColor: "text-violet-400",
     },
     {
-      label: "Pipeline Value",
-      value: fmtK(useConverted ? (allRegionsTotals?.totalAgreedAmount ?? 0) : (summary?.totalAgreedAmount ?? 0)),
-      sub: "Total agreed",
-      icon: DollarSign,
+      label: "Confirmed Orders",
+      value: String(useConverted ? (allRegionsTotals?.confirmedDeals ?? 0) : (summary?.confirmedDeals ?? 0)),
+      sub: fmtAmt(useConverted ? (allRegionsTotals?.confirmedAmount ?? 0) : (summary?.confirmedAmount ?? 0)),
+      icon: Target,
       gradient: "from-blue-500/15",
       iconBg: "bg-blue-500/10",
       iconColor: "text-blue-400",
     },
     {
-      label: "Received",
-      value: fmtK(useConverted ? (allRegionsTotals?.totalReceivedAmount ?? 0) : (summary?.totalReceivedAmount ?? 0)),
-      sub: "Collected",
+      label: "Closed Orders",
+      value: String(useConverted ? (allRegionsTotals?.closedDeals ?? 0) : (summary?.closedDeals ?? 0)),
+      sub: fmtAmt(useConverted ? (allRegionsTotals?.closedAmount ?? 0) : (summary?.closedAmount ?? 0)),
       icon: TrendingUp,
       gradient: "from-emerald-500/15",
       iconBg: "bg-emerald-500/10",
       iconColor: "text-emerald-400",
     },
     {
-      label: "Outstanding",
-      value: fmtK(useConverted ? (allRegionsTotals?.totalOutstandingAmount ?? 0) : (summary?.totalOutstandingAmount ?? 0)),
-      sub: "Pending",
-      icon: AlertCircle,
+      label: "Received Amount",
+      value: fmtAmt(useConverted ? (allRegionsTotals?.totalReceivedAmount ?? 0) : (summary?.totalReceivedAmount ?? 0)),
+      sub: "Collected",
+      icon: DollarSign,
       gradient: "from-amber-500/15",
       iconBg: "bg-amber-500/10",
       iconColor: "text-amber-400",
     },
     {
-      label: "Close Rate",
-      value: `${winRate}%`,
-      sub: `${kpiSrc?.closedDeals ?? 0} closed`,
+      label: "Lost Orders",
+      value: String(useConverted ? (allRegionsTotals?.lostDeals ?? 0) : (summary?.lostDeals ?? 0)),
+      sub: fmtAmt(useConverted ? (allRegionsTotals?.lostAmount ?? 0) : (summary?.lostAmount ?? 0)),
       icon: Target,
       gradient: "from-pink-500/15",
       iconBg: "bg-pink-500/10",
@@ -597,11 +599,11 @@ export default function Dashboard() {
             onClick={() => {
               const rows = [
                 ["Period", dateRangeOptions.find((o) => o.key === dateRange)?.label ?? dateRange],
-                ["Total Orders", String(kpiSrc?.totalDeals ?? 0)],
-                ["Pipeline Value", String(useConverted ? allRegionsTotals?.totalAgreedAmount : summary?.totalAgreedAmount ?? 0)],
-                ["Received", String(useConverted ? allRegionsTotals?.totalReceivedAmount : summary?.totalReceivedAmount ?? 0)],
-                ["Outstanding", String(useConverted ? allRegionsTotals?.totalOutstandingAmount : summary?.totalOutstandingAmount ?? 0)],
-                ["Close Rate", `${winRate}%`],
+                ["Quotation Sent", String(useConverted ? (allRegionsTotals?.quotationSentCount ?? 0) : (summary?.quotationSentCount ?? 0))],
+                ["Confirmed Orders", String(useConverted ? (allRegionsTotals?.confirmedDeals ?? 0) : (summary?.confirmedDeals ?? 0))],
+                ["Closed Orders", String(useConverted ? (allRegionsTotals?.closedDeals ?? 0) : (summary?.closedDeals ?? 0))],
+                ["Received Amount", String(useConverted ? (allRegionsTotals?.totalReceivedAmount ?? 0) : (summary?.totalReceivedAmount ?? 0))],
+                ["Lost Orders", String(useConverted ? (allRegionsTotals?.lostDeals ?? 0) : (summary?.lostDeals ?? 0))],
                 [],
                 ["Stage", "Count", "Agreed Amount"],
                 ...stageData.map((s) => [s.stage, String(s.count), String(s.totalAgreedAmount)]),
