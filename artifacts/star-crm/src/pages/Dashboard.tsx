@@ -555,10 +555,9 @@ export default function Dashboard() {
                       <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={56} />
                       <Tooltip content={<CustomBarTooltip />} />
-                      <Bar dataKey="agreed" name="Pipeline" fill="#a78bfa" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                        <LabelList dataKey="agreed" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <Bar dataKey="received" name="Received" fill="#34d399" radius={[0, 4, 4, 0]} maxBarSize={14}>
+                        <LabelList dataKey="received" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                       </Bar>
-                      <Bar dataKey="received" name="Received" fill="#34d399" radius={[0, 4, 4, 0]} maxBarSize={14} />
                     </BarChart>
                   </ResponsiveContainer>
                 )
