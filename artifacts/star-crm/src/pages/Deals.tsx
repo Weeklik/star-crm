@@ -523,6 +523,8 @@ export default function Deals() {
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
   const [filterRegion, setFilterRegion] = useState<string>("all");
+  const [filterYear, setFilterYear] = useState<string>("all");
+  const YEAR_OPTIONS = ["2025", "2026", "2027", "2028"];
   const [regions, setRegions] = useState<{ country: string }[]>([]);
 
   useEffect(() => {
@@ -581,7 +583,8 @@ export default function Deals() {
       const matchesStage = !stageFilter  || d.stage === stageFilter;
       const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
       const matchesRegion = !isOwner || filterRegion === "all" || (d as any).region === filterRegion;
-      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion;
+      const matchesYear  = filterYear === "all" || dateStr.startsWith(filterYear);
+      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion && matchesYear;
     })
     .slice()
     .sort((a, b) => {
@@ -914,6 +917,18 @@ export default function Deals() {
             </button>
           )}
         </div>
+
+        {/* Year filter */}
+        <select
+          value={filterYear}
+          onChange={(e) => { setFilterYear(e.target.value); setPage(1); }}
+          className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
+        >
+          <option value="all">All Years</option>
+          {YEAR_OPTIONS.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
 
         {/* Stage filter */}
         <select
