@@ -482,7 +482,7 @@ export default function Dashboard() {
           <Card className="border-border/60">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">
-                {showPersonChart ? "Salesperson Pipeline" : "Stage Amount Breakdown"}
+                {showPersonChart ? "Closed Orders" : "Stage Amount Breakdown"}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 {showPersonChart
