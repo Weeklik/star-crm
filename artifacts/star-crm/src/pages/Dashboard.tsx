@@ -137,7 +137,7 @@ export default function Dashboard() {
   const { data: me } = useGetMe();
   const {
     formatConverted, selectedRegion, selectedYear,
-    getRateFor, loadMultiRates, selectedCurrency,
+    getRateFor, loadMultiRates, selectedCurrency, conversionRate,
   } = useOwnerControls();
 
   const isOwner = me?.role === "owner";
@@ -232,6 +232,21 @@ export default function Dashboard() {
     return formatConverted(n);
   }, [useConverted, selectedCurrency, formatConverted]);
 
+  // Formats an already-converted value in the display currency (no multiplication)
+  const fmtDisplay = useCallback((n: number) => {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency", currency: selectedCurrency, maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return fmtK(n);
+    }
+  }, [selectedCurrency]);
+
+  // Rate to apply to raw API chart data (weekly / stage) so bars reflect display currency.
+  // topPersons values are already converted individually via getRateFor — don't apply this to them.
+  const chartRate = useConverted ? 1 : conversionRate;
+
   if (!me || loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -240,11 +255,26 @@ export default function Dashboard() {
     );
   }
 
+  // Pre-convert stage & weekly data to the display currency so bar heights are accurate
+  const convertedStageData = stageData.map((s) => ({
+    ...s,
+    totalAgreedAmount:    Math.round(s.totalAgreedAmount    * chartRate),
+    totalReceivedAmount:  Math.round(s.totalReceivedAmount  * chartRate),
+  }));
+
+  const convertedWeeklyData = weeklyData.map((w) => ({
+    ...w,
+    orderClosedAmount:          Math.round(w.orderClosedAmount          * chartRate),
+    orderClosedReceivedAmount:  Math.round(w.orderClosedReceivedAmount  * chartRate),
+    orderConfirmedAmount:       Math.round(w.orderConfirmedAmount       * chartRate),
+    orderLostAmount:            Math.round(w.orderLostAmount            * chartRate),
+  }));
+
   const quotationSentAmt = useConverted
     ? (allRegionsTotals?.quotationSentAmount ?? 0)
     : (stageData.find((s) => s.stage === "Quotation Sent")?.totalAgreedAmount ?? 0);
 
-  const pieData = stageData
+  const pieData = convertedStageData
     .filter((s) => s.count > 0)
     .map((s) => ({ name: s.stage, value: s.count, amount: s.totalAgreedAmount }));
 
@@ -265,7 +295,7 @@ export default function Dashboard() {
       <div style={TOOLTIP_STYLE} className="p-3 shadow-xl">
         <p className="font-semibold mb-1">{d.name}</p>
         <p className="text-muted-foreground">{d.value} deals</p>
-        <p style={{ color: STAGE_COLORS[d.name] }}>{fmtAmt(d.amount)}</p>
+        <p style={{ color: STAGE_COLORS[d.name] }}>{fmtDisplay(d.amount)}</p>
       </div>
     );
   };
@@ -278,7 +308,7 @@ export default function Dashboard() {
         {payload.map((p: any) => (
           <div key={p.name} className="flex justify-between gap-6 py-0.5">
             <span style={{ color: p.color }} className="text-xs">{p.name}</span>
-            <span className="text-xs font-medium">{fmtAmt(p.value ?? 0)}</span>
+            <span className="text-xs font-medium">{fmtDisplay(p.value ?? 0)}</span>
           </div>
         ))}
       </div>
@@ -293,7 +323,7 @@ export default function Dashboard() {
         {payload.map((p: any) => (
           <div key={p.name} className="flex justify-between gap-4 py-0.5">
             <span style={{ color: p.color }} className="text-xs">{p.name}</span>
-            <span className="text-xs font-medium">{fmtAmt(p.value ?? 0)}</span>
+            <span className="text-xs font-medium">{fmtDisplay(p.value ?? 0)}</span>
           </div>
         ))}
       </div>
@@ -516,19 +546,19 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 )
               ) : (
-                stageData.every((s) => s.totalAgreedAmount === 0) ? (
+                convertedStageData.every((s) => s.totalAgreedAmount === 0) ? (
                   <div className="h-[270px] flex items-center justify-center text-muted-foreground text-sm">
                     No data for selected period
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={270}>
-                    <BarChart data={stageData} margin={{ left: 0, right: 16, top: 20, bottom: 4 }} barCategoryGap="28%">
+                    <BarChart data={convertedStageData} margin={{ left: 0, right: 16, top: 20, bottom: 4 }} barCategoryGap="28%">
                       <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
                       <XAxis dataKey="stage" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                       <Tooltip content={<CustomBarTooltip />} />
                       <Bar dataKey="totalAgreedAmount" name="Agreed" radius={[6, 6, 0, 0]} maxBarSize={56}>
-                        {stageData.map((entry) => (
+                        {convertedStageData.map((entry) => (
                           <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] ?? "#94a3b8"} />
                         ))}
                         <LabelList dataKey="totalAgreedAmount" position="top" formatter={fmtK} style={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
@@ -550,13 +580,13 @@ export default function Dashboard() {
             </p>
           </CardHeader>
           <CardContent className="pt-0">
-            {weeklyData.length === 0 || weeklyData.every((w) => w.totalDeals === 0) ? (
+            {convertedWeeklyData.length === 0 || convertedWeeklyData.every((w) => w.totalDeals === 0) ? (
               <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
                 No data for selected period
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={weeklyData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="30%">
+                <ComposedChart data={convertedWeeklyData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="30%">
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
                   <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="amount" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
