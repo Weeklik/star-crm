@@ -284,11 +284,10 @@ export default function Dashboard() {
   const topPersons = [...byPerson]
     .map((p) => ({
       name: (p.salespersonName || p.email || "Unknown").split(" ")[0],
-      agreed:   Math.round((p.agreedAmountAll ?? p.totalAgreedAmount) * getRateFor(p.currency ?? "")),
-      received: Math.round(p.totalReceivedAmount * getRateFor(p.currency ?? "")),
-      deals:    p.totalDeals,
+      closedAmount: Math.round((p.totalAgreedAmount ?? 0) * getRateFor(p.currency ?? "")),
+      deals: p.closedDeals ?? 0,
     }))
-    .sort((a, b) => b.received - a.received)
+    .sort((a, b) => b.closedAmount - a.closedAmount)
     .slice(0, 8);
 
   const CustomPieTooltip = ({ active, payload }: any) => {
@@ -533,7 +532,7 @@ export default function Dashboard() {
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 {showPersonChart
-                  ? "Pipeline & received amounts by salesperson (converted)"
+                  ? "Closed orders agreed amount by salesperson · highest to lowest"
                   : "Agreed amount per deal stage"}
               </p>
             </CardHeader>
@@ -555,8 +554,8 @@ export default function Dashboard() {
                       <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={56} />
                       <Tooltip content={<CustomBarTooltip />} />
-                      <Bar dataKey="received" name="Received" fill="#34d399" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                        <LabelList dataKey="received" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                      <Bar dataKey="closedAmount" name="Closed Orders Amount" fill="#fbbf24" radius={[0, 4, 4, 0]} maxBarSize={14}>
+                        <LabelList dataKey="closedAmount" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
