@@ -282,14 +282,14 @@ export default function Dashboard() {
   });
 
   const topPersons = [...byPerson]
-    .sort((a, b) => b.totalReceivedAmount - a.totalReceivedAmount)
-    .slice(0, 8)
     .map((p) => ({
       name: (p.salespersonName || p.email || "Unknown").split(" ")[0],
       agreed:   Math.round((p.agreedAmountAll ?? p.totalAgreedAmount) * getRateFor(p.currency ?? "")),
       received: Math.round(p.totalReceivedAmount * getRateFor(p.currency ?? "")),
       deals:    p.totalDeals,
-    }));
+    }))
+    .sort((a, b) => b.received - a.received)
+    .slice(0, 8);
 
   const CustomPieTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
