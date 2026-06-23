@@ -473,7 +473,7 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Orders by Stage</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Count distribution · updates with region &amp; date filter
+                % shown relative to Quotation Sent total · updates with region &amp; date filter
               </p>
             </CardHeader>
             <CardContent className="pt-0">
@@ -499,28 +499,35 @@ export default function Dashboard() {
                   </PieChart>
                 </ResponsiveContainer>
 
-                {/* Custom legend with counts */}
-                <div className="grid grid-cols-2 gap-2">
-                  {pieData.map((entry) => {
-                    const total = pieData.reduce((s, d) => s + d.value, 0);
-                    const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-                    return (
-                      <div key={entry.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ background: STAGE_COLORS[entry.name] ?? "#94a3b8" }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] text-muted-foreground truncate">{entry.name}</p>
-                          <p className="text-sm font-bold leading-tight">
-                            {entry.value}
-                            <span className="text-[10px] font-normal text-muted-foreground ml-1">({pct}%)</span>
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* Custom legend — % relative to Quotation Sent */}
+                {(() => {
+                  const qsCount = pieData.find((d) => d.name === "Quotation Sent")?.value ?? 0;
+                  return (
+                    <div className="grid grid-cols-2 gap-2">
+                      {pieData.map((entry) => {
+                        const isQS = entry.name === "Quotation Sent";
+                        const pct = qsCount > 0 ? Math.round((entry.value / qsCount) * 100) : 0;
+                        return (
+                          <div key={entry.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ background: STAGE_COLORS[entry.name] ?? "#94a3b8" }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] text-muted-foreground truncate">{entry.name}</p>
+                              <p className="text-sm font-bold leading-tight">
+                                {entry.value}
+                                <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                                  {isQS ? "(Total)" : `(${pct}%)`}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
