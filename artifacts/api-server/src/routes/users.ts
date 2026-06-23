@@ -66,6 +66,7 @@ router.get(
   requireAuth,
   requireOwner,
   async (_req, res): Promise<void> => {
+    res.setHeader("Cache-Control", "no-store");
     const users = await db
       .select({
         id: usersTable.id,

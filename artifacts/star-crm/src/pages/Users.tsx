@@ -165,15 +165,16 @@ export default function Users() {
         throw new Error(d.error || `Save failed (${res.status})`);
       }
       const updated = await res.json();
-      // Directly patch the cached list so the UI updates immediately without
-      // relying on a re-fetch that may get a stale 304 browser-cache hit.
+      // Directly patch the cached list so the UI updates immediately.
       queryClient.setQueryData(getListUsersQueryKey(), (old: any) =>
         Array.isArray(old)
           ? old.map((u: any) => (u.id === updated.id ? { ...u, country: updated.country, currency: updated.currency } : u))
           : old,
       );
-      queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
-      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      // resetQueries wipes the cache and forces a fresh (non-304) fetch next
+      // time the component needs it, avoiding stale browser-cached overrides.
+      queryClient.resetQueries({ queryKey: getListUsersQueryKey() });
+      queryClient.resetQueries({ queryKey: getGetMeQueryKey() });
       toast({ title: "Profile updated", description: `${editTarget.name || editTarget.email}'s region settings saved.` });
       setEditTarget(null);
     } catch (e: any) {
