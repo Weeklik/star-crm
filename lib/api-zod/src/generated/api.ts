@@ -236,6 +236,8 @@ export const ListUsersResponseItem = zod.object({
   email: zod.string(),
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
+  country: zod.string().nullish(),
+  currency: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
@@ -248,6 +250,8 @@ export const GetMeResponse = zod.object({
   email: zod.string(),
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
+  country: zod.string().nullish(),
+  currency: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -267,6 +271,8 @@ export const UpdateUserRoleResponse = zod.object({
   email: zod.string(),
   name: zod.string().nullish(),
   role: zod.enum(["owner", "salesperson"]),
+  country: zod.string().nullish(),
+  currency: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 

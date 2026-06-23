@@ -147,6 +147,10 @@ export interface User {
   /** @nullable */
   name?: string | null;
   role: UserRole;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  currency?: string | null;
   createdAt: string;
 }
 

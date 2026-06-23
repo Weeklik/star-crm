@@ -553,6 +553,10 @@ components:
         role:
           type: string
           enum: [owner, salesperson]
+        country:
+          type: ["string", "null"]
+        currency:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
