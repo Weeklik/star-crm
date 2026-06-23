@@ -29,7 +29,6 @@ import {
 import {
   Loader2,
   TrendingUp,
-  DollarSign,
   Briefcase,
   Target,
   Users,
@@ -341,15 +340,6 @@ export default function Dashboard() {
       gradient: "from-emerald-500/15",
       iconBg: "bg-emerald-500/10",
       iconColor: "text-emerald-400",
-    },
-    {
-      label: "Received Amount",
-      value: fmtAmt(useConverted ? (allRegionsTotals?.totalReceivedAmount ?? 0) : (summary?.totalReceivedAmount ?? 0)),
-      sub: "Collected",
-      icon: DollarSign,
-      gradient: "from-amber-500/15",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-400",
     },
     {
       label: "Lost Orders",
