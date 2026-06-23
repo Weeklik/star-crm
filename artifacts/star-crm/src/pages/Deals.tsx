@@ -1202,6 +1202,8 @@ export default function Deals() {
                   const stage = v as Stage;
                   set("stage", stage);
                   if (stage !== "Order Lost") set("lostReason", "");
+                  if (stage === "Quotation Sent") set("salesStatus", "25%");
+                  else if (stage === "Order Confirmed") set("salesStatus", "75%");
                 }}
               >
                 <SelectTrigger>
