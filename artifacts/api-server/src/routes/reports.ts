@@ -113,15 +113,7 @@ router.get(
     const lostDealsList = deals.filter((d) => d.stage === "Order Lost");
     const lostDeals = lostDealsList.length;
     const lostAmount = lostDealsList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
-    // When an explicit date range is given the range itself acts as the window.
-    // Only fall back to a 90-day rolling cutoff when no startDate filter was applied.
-    const quotationSentList = deals.filter((d) => {
-      if (d.stage !== "Quotation Sent") return false;
-      if (startDate) return true; // already scoped by date range
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 90);
-      return (d.dealStartDate ?? "") > cutoff.toISOString().slice(0, 10);
-    });
+    const quotationSentList = deals.filter((d) => d.stage === "Quotation Sent");
     const quotationSentCount = quotationSentList.length;
     const quotationSentAmount = quotationSentList.reduce((s, d) => s + parseFloat(d.agreedAmount ?? "0"), 0);
     const avgProgress =
