@@ -1,1 +1,1 @@
-- [Neon vs local DB](neon-vs-local-db.md) — API server uses NEON_DATABASE_URL; always run ALTER TABLE against that, not $DATABASE_URL.
+- [Drizzle set() with Zod optional types](drizzle-zod-set-bug.md) — Drizzle ORM's set() silently skips all columns when passed a Zod-inferred object with optional fields; use raw SQL instead.

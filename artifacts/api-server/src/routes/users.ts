@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { requireAuth, requireOwner } from "../middlewares/requireAuth";
 import {
@@ -178,6 +178,8 @@ router.patch(
   requireAuth,
   requireOwner,
   async (req, res): Promise<void> => {
+    req.log.info({ rawBody: req.body, params: req.params }, "PATCH /users/:id/profile received");
+
     const idParam = z.coerce.number().int().safeParse(req.params.id);
     if (!idParam.success) {
       res.status(400).json({ error: "Invalid user ID" });
@@ -196,17 +198,38 @@ router.patch(
       return;
     }
 
-    const [updated] = await db
-      .update(usersTable)
-      .set(body.data)
-      .where(eq(usersTable.id, idParam.data))
-      .returning(safeUserFields);
+    // The frontend always sends both fields; use them directly.
+    // Raw SQL is used here because Drizzle's set() with Zod-inferred
+    // optional types silently produces no SET clauses under some conditions.
+    const countryVal = body.data.country ?? null;
+    const currencyVal = body.data.currency ?? "USD";
+
+    req.log.info({ userId: idParam.data, countryVal, currencyVal }, "Updating user profile via raw SQL");
+
+    const result = await db.execute(sql`
+      UPDATE users
+      SET country = ${countryVal}, currency = ${currencyVal}
+      WHERE id = ${idParam.data}
+      RETURNING
+        id,
+        email,
+        name,
+        role,
+        profile_picture   AS "profilePicture",
+        date_of_joining   AS "dateOfJoining",
+        country,
+        currency,
+        created_at        AS "createdAt"
+    `);
+
+    const updated = result.rows[0] as typeof safeUserFields | undefined;
 
     if (!updated) {
       res.status(404).json({ error: "User not found" });
       return;
     }
 
+    req.log.info({ updated }, "User profile updated");
     res.json(updated);
   },
 );
