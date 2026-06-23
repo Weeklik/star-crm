@@ -15,7 +15,6 @@ import Profile from "./pages/Profile";
 
 import SummarySalesReport from "./pages/SummarySalesReport";
 import SalesBreakdown from "./pages/SalesBreakdown";
-import ReportsDashboard from "./pages/ReportsDashboard";
 import Users from "./pages/Users";
 import Login from "./pages/Login";
 import NotFound from "./pages/not-found";
@@ -72,9 +71,6 @@ function AppRoutes() {
         </Route>
         <Route path="/deals">
           <ProtectedRoute component={Deals} />
-        </Route>
-        <Route path="/reports/dashboard">
-          <ProtectedRoute component={ReportsDashboard} ownerOnly />
         </Route>
         <Route path="/reports/summary-sales">
           <ProtectedRoute component={SummarySalesReport} />
