@@ -274,9 +274,12 @@ export default function Dashboard() {
     ? (allRegionsTotals?.quotationSentAmount ?? 0)
     : (stageData.find((s) => s.stage === "Quotation Sent")?.totalAgreedAmount ?? 0);
 
-  const pieData = convertedStageData
-    .filter((s) => s.count > 0)
-    .map((s) => ({ name: s.stage, value: s.count, amount: s.totalAgreedAmount }));
+  // Always include all 4 stages, even those with 0 count
+  const ALL_STAGES = ["Quotation Sent", "Order Confirmed", "Order Closed", "Order Lost"];
+  const pieData = ALL_STAGES.map((stageName) => {
+    const found = convertedStageData.find((s) => s.stage === stageName);
+    return { name: stageName, value: found?.count ?? 0, amount: found?.totalAgreedAmount ?? 0 };
+  });
 
   const topPersons = [...byPerson]
     .sort((a, b) => (b.agreedAmountAll ?? b.totalAgreedAmount) - (a.agreedAmountAll ?? a.totalAgreedAmount))
@@ -469,23 +472,21 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border-border/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Order Stage Breakdown</CardTitle>
-              <p className="text-xs text-muted-foreground">Distribution by stage · deal count</p>
+              <CardTitle className="text-base font-semibold">Orders by Stage</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Count distribution · updates with region &amp; date filter
+              </p>
             </CardHeader>
             <CardContent className="pt-0">
-              {pieData.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
-                  No data for selected period
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={270}>
+              <div className="flex flex-col gap-4">
+                <ResponsiveContainer width="100%" height={230}>
                   <PieChart>
                     <Pie
                       data={pieData}
                       cx="50%"
-                      cy="44%"
-                      innerRadius={65}
-                      outerRadius={105}
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={95}
                       paddingAngle={3}
                       dataKey="value"
                       labelLine={false}
@@ -496,16 +497,32 @@ export default function Dashboard() {
                       ))}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip />} />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(value) => (
-                        <span className="text-xs text-foreground/80">{value}</span>
-                      )}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
-              )}
+
+                {/* Custom legend with counts */}
+                <div className="grid grid-cols-2 gap-2">
+                  {pieData.map((entry) => {
+                    const total = pieData.reduce((s, d) => s + d.value, 0);
+                    const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                    return (
+                      <div key={entry.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: STAGE_COLORS[entry.name] ?? "#94a3b8" }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] text-muted-foreground truncate">{entry.name}</p>
+                          <p className="text-sm font-bold leading-tight">
+                            {entry.value}
+                            <span className="text-[10px] font-normal text-muted-foreground ml-1">({pct}%)</span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
