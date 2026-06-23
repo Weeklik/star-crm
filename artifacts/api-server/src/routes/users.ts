@@ -131,7 +131,7 @@ router.post(
         name: z.string().min(1),
         email: z.string().email(),
         password: z.string().min(6),
-        country: z.string().length(2).nullable().optional(),
+        country: z.string().nullable().optional(),
         currency: z.string().min(3).max(3).optional(),
       })
       .safeParse(req.body);

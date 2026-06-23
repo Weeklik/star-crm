@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useListUsers, useUpdateUserRole, getListUsersQueryKey } from "@workspace/api-client-react";
+import { useListUsers, useUpdateUserRole, getListUsersQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetMe } from "@workspace/api-client-react";
 import {
@@ -165,6 +165,7 @@ export default function Users() {
         throw new Error(d.error || "Failed to save");
       }
       queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       toast({ title: "Profile updated", description: `${editTarget.name || editTarget.email}'s region settings saved.` });
       setEditTarget(null);
     } catch (e: any) {
