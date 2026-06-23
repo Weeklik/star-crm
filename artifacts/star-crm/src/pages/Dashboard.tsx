@@ -282,7 +282,7 @@ export default function Dashboard() {
   });
 
   const topPersons = [...byPerson]
-    .sort((a, b) => (b.agreedAmountAll ?? b.totalAgreedAmount) - (a.agreedAmountAll ?? a.totalAgreedAmount))
+    .sort((a, b) => b.totalReceivedAmount - a.totalReceivedAmount)
     .slice(0, 8)
     .map((p) => ({
       name: (p.salespersonName || p.email || "Unknown").split(" ")[0],
