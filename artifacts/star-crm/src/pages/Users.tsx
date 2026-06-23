@@ -151,19 +151,27 @@ export default function Users() {
     if (!editTarget) return;
     setEditSaving(true);
     try {
-      const res = await fetch(`${BASE}/api/users/${editTarget.id}/profile`, {
+      const res = await fetch(`/api/users/${editTarget.id}/profile`, {
         method: "PATCH",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
         body: JSON.stringify({
           country: editCountry || null,
-          currency: editCurrency,
+          currency: editCurrency || "USD",
         }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || "Failed to save");
+        throw new Error(d.error || `Save failed (${res.status})`);
       }
+      const updated = await res.json();
+      // Directly patch the cached list so the UI updates immediately without
+      // relying on a re-fetch that may get a stale 304 browser-cache hit.
+      queryClient.setQueryData(getListUsersQueryKey(), (old: any) =>
+        Array.isArray(old)
+          ? old.map((u: any) => (u.id === updated.id ? { ...u, country: updated.country, currency: updated.currency } : u))
+          : old,
+      );
       queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       toast({ title: "Profile updated", description: `${editTarget.name || editTarget.email}'s region settings saved.` });
