@@ -519,6 +519,7 @@ export default function Deals() {
 
   const { data: users } = useListUsers({ query: { enabled: isOwner } } as any);
   const salespersons = users?.filter((u) => u.role === "salesperson") ?? [];
+  const spNameById = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
 
@@ -1006,6 +1007,7 @@ export default function Deals() {
             <TableRow className="bg-secondary/50">
               <TableHead>Start Date</TableHead>
               <TableHead>Company</TableHead>
+              <TableHead>Salesperson</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Product</TableHead>
               <TableHead>Stage</TableHead>
@@ -1017,7 +1019,7 @@ export default function Deals() {
           <TableBody>
             {pagedDeals?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   No deals found
                 </TableCell>
               </TableRow>
@@ -1034,6 +1036,9 @@ export default function Deals() {
                       : "—"}
                   </TableCell>
                   <TableCell className="font-medium">{deal.companyName}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                    {spNameById[deal.salespersonId ?? 0] ?? "—"}
+                  </TableCell>
                   <TableCell>{deal.name}</TableCell>
                   <TableCell className="text-muted-foreground">{deal.productItem}</TableCell>
                   <TableCell>
