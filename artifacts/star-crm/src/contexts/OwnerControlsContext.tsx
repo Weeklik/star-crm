@@ -160,15 +160,17 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
   const baseCurrency = user?.currency ?? "USD";
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
-  const regions: RegionOption[] = [
-    { country: "KSA",      currency: "SAR" },
-    { country: "UAE",      currency: "AED" },
-    { country: "Nigeria",  currency: "NGN" },
-    { country: "Tunisia",  currency: "TND" },
-    { country: "Egypt",    currency: "EGP" },
-    { country: "Kenya",    currency: "KES" },
-    { country: "Ethiopia", currency: "ETB" },
-  ];
+  const [regions, setRegions] = useState<RegionOption[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch("/api/lookup/regions", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data: RegionOption[]) => {
+        if (Array.isArray(data)) setRegions(data);
+      })
+      .catch(() => {});
+  }, [user]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // sourceCurrency = natural currency of the current view (region's or owner's)
   const [sourceCurrency, setSourceCurrencyState] = useState(baseCurrency);
