@@ -67,7 +67,7 @@ export function OwnerControlsBar() {
             <SelectItem value="all">All Regions</SelectItem>
             {regions.map((r: RegionOption) => (
               <SelectItem key={r.country} value={r.country}>
-                {r.country}{r.currency ? ` (${r.currency})` : ""}
+                {r.country}
               </SelectItem>
             ))}
             {regions.length === 0 && (
