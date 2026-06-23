@@ -6,8 +6,6 @@ import { useAuth } from "./AuthContext";
  * Used to auto-select the display currency when a region is chosen.
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  "Dubai": "AED", "Abu Dhabi": "AED", "Sharjah": "AED", "Ajman": "AED",
-  "Umm Al Quwain": "AED", "Ras Al Khaimah": "AED", "Fujairah": "AED",
   "Qatar": "QAR", "Saudi Arabia": "SAR", "Kuwait": "KWD", "Bahrain": "BHD",
   "Oman": "OMR", "Egypt": "EGP", "India": "INR", "Pakistan": "PKR",
   "Bangladesh": "BDT", "Sri Lanka": "LKR", "Nepal": "NPR", "Jordan": "JOD",
@@ -179,10 +177,7 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
   const regions: RegionOption[] = [
-    { country: "Dubai",           currency: "AED" }, { country: "Abu Dhabi",    currency: "AED" },
-    { country: "Sharjah",         currency: "AED" }, { country: "Ajman",         currency: "AED" },
-    { country: "Umm Al Quwain",   currency: "AED" }, { country: "Ras Al Khaimah",currency: "AED" },
-    { country: "Fujairah",        currency: "AED" }, { country: "Qatar",         currency: "QAR" },
+    { country: "Qatar",           currency: "QAR" },
     { country: "Saudi Arabia",    currency: "SAR" }, { country: "Kuwait",        currency: "KWD" },
     { country: "Bahrain",         currency: "BHD" }, { country: "Oman",          currency: "OMR" },
     { country: "Egypt",           currency: "EGP" }, { country: "India",         currency: "INR" },

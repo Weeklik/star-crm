@@ -17,13 +17,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const COUNTRIES: { code: string; name: string; currency: string }[] = [
-  { code: "Dubai",                    name: "Dubai (AED)",                    currency: "AED" },
-  { code: "Abu Dhabi",                name: "Abu Dhabi (AED)",                currency: "AED" },
-  { code: "Sharjah",                  name: "Sharjah (AED)",                  currency: "AED" },
-  { code: "Ajman",                    name: "Ajman (AED)",                    currency: "AED" },
-  { code: "Umm Al Quwain",            name: "Umm Al Quwain (AED)",            currency: "AED" },
-  { code: "Ras Al Khaimah",           name: "Ras Al Khaimah (AED)",           currency: "AED" },
-  { code: "Fujairah",                 name: "Fujairah (AED)",                 currency: "AED" },
   { code: "Qatar",                    name: "Qatar (QAR)",                    currency: "QAR" },
   { code: "Saudi Arabia",             name: "Saudi Arabia (SAR)",             currency: "SAR" },
   { code: "Kuwait",                   name: "Kuwait (KWD)",                   currency: "KWD" },
