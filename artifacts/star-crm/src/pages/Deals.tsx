@@ -8,7 +8,7 @@ import {
   getListDealsQueryKey,
 } from "@workspace/api-client-react";
 import type { Deal } from "@workspace/api-client-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2,
@@ -522,6 +522,16 @@ export default function Deals() {
   const spNameById = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
+  const [filterRegion, setFilterRegion] = useState<string>("all");
+  const [regions, setRegions] = useState<{ country: string }[]>([]);
+
+  useEffect(() => {
+    if (!isOwner) return;
+    fetch("/api/lookup/regions", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setRegions(data); })
+      .catch(() => {});
+  }, [isOwner]);
 
   const { data: deals, isLoading } = useListDeals(
     me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
@@ -569,8 +579,9 @@ export default function Deals() {
       const matchesFrom  = !dateFrom     || dateStr >= dateFrom;
       const matchesTo    = !dateTo       || dateStr <= dateTo;
       const matchesStage = !stageFilter  || d.stage === stageFilter;
-      const matchesSp    = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
-      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp;
+      const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
+      const matchesRegion = !isOwner || filterRegion === "all" || (d as any).region === filterRegion;
+      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion;
     })
     .slice()
     .sort((a, b) => {
@@ -926,6 +937,20 @@ export default function Deals() {
             <option value="all">All Salespersons</option>
             {salespersons.map((u) => (
               <option key={u.id} value={String(u.id)}>{u.name ?? u.email}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Region filter — owner only */}
+        {isOwner && regions.length > 0 && (
+          <select
+            value={filterRegion}
+            onChange={(e) => { setFilterRegion(e.target.value); setPage(1); }}
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
+          >
+            <option value="all">All Regions</option>
+            {regions.map((r) => (
+              <option key={r.country} value={r.country}>{r.country}</option>
             ))}
           </select>
         )}
