@@ -1204,6 +1204,8 @@ export default function Deals() {
                   if (stage !== "Order Lost") set("lostReason", "");
                   if (stage === "Quotation Sent") set("salesStatus", "25%");
                   else if (stage === "Order Confirmed") set("salesStatus", "75%");
+                  else if (stage === "Order Closed") set("salesStatus", "100%");
+                  else if (stage === "Order Lost") set("salesStatus", "0%");
                 }}
               >
                 <SelectTrigger>
@@ -1302,6 +1304,7 @@ export default function Deals() {
                   <SelectValue placeholder="Select chances" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0%">0%</SelectItem>
                   <SelectItem value="25%">25%</SelectItem>
                   <SelectItem value="50%">50%</SelectItem>
                   <SelectItem value="75%">75%</SelectItem>
