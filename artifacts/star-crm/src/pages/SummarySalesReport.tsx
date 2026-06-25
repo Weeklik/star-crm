@@ -197,9 +197,15 @@ export default function SummarySalesReport() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, getRateFor, sourceCurrency]);
 
+  // Sort by the current month's sales in the display currency so cross-currency rankings are accurate
   const sortedRows = useMemo(
-    () => [...rows].sort((a, b) => (b.monthly[currentMonth] ?? 0) - (a.monthly[currentMonth] ?? 0)),
-    [rows, currentMonth]
+    () =>
+      [...rows].sort(
+        (a, b) =>
+          (b.monthly[currentMonth] ?? 0) * getRateFor(b.currency ?? sourceCurrency) -
+          (a.monthly[currentMonth] ?? 0) * getRateFor(a.currency ?? sourceCurrency),
+      ),
+    [rows, currentMonth, getRateFor, sourceCurrency],
   );
 
   const hasSummary    = summaryStart && summaryEnd;
@@ -295,27 +301,41 @@ export default function SummarySalesReport() {
                 <thead>
                   {/* Main header row */}
                   <tr className="bg-muted/60 border-b border-border">
-                    <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap sticky left-0 bg-muted/60">Name</th>
+                    <th className="px-2 py-2.5 text-center font-semibold whitespace-nowrap w-8 sticky left-0 bg-muted/60">#</th>
+                    <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap sticky left-8 bg-muted/60">Name</th>
                     <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">Avg Monthly {year}</th>
                     <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">Total {year}</th>
-                    {MONTHS.map((m, idx) => (
-                      <th key={m} className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">
-                        {m} {year}
-                        {!isSameCurrency && !isAllRegions && (
-                          <div className="mt-0.5">
-                            <MonthRateCell
-                              baseCurrency={sourceCurrency}
-                              targetCurrency={selectedCurrency}
-                              rate={getRate(yr, idx + 1)}
-                              loading={rateIsLoading(yr, idx + 1)}
-                              overridden={rateIsOverridden(yr, idx + 1)}
-                              isCurrentMonth={rateIsCurrent(yr, idx + 1)}
-                              onEdit={(r) => setOverride(yr, idx + 1, r)}
-                            />
-                          </div>
-                        )}
-                      </th>
-                    ))}
+                    {MONTHS.map((m, idx) => {
+                      const isCurrentCol = idx + 1 === currentMonth;
+                      return (
+                        <th
+                          key={m}
+                          className={`px-3 py-2.5 text-right font-semibold whitespace-nowrap ${
+                            isCurrentCol ? "bg-primary/10 text-primary" : ""
+                          }`}
+                        >
+                          <span className="flex items-center justify-end gap-1">
+                            {m} {year}
+                            {isCurrentCol && (
+                              <span className="text-[10px] font-normal opacity-70">▼</span>
+                            )}
+                          </span>
+                          {!isSameCurrency && !isAllRegions && (
+                            <div className="mt-0.5">
+                              <MonthRateCell
+                                baseCurrency={sourceCurrency}
+                                targetCurrency={selectedCurrency}
+                                rate={getRate(yr, idx + 1)}
+                                loading={rateIsLoading(yr, idx + 1)}
+                                overridden={rateIsOverridden(yr, idx + 1)}
+                                isCurrentMonth={rateIsCurrent(yr, idx + 1)}
+                                onEdit={(r) => setOverride(yr, idx + 1, r)}
+                              />
+                            </div>
+                          )}
+                        </th>
+                      );
+                    })}
                     {hasSummary && (
                       <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap bg-blue-500/10 border-l border-border" colSpan={3}>
                         Summary {summaryLabel}
@@ -324,7 +344,8 @@ export default function SummarySalesReport() {
                   </tr>
                   {hasSummary && (
                     <tr className="bg-muted/30 border-b border-border text-xs">
-                      <th className="px-3 py-1 sticky left-0 bg-muted/30" />
+                      <th className="px-2 py-1 sticky left-0 bg-muted/30" />
+                      <th className="px-3 py-1 sticky left-8 bg-muted/30" />
                       <th className="px-3 py-1" />
                       <th className="px-3 py-1" />
                       {MONTHS.map((m) => <th key={m} className="px-3 py-1" />)}
@@ -361,7 +382,18 @@ export default function SummarySalesReport() {
                             key={`row-${row.salespersonId}`}
                             className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
                           >
-                            <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-0 bg-card">
+                            <td className="px-2 py-2 text-center text-[11px] font-bold text-muted-foreground whitespace-nowrap sticky left-0 bg-card w-8">
+                              {i + 1 === 1 ? (
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 text-[10px] font-bold">1</span>
+                              ) : i + 1 === 2 ? (
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-400/20 text-slate-500 dark:text-slate-300 text-[10px] font-bold">2</span>
+                              ) : i + 1 === 3 ? (
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-400/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold">3</span>
+                              ) : (
+                                <span className="text-muted-foreground/60">{i + 1}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-8 bg-card">
                               {row.name}
                               {!rowIsSame && (
                                 <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency})</span>
@@ -373,6 +405,7 @@ export default function SummarySalesReport() {
                               const mIdx     = idx + 1;
                               const val      = row.monthly[mIdx] ?? 0;
                               const active   = isExpanded && expandedMonth === mIdx;
+                              const isCurCol = mIdx === currentMonth;
                               // In specific-region mode use historical rate; in "All Regions" use live per-row rate
                               const cellRate = isAllRegions ? rowRate : getRate(yr, mIdx);
                               return (
@@ -382,7 +415,9 @@ export default function SummarySalesReport() {
                                   className={`px-3 py-2 text-right tabular-nums cursor-pointer select-none transition-colors
                                     ${active
                                       ? "bg-primary/15 text-primary font-semibold ring-inset ring-1 ring-primary/40"
-                                      : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                                      : isCurCol
+                                        ? "bg-primary/5 text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+                                        : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                                     }`}
                                 >
                                   <span className="flex items-center justify-end gap-0.5">
@@ -522,7 +557,8 @@ export default function SummarySalesReport() {
                 {rows.length > 0 && (
                   <tfoot>
                     <tr className="border-t-2 border-border bg-muted/40 font-semibold">
-                      <td className="px-3 py-2 sticky left-0 bg-muted/40">Total</td>
+                      <td className="px-2 py-2 sticky left-0 bg-muted/40" />
+                      <td className="px-3 py-2 sticky left-8 bg-muted/40">Total</td>
                       <td className="px-3 py-2 text-right">
                         {fmtAmt(Math.round(convertedTotals?.avgMonthly ?? 0), 1)}
                       </td>
