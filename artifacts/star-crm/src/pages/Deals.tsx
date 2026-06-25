@@ -97,7 +97,8 @@ const LOST_REASONS = [
   "Specification Match",
   "Credit Period",
   "Availability Issue at our end",
-] as const;
+  "Other Factors",
+];
 
 const WORLD_COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda",
@@ -1293,29 +1294,45 @@ export default function Deals() {
                 />
               </div>
             )}
-            {form.stage === "Order Lost" && (
-              <div className="space-y-1.5">
-                <Label>
-                  Lost Reason *
-                </Label>
-                <Select
-                  value={form.lostReason || "__none__"}
-                  onValueChange={(v) => set("lostReason", v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a reason…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— No reason selected —</SelectItem>
-                    {LOST_REASONS.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {form.stage === "Order Lost" && (() => {
+              const isOther = form.lostReason === "Other Factors" || form.lostReason.startsWith("Other Factors: ");
+              const dropdownVal = form.lostReason === "" ? "__none__" : isOther ? "Other Factors" : form.lostReason;
+              const otherText = form.lostReason.startsWith("Other Factors: ")
+                ? form.lostReason.slice("Other Factors: ".length)
+                : "";
+              return (
+                <div className="space-y-2">
+                  <Label>Lost Reason *</Label>
+                  <Select
+                    value={dropdownVal}
+                    onValueChange={(v) => {
+                      if (v === "__none__") set("lostReason", "");
+                      else if (v === "Other Factors") set("lostReason", "Other Factors");
+                      else set("lostReason", v);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a reason…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— No reason selected —</SelectItem>
+                      {LOST_REASONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {isOther && (
+                    <Input
+                      placeholder="Describe the reason…"
+                      value={otherText}
+                      onChange={(e) =>
+                        set("lostReason", e.target.value ? `Other Factors: ${e.target.value}` : "Other Factors")
+                      }
+                    />
+                  )}
+                </div>
+              );
+            })()}
             <div className="space-y-1.5">
               <Label>
                 Order Type
@@ -1416,7 +1433,7 @@ export default function Deals() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !form.name || !form.companyName || !form.productItem || (form.stage === "Order Lost" && !form.lostReason)}
+              disabled={saving || !form.name || !form.companyName || !form.productItem || (form.stage === "Order Lost" && (!form.lostReason || form.lostReason === "Other Factors"))}
               data-testid="btn-save-deal"
             >
               {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
