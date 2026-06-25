@@ -810,41 +810,6 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Export Bar */}
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => window.print()}
-            className="px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-secondary transition-colors"
-          >
-            Export PDF
-          </button>
-          <button
-            onClick={() => {
-              const rows = [
-                ["Period", dateRangeOptions.find((o) => o.key === dateRange)?.label ?? dateRange],
-                ["Quotation Sent", String(useConverted ? (allRegionsTotals?.quotationSentCount ?? 0) : (summary?.quotationSentCount ?? 0))],
-                ["Confirmed Orders", String(useConverted ? (allRegionsTotals?.confirmedDeals ?? 0) : (summary?.confirmedDeals ?? 0))],
-                ["Closed Orders", String(useConverted ? (allRegionsTotals?.closedDeals ?? 0) : (summary?.closedDeals ?? 0))],
-                ["Received Amount", String(useConverted ? (allRegionsTotals?.totalReceivedAmount ?? 0) : (summary?.totalReceivedAmount ?? 0))],
-                ["Lost Orders", String(useConverted ? (allRegionsTotals?.lostDeals ?? 0) : (summary?.lostDeals ?? 0))],
-                [],
-                ["Stage", "Count", "Agreed Amount"],
-                ...stageData.map((s) => [s.stage, String(s.count), String(s.totalAgreedAmount)]),
-              ];
-              const csv = rows.map((r) => r.join(",")).join("\n");
-              const blob = new Blob([csv], { type: "text/csv" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `dashboard-${selectedYear}-${dateRange}.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Export Excel
-          </button>
-        </div>
       </div>
     </div>
   );
