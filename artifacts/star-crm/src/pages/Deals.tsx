@@ -66,13 +66,14 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useOwnerControls } from "@/contexts/OwnerControlsContext";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 
-type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost";
+type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost" | "Sales Return";
 
 const STAGES: Stage[] = [
   "Quotation Sent",
   "Order Confirmed",
   "Order Closed",
   "Order Lost",
+  "Sales Return",
 ];
 
 // Excel template column headers (must stay in sync with parsing logic)
@@ -215,6 +216,7 @@ const getStageColor = (stage: string) => {
     case "Order Confirmed": return "bg-yellow-500/20 text-yellow-500";
     case "Order Closed": return "bg-green-500/20 text-green-500";
     case "Order Lost": return "bg-red-500/20 text-red-500";
+    case "Sales Return": return "bg-orange-500/20 text-orange-500";
     default: return "bg-gray-500/20 text-gray-500";
   }
 };
@@ -325,6 +327,7 @@ function parseAmount(val: unknown): number {
 /** Normalise a stage string to one of our four valid values */
 function normaliseStage(raw: string): Stage {
   const lower = raw.toLowerCase();
+  if (lower.includes("return")) return "Sales Return";
   if (lower.includes("confirm")) return "Order Confirmed";
   if (lower.includes("close") || lower.includes("closed")) return "Order Closed";
   if (lower.includes("lost")) return "Order Lost";

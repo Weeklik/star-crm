@@ -45,6 +45,7 @@ export const ListDealsResponseItem = zod.object({
     "Order Closed",
     "Order Confirmed",
     "Order Lost",
+    "Sales Return",
   ]),
   progress: zod
     .number()
@@ -83,6 +84,7 @@ export const CreateDealBody = zod.object({
     "Order Closed",
     "Order Confirmed",
     "Order Lost",
+    "Sales Return",
   ]),
   progress: zod
     .number()
@@ -126,6 +128,7 @@ export const GetDealResponse = zod.object({
     "Order Closed",
     "Order Confirmed",
     "Order Lost",
+    "Sales Return",
   ]),
   progress: zod
     .number()
@@ -163,7 +166,13 @@ export const UpdateDealBody = zod.object({
   companyName: zod.string().optional(),
   productItem: zod.string().optional(),
   stage: zod
-    .enum(["Quotation Sent", "Order Closed", "Order Confirmed", "Order Lost"])
+    .enum([
+      "Quotation Sent",
+      "Order Closed",
+      "Order Confirmed",
+      "Order Lost",
+      "Sales Return",
+    ])
     .optional(),
   progress: zod
     .number()
@@ -200,6 +209,7 @@ export const UpdateDealResponse = zod.object({
     "Order Closed",
     "Order Confirmed",
     "Order Lost",
+    "Sales Return",
   ]),
   progress: zod
     .number()

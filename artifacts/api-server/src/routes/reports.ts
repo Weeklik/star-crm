@@ -355,7 +355,7 @@ router.get(
             .where(and(...conditions))
         : await db.select().from(dealsTable);
 
-    const stages = ["Quotation Sent", "Order Closed", "Order Confirmed", "Order Lost"];
+    const stages = ["Quotation Sent", "Order Closed", "Order Confirmed", "Order Lost", "Sales Return"];
     const breakdown = stages.map((stage) => {
       const stageDeals = deals.filter((d) => d.stage === stage);
       return {

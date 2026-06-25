@@ -111,6 +111,7 @@ const STAGE_COLORS: Record<string, string> = {
   "Order Closed": "#fbbf24",
   "Order Confirmed": "#34d399",
   "Order Lost": "#f87171",
+  "Sales Return": "#fb923c",
 };
 
 function getDateBounds(range: DateRange, year: number): { startDate: string; endDate: string } {
@@ -328,7 +329,7 @@ export default function Dashboard() {
     : (stageData.find((s) => s.stage === "Quotation Sent")?.totalAgreedAmount ?? 0);
 
   // Always include all 4 stages, even those with 0 count
-  const ALL_STAGES = ["Quotation Sent", "Order Confirmed", "Order Closed", "Order Lost"];
+  const ALL_STAGES = ["Quotation Sent", "Order Confirmed", "Order Closed", "Order Lost", "Sales Return"];
   const pieData = ALL_STAGES.map((stageName) => {
     const found = convertedStageData.find((s) => s.stage === stageName);
     return { name: stageName, value: found?.count ?? 0, amount: found?.totalAgreedAmount ?? 0 };

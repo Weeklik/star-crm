@@ -16,6 +16,7 @@ export const DealStage = {
   Order_Closed: "Order Closed",
   Order_Confirmed: "Order Confirmed",
   Order_Lost: "Order Lost",
+  Sales_Return: "Sales Return",
 } as const;
 
 export interface Deal {
@@ -62,6 +63,7 @@ export const CreateDealBodyStage = {
   Order_Closed: "Order Closed",
   Order_Confirmed: "Order Confirmed",
   Order_Lost: "Order Lost",
+  Sales_Return: "Sales Return",
 } as const;
 
 export interface CreateDealBody {
@@ -102,6 +104,7 @@ export const UpdateDealBodyStage = {
   Order_Closed: "Order Closed",
   Order_Confirmed: "Order Confirmed",
   Order_Lost: "Order Lost",
+  Sales_Return: "Sales Return",
 } as const;
 
 export interface UpdateDealBody {

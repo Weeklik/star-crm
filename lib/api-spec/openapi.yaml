@@ -382,7 +382,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost]
+          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost, Sales Return]
         progress:
           type: integer
           minimum: 0
@@ -452,7 +452,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost]
+          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost, Sales Return]
         progress:
           type: integer
           minimum: 0
@@ -509,7 +509,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost]
+          enum: [Quotation Sent, Order Closed, Order Confirmed, Order Lost, Sales Return]
         progress:
           type: integer
           minimum: 0
