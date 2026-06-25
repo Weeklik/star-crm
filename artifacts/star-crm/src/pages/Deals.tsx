@@ -63,6 +63,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useOwnerControls } from "@/contexts/OwnerControlsContext";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost";
@@ -600,10 +601,22 @@ export default function Deals() {
   const pagedDeals = filteredDeals?.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const { formatAmount, currency: userCurrency } = useCurrency();
-  const fmtCurrency = formatAmount;
   const formatCurrency = formatAmount;
+  const { getRateFor, selectedCurrency } = useOwnerControls();
 
-  // Format an amount using the deal's own stored currency (falls back to user's currency)
+  // Convert a deal's amount to the display currency using the same logic as Dashboard
+  const dealRate = (d: any) => getRateFor((d as any).currency ?? "");
+
+  // Format in the display currency (matches Dashboard fmtAmt)
+  const fmtCurrency = (n: number) => {
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: selectedCurrency, maximumFractionDigits: 0 }).format(n);
+    } catch {
+      return formatAmount(n);
+    }
+  };
+
+  // Format an amount using the deal's own stored currency (for table rows)
   function fmtDealAmt(dealCurrency: string | null | undefined, amount: number): string {
     const cur = dealCurrency ?? userCurrency;
     try {
@@ -613,11 +626,14 @@ export default function Deals() {
     }
   }
 
-  const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)      || 0), 0) ?? 0;
-  const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)     || 0), 0) ?? 0;
-  const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount)  || 0), 0) ?? 0;
+  // All stat aggregations convert to display currency via getRateFor — same as Dashboard
+  const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)     || 0) * dealRate(d), 0) ?? 0;
+  const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)    || 0) * dealRate(d), 0) ?? 0;
+  const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount) || 0) * dealRate(d), 0) ?? 0;
   const stageCount  = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
-  const stageAmount = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).reduce((s, d) => s + (Number(d.agreedAmount) || 0), 0) ?? 0;
+  const stageAmount = (stage: string) =>
+    filteredDeals?.filter((d) => d.stage === stage)
+      .reduce((s, d) => s + (Number(d.agreedAmount) || 0) * dealRate(d), 0) ?? 0;
 
 
   // Reset to page 1 whenever filters or page size change
