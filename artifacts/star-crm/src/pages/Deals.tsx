@@ -570,6 +570,11 @@ export default function Deals() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
+  // Mirror the Dashboard's resolveRegionSpIds logic: filter by salesperson's country, not deal.region
+  const regionSpIds = isOwner && filterRegion !== "all"
+    ? new Set((users ?? []).filter((u) => u.country === filterRegion).map((u) => u.id))
+    : null;
+
   const filteredDeals = deals
     ?.filter((d) => {
       const dateStr = String(d.dealStartDate).split("T")[0];
@@ -583,7 +588,7 @@ export default function Deals() {
       const matchesTo    = !dateTo       || dateStr <= dateTo;
       const matchesStage = !stageFilter  || d.stage === stageFilter;
       const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
-      const matchesRegion = !isOwner || filterRegion === "all" || (d as any).region === filterRegion;
+      const matchesRegion = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
       const matchesYear  = filterYear === "all" || dateStr.startsWith(filterYear);
       return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion && matchesYear;
     })
