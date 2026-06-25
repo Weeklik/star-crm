@@ -104,6 +104,13 @@ interface RegionStageRow {
   count: number;
 }
 
+interface CategoryBreakdownRow {
+  dealType: string;
+  currency: string;
+  count: number;
+  totalAmount: number;
+}
+
 type DateRange = "fullyear" | "h1" | "h2" | "last30" | "last7";
 
 const STAGE_COLORS: Record<string, string> = {
@@ -112,6 +119,18 @@ const STAGE_COLORS: Record<string, string> = {
   "Order Confirmed": "#34d399",
   "Order Lost": "#f87171",
   "Sales Return": "#fb923c",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "New Deal":  "New Customer",
+  "Recurring": "Existing Customer",
+  "Dealer":    "Dealer Customer",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  "New Deal":  "#60a5fa",
+  "Recurring": "#34d399",
+  "Dealer":    "#a78bfa",
 };
 
 function getDateBounds(range: DateRange, year: number): { startDate: string; endDate: string } {
@@ -160,6 +179,7 @@ export default function Dashboard() {
   const [weeklyData, setWeeklyData] = useState<WeeklyItem[]>([]);
   const [byPerson, setByPerson] = useState<EnrichedPerson[]>([]);
   const [regionStageRaw, setRegionStageRaw] = useState<RegionStageRow[]>([]);
+  const [categoryRaw, setCategoryRaw] = useState<CategoryBreakdownRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setDateRange("fullyear"); }, [selectedYear]);
@@ -191,6 +211,16 @@ export default function Dashboard() {
       .then((data) => setRegionStageRaw(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [me, isOwner, dateRange, selectedYear]);
+
+  // Fetch category (dealType) breakdown for closed orders — respects all filters
+  useEffect(() => {
+    if (!me) return;
+    const qs = buildQs();
+    fetch(`/api/reports/category-breakdown?${qs}`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setCategoryRaw(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [me, buildQs]);
 
   useEffect(() => {
     if (!me) return;
@@ -251,6 +281,20 @@ export default function Dashboard() {
       (a, b) => b["Quotation Sent"] - a["Quotation Sent"],
     );
   }, [regionStageRaw, getRateFor, isOwner]);
+
+  // Aggregate category breakdown rows with currency conversion
+  const categoryChartData = useMemo(() => {
+    const map = new Map<string, { dealType: string; count: number; totalAmount: number }>();
+    for (const row of categoryRaw) {
+      if (!map.has(row.dealType)) {
+        map.set(row.dealType, { dealType: row.dealType, count: 0, totalAmount: 0 });
+      }
+      const entry = map.get(row.dealType)!;
+      entry.count      += row.count;
+      entry.totalAmount += Math.round(row.totalAmount * getRateFor(row.currency));
+    }
+    return Array.from(map.values()).sort((a, b) => b.totalAmount - a.totalAmount);
+  }, [categoryRaw, getRateFor]);
 
   const allRegionsTotals = useMemo(() => {
     if (!isOwner || selectedRegion !== "all" || selectedSpId !== "all" || byPerson.length === 0) return null;
@@ -810,6 +854,124 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* ── Closed Orders by Customer Category ── */}
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Closed Orders by Customer Category</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Agreed amounts &amp; deal counts for Order Closed · filtered by selected period
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {categoryChartData.length === 0 ? (
+              <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
+                No closed orders for selected period
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row gap-6 items-center">
+                {/* Pie chart */}
+                <div className="w-full md:w-64 shrink-0">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={categoryChartData.map((d) => ({
+                          name: CATEGORY_LABELS[d.dealType] ?? d.dealType,
+                          value: d.totalAmount,
+                          fill: CATEGORY_COLORS[d.dealType] ?? "#94a3b8",
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={90}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {categoryChartData.map((d) => (
+                          <Cell
+                            key={d.dealType}
+                            fill={CATEGORY_COLORS[d.dealType] ?? "#94a3b8"}
+                            fillOpacity={0.9}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        formatter={(value: number) => [fmtK(value), "Amount"]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Summary table */}
+                <div className="flex-1 w-full overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left py-2 pr-6 font-semibold text-muted-foreground">Category</th>
+                        <th className="text-center py-2 px-4 font-semibold text-muted-foreground">Count</th>
+                        <th className="text-right py-2 pl-4 font-semibold text-muted-foreground">Amount ({selectedCurrency})</th>
+                        <th className="text-right py-2 pl-4 font-semibold text-muted-foreground">Share</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const grandTotal = categoryChartData.reduce((s, d) => s + d.totalAmount, 0);
+                        const grandCount = categoryChartData.reduce((s, d) => s + d.count, 0);
+                        return (
+                          <>
+                            {categoryChartData.map((d) => {
+                              const color = CATEGORY_COLORS[d.dealType] ?? "#94a3b8";
+                              const pct   = grandTotal > 0 ? Math.round((d.totalAmount / grandTotal) * 100) : 0;
+                              return (
+                                <tr key={d.dealType} className="border-b border-border/20 hover:bg-secondary/30 transition-colors">
+                                  <td className="py-3 pr-6">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className="inline-block w-3 h-3 rounded-full shrink-0"
+                                        style={{ background: color }}
+                                      />
+                                      <span className="font-medium">
+                                        {CATEGORY_LABELS[d.dealType] ?? d.dealType}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4 text-center tabular-nums font-semibold" style={{ color }}>
+                                    {d.count}
+                                  </td>
+                                  <td className="py-3 pl-4 text-right tabular-nums font-semibold" style={{ color }}>
+                                    {fmtK(d.totalAmount)}
+                                  </td>
+                                  <td className="py-3 pl-4 text-right tabular-nums">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <div className="w-20 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full rounded-full"
+                                          style={{ width: `${pct}%`, background: color }}
+                                        />
+                                      </div>
+                                      <span className="text-muted-foreground text-xs w-8 text-right">{pct}%</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            <tr className="border-t-2 border-border/50 font-semibold bg-muted/30">
+                              <td className="py-2 pr-6 text-sm">Total</td>
+                              <td className="py-2 px-4 text-center tabular-nums">{grandCount}</td>
+                              <td className="py-2 pl-4 text-right tabular-nums">{fmtK(grandTotal)}</td>
+                              <td className="py-2 pl-4 text-right text-muted-foreground text-xs">100%</td>
+                            </tr>
+                          </>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       </div>
     </div>

@@ -809,6 +809,56 @@ router.get(
   },
 );
 
+// ─── Category (dealType) breakdown — closed orders only ───────────────────────
+router.get(
+  "/reports/category-breakdown",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const user = (req as any).user;
+    const { startDate, endDate, salespersonId, region } = req.query as Record<string, string>;
+
+    const conditions: SQL[] = [eq(dealsTable.stage, "Order Closed")];
+
+    if (user.role !== "owner") {
+      conditions.push(eq(dealsTable.salespersonId, user.id));
+    } else if (salespersonId) {
+      conditions.push(eq(dealsTable.salespersonId, parseInt(salespersonId, 10)));
+    } else if (region) {
+      const regionSpIds = await resolveRegionSpIds(region);
+      conditions.push(
+        regionSpIds.length > 0
+          ? inArray(dealsTable.salespersonId, regionSpIds)
+          : eq(dealsTable.salespersonId, -1),
+      );
+    }
+
+    if (startDate) conditions.push(gte(dealsTable.dealStartDate, startDate));
+    if (endDate)   conditions.push(lte(dealsTable.dealStartDate, endDate));
+
+    const deals = await db
+      .select({
+        dealType:     dealsTable.dealType,
+        currency:     dealsTable.currency,
+        agreedAmount: dealsTable.agreedAmount,
+      })
+      .from(dealsTable)
+      .where(and(...conditions));
+
+    const map = new Map<string, { dealType: string; currency: string; count: number; totalAmount: number }>();
+    for (const deal of deals) {
+      const dt  = deal.dealType ?? "New Deal";
+      const cur = deal.currency ?? "AED";
+      const key = `${dt}||${cur}`;
+      if (!map.has(key)) map.set(key, { dealType: dt, currency: cur, count: 0, totalAmount: 0 });
+      const entry = map.get(key)!;
+      entry.count++;
+      entry.totalAmount += parseFloat(deal.agreedAmount ?? "0");
+    }
+
+    res.json(Array.from(map.values()));
+  },
+);
+
 // ─── Sales Breakdown drill-down: deals behind a specific week × stage cell ────
 router.get(
   "/reports/sales-breakdown-deals",
