@@ -765,6 +765,50 @@ router.get(
   },
 );
 
+// ─── Region × Stage breakdown (owner-only, all regions, date-filtered) ────────
+router.get(
+  "/reports/region-stage-breakdown",
+  requireAuth,
+  requireOwner,
+  async (req, res): Promise<void> => {
+    const startDate = req.query.startDate as string | undefined;
+    const endDate   = req.query.endDate   as string | undefined;
+
+    const conditions: SQL[] = [];
+    if (startDate) conditions.push(gte(dealsTable.dealStartDate, startDate));
+    if (endDate)   conditions.push(lte(dealsTable.dealStartDate, endDate));
+
+    const rows = await db
+      .select({
+        country:      usersTable.country,
+        currency:     usersTable.currency,
+        stage:        dealsTable.stage,
+        agreedAmount: dealsTable.agreedAmount,
+      })
+      .from(dealsTable)
+      .innerJoin(usersTable, eq(dealsTable.salespersonId, usersTable.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Group by [country, currency, stage] so the client can convert per currency
+    const map = new Map<string, {
+      region: string; currency: string; stage: string; amount: number; count: number;
+    }>();
+
+    for (const row of rows) {
+      const region   = row.country   ?? "Unknown";
+      const currency = row.currency  ?? "USD";
+      const stage    = row.stage     ?? "";
+      const key      = `${region}||${currency}||${stage}`;
+      if (!map.has(key)) map.set(key, { region, currency, stage, amount: 0, count: 0 });
+      const entry = map.get(key)!;
+      entry.amount += parseFloat(row.agreedAmount ?? "0");
+      entry.count++;
+    }
+
+    res.json(Array.from(map.values()));
+  },
+);
+
 // ─── Sales Breakdown drill-down: deals behind a specific week × stage cell ────
 router.get(
   "/reports/sales-breakdown-deals",

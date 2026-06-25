@@ -96,6 +96,14 @@ interface UserOption {
   email: string;
 }
 
+interface RegionStageRow {
+  region: string;
+  currency: string;
+  stage: string;
+  amount: number;
+  count: number;
+}
+
 type DateRange = "fullyear" | "h1" | "h2" | "last30" | "last7";
 
 const STAGE_COLORS: Record<string, string> = {
@@ -150,6 +158,7 @@ export default function Dashboard() {
   const [stageData, setStageData] = useState<StageItem[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyItem[]>([]);
   const [byPerson, setByPerson] = useState<EnrichedPerson[]>([]);
+  const [regionStageRaw, setRegionStageRaw] = useState<RegionStageRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setDateRange("fullyear"); }, [selectedYear]);
@@ -170,6 +179,17 @@ export default function Dashboard() {
     if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
     return p.toString();
   }, [dateRange, selectedSpId, isOwner, selectedRegion, selectedYear]);
+
+  // Fetch region-stage breakdown independently (always all regions, only date-filtered)
+  useEffect(() => {
+    if (!me || !isOwner) return;
+    const { startDate, endDate } = getDateBounds(dateRange, selectedYear);
+    const qs = new URLSearchParams({ startDate, endDate }).toString();
+    fetch(`/api/reports/region-stage-breakdown?${qs}`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setRegionStageRaw(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [me, isOwner, dateRange, selectedYear]);
 
   useEffect(() => {
     if (!me) return;
@@ -197,6 +217,39 @@ export default function Dashboard() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [me, buildQs, isOwner, selectedSpId, selectedRegion, loadMultiRates]);
+
+  // Aggregate region-stage raw rows into chart-ready entries with currency conversion
+  const regionChartData = useMemo(() => {
+    if (!isOwner || regionStageRaw.length === 0) return [];
+    type RegionEntry = {
+      region: string;
+      "Quotation Sent": number; quotationSentCount: number;
+      "Order Confirmed": number; orderConfirmedCount: number;
+      "Order Closed": number; orderClosedCount: number;
+      "Order Lost": number; orderLostCount: number;
+    };
+    const map = new Map<string, RegionEntry>();
+    for (const row of regionStageRaw) {
+      if (!map.has(row.region)) {
+        map.set(row.region, {
+          region: row.region,
+          "Quotation Sent": 0, quotationSentCount: 0,
+          "Order Confirmed": 0, orderConfirmedCount: 0,
+          "Order Closed": 0, orderClosedCount: 0,
+          "Order Lost": 0, orderLostCount: 0,
+        });
+      }
+      const entry = map.get(row.region)!;
+      const converted = Math.round(row.amount * getRateFor(row.currency));
+      if (row.stage === "Quotation Sent")  { entry["Quotation Sent"]  += converted; entry.quotationSentCount  += row.count; }
+      if (row.stage === "Order Confirmed") { entry["Order Confirmed"] += converted; entry.orderConfirmedCount += row.count; }
+      if (row.stage === "Order Closed")    { entry["Order Closed"]    += converted; entry.orderClosedCount    += row.count; }
+      if (row.stage === "Order Lost")      { entry["Order Lost"]      += converted; entry.orderLostCount      += row.count; }
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b["Quotation Sent"] - a["Quotation Sent"],
+    );
+  }, [regionStageRaw, getRateFor, isOwner]);
 
   const allRegionsTotals = useMemo(() => {
     if (!isOwner || selectedRegion !== "all" || selectedSpId !== "all" || byPerson.length === 0) return null;
@@ -328,6 +381,38 @@ export default function Dashboard() {
             <span className="text-xs font-medium">{fmtDisplay(p.value ?? 0)}</span>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const CustomRegionTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const row = regionChartData.find((r) => r.region === label);
+    if (!row) return null;
+    const stages = [
+      { key: "Quotation Sent",  color: STAGE_COLORS["Quotation Sent"],  count: row.quotationSentCount  },
+      { key: "Order Confirmed", color: STAGE_COLORS["Order Confirmed"], count: row.orderConfirmedCount },
+      { key: "Order Closed",    color: STAGE_COLORS["Order Closed"],    count: row.orderClosedCount    },
+      { key: "Order Lost",      color: STAGE_COLORS["Order Lost"],      count: row.orderLostCount      },
+    ];
+    return (
+      <div style={TOOLTIP_STYLE} className="p-3 shadow-xl min-w-52">
+        <p className="font-semibold mb-2 text-sm">{label}</p>
+        {payload.map((p: any) => {
+          const meta = stages.find((s) => s.key === p.name);
+          return (
+            <div key={p.name} className="flex items-center justify-between gap-6 py-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.fill }} />
+                <span className="text-xs" style={{ color: p.fill }}>{p.name}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs font-semibold">{fmtDisplay(p.value ?? 0)}</span>
+                {meta && <span className="text-[10px] text-muted-foreground ml-1">({meta.count})</span>}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -628,6 +713,102 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Region × Stage Breakdown Chart — owner only */}
+        {isOwner && (
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Region-wise Pipeline Breakdown</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Agreed amounts by stage across all regions · filtered by selected period · hover for deal counts
+              </p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {regionChartData.length === 0 ? (
+                <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+                  No regional data for selected period
+                </div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={regionChartData.length > 4 ? 380 : 320}>
+                    <BarChart
+                      data={regionChartData}
+                      margin={{ top: 16, right: 24, left: 0, bottom: regionChartData.length > 3 ? 60 : 16 }}
+                      barCategoryGap="22%"
+                      barGap={3}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                      <XAxis
+                        dataKey="region"
+                        tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                        angle={regionChartData.length > 3 ? -35 : 0}
+                        textAnchor={regionChartData.length > 3 ? "end" : "middle"}
+                        interval={0}
+                      />
+                      <YAxis
+                        tickFormatter={fmtK}
+                        tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={48}
+                      />
+                      <Tooltip content={<CustomRegionTooltip />} cursor={{ fill: "hsl(var(--muted)/0.08)" }} />
+                      <Legend
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ paddingTop: "14px" }}
+                        formatter={(value) => <span className="text-xs text-foreground/80">{value}</span>}
+                      />
+                      <Bar dataKey="Quotation Sent"  name="Quotation Sent"  fill={STAGE_COLORS["Quotation Sent"]}  fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="Order Confirmed" name="Order Confirmed" fill={STAGE_COLORS["Order Confirmed"]} fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="Order Closed"    name="Order Closed"    fill={STAGE_COLORS["Order Closed"]}    fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="Order Lost"      name="Order Lost"      fill={STAGE_COLORS["Order Lost"]}      fillOpacity={0.8} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+
+                  {/* Region summary table */}
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border/50">
+                          <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Region</th>
+                          {["Quotation Sent", "Order Confirmed", "Order Closed", "Order Lost"].map((s) => (
+                            <th key={s} className="text-right py-2 px-3 font-semibold" style={{ color: STAGE_COLORS[s] }}>{s}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {regionChartData.map((row) => (
+                          <tr key={row.region} className="border-b border-border/20 hover:bg-secondary/30 transition-colors">
+                            <td className="py-2 pr-4 font-medium text-foreground/90">{row.region}</td>
+                            <td className="py-2 px-3 text-right tabular-nums">
+                              <span style={{ color: STAGE_COLORS["Quotation Sent"] }} className="font-semibold">{fmtK(row["Quotation Sent"])}</span>
+                              <span className="text-muted-foreground ml-1">({row.quotationSentCount})</span>
+                            </td>
+                            <td className="py-2 px-3 text-right tabular-nums">
+                              <span style={{ color: STAGE_COLORS["Order Confirmed"] }} className="font-semibold">{fmtK(row["Order Confirmed"])}</span>
+                              <span className="text-muted-foreground ml-1">({row.orderConfirmedCount})</span>
+                            </td>
+                            <td className="py-2 px-3 text-right tabular-nums">
+                              <span style={{ color: STAGE_COLORS["Order Closed"] }} className="font-semibold">{fmtK(row["Order Closed"])}</span>
+                              <span className="text-muted-foreground ml-1">({row.orderClosedCount})</span>
+                            </td>
+                            <td className="py-2 px-3 text-right tabular-nums">
+                              <span style={{ color: STAGE_COLORS["Order Lost"] }} className="font-semibold">{fmtK(row["Order Lost"])}</span>
+                              <span className="text-muted-foreground ml-1">({row.orderLostCount})</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Export Bar */}
         <div className="flex justify-end gap-3">
