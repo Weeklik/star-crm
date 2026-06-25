@@ -628,7 +628,7 @@ export default function Deals() {
 
   // Region → native currency code for the Received Amount label
   const REGION_CURRENCY_MAP: Record<string, string> = {
-    "all":                  "AED",
+    "all":                  "USD",
     "United Arab Emirates": "AED",
     "Saudi Arabia":         "SAR",
     "Kenya":                "KES",
