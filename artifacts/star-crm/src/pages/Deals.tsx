@@ -13,8 +13,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2,
   Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle,
-  Handshake, Wallet, Clock4, TrendingUp, CalendarRange,
+  Handshake, Wallet, Clock4, TrendingUp, CalendarRange, FileDown,
 } from "lucide-react";
+import { openProformaInvoice } from "@/utils/proformaInvoice";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1129,28 +1130,52 @@ export default function Deals() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => openEdit(deal)}
-                          data-testid={`btn-edit-deal-${deal.id}`}
-                        >
-                          <Pencil className="w-4 h-4 mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDeleteId(deal.id)}
-                          data-testid={`btn-delete-deal-${deal.id}`}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        title="Download Proforma Invoice"
+                        onClick={() =>
+                          openProformaInvoice({
+                            id: deal.id,
+                            companyName: deal.companyName ?? "",
+                            contactName: deal.name ?? "",
+                            dealStartDate: deal.dealStartDate as string | undefined,
+                            productItem: deal.productItem ?? "",
+                            agreedAmount: deal.agreedAmount ?? 0,
+                            currency: (deal as any).currency,
+                            vatApplicable: deal.vatApplicable ?? false,
+                            notes: deal.notes as string | undefined,
+                            salespersonName: spNameById[deal.salespersonId ?? 0] ?? "",
+                          })
+                        }
+                      >
+                        <FileDown className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => openEdit(deal)}
+                            data-testid={`btn-edit-deal-${deal.id}`}
+                          >
+                            <Pencil className="w-4 h-4 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDeleteId(deal.id)}
+                            data-testid={`btn-delete-deal-${deal.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
