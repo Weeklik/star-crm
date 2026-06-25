@@ -626,6 +626,24 @@ export default function Deals() {
     }
   };
 
+  // Region → native currency code for the Received Amount label
+  const REGION_CURRENCY_MAP: Record<string, string> = {
+    "all":                  "AED",
+    "United Arab Emirates": "AED",
+    "Saudi Arabia":         "SAR",
+    "Kenya":                "KES",
+    "Nigeria":              "NGN",
+    "Tunisia":              "TND",
+  };
+  const receivedCurrency = REGION_CURRENCY_MAP[filterRegion] ?? "AED";
+  const fmtReceived = (n: number) => {
+    try {
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: receivedCurrency, maximumFractionDigits: 0 }).format(n);
+    } catch {
+      return formatAmount(n);
+    }
+  };
+
   // Format an amount using the deal's own stored currency (for table rows)
   function fmtDealAmt(dealCurrency: string | null | undefined, amount: number): string {
     const cur = dealCurrency ?? userCurrency;
@@ -1046,7 +1064,7 @@ export default function Deals() {
             <Wallet className="w-4 h-4 text-blue-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
-            {fmtCurrency(statsReceived)}
+            {fmtReceived(statsReceived)}
           </p>
           <p className="text-xs text-muted-foreground">total collected</p>
         </div>
