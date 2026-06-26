@@ -53,7 +53,12 @@ function formatDeal(deal: any) {
 
 router.get("/deals", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
-  const parsed = ListDealsQueryParams.safeParse(req.query);
+  const rawQuery = {
+    ...req.query,
+    startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+    endDate:   req.query.endDate   ? new Date(req.query.endDate   as string) : undefined,
+  };
+  const parsed = ListDealsQueryParams.safeParse(rawQuery);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -74,11 +79,13 @@ router.get("/deals", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (startDate) {
-    conditions.push(gte(dealsTable.dealStartDate, startDate as unknown as string));
+    const d = startDate instanceof Date ? startDate.toISOString().split("T")[0] : String(startDate);
+    conditions.push(gte(dealsTable.dealStartDate, d));
   }
 
   if (endDate) {
-    conditions.push(lte(dealsTable.dealStartDate, endDate as unknown as string));
+    const d = endDate instanceof Date ? endDate.toISOString().split("T")[0] : String(endDate);
+    conditions.push(lte(dealsTable.dealStartDate, d));
   }
 
   const deals =
