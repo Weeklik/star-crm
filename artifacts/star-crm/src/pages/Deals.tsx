@@ -531,6 +531,9 @@ export default function Deals() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [pendingFrom, setPendingFrom] = useState("");
+  const [pendingTo, setPendingTo] = useState("");
+  const [dateApplied, setDateApplied] = useState(false);
   const [stageFilter, setStageFilter] = useState<Stage | "">("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -694,10 +697,25 @@ export default function Deals() {
   const resetPage = () => setPage(1);
 
   function onSearchChange(v: string) { setSearch(v); resetPage(); }
-  function onDateFromChange(v: string) { setDateFrom(v); resetPage(); }
   function onStageFilterChange(v: Stage | "") { setStageFilter(v); resetPage(); }
-  function onDateToChange(v: string) { setDateTo(v); resetPage(); }
   function onPageSizeChange(v: number) { setPageSize(v); resetPage(); }
+
+  function applyDateFilter() {
+    setDateFrom(pendingFrom);
+    setDateTo(pendingTo);
+    resetPage();
+    setDateApplied(true);
+    setTimeout(() => setDateApplied(false), 2000);
+  }
+
+  function clearDateFilter() {
+    setPendingFrom("");
+    setPendingTo("");
+    setDateFrom("");
+    setDateTo("");
+    setDateApplied(false);
+    resetPage();
+  }
 
   function openAdd() {
     setEditingId(null);
@@ -961,26 +979,45 @@ export default function Deals() {
             data-testid="input-search-deals"
           />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <CalendarRange className="w-4 h-4 text-muted-foreground" />
           <input
             type="date"
-            value={dateFrom}
-            onChange={(e) => onDateFromChange(e.target.value)}
+            value={pendingFrom}
+            onChange={(e) => setPendingFrom(e.target.value)}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             title="From date"
           />
           <span className="text-muted-foreground text-sm">to</span>
           <input
             type="date"
-            value={dateTo}
-            onChange={(e) => onDateToChange(e.target.value)}
+            value={pendingTo}
+            onChange={(e) => setPendingTo(e.target.value)}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             title="To date"
           />
-          {(dateFrom || dateTo) && (
+          <button
+            onClick={applyDateFilter}
+            className={`h-9 px-4 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 border ${
+              dateApplied
+                ? "bg-green-500 border-green-500 text-white"
+                : "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
+            }`}
+          >
+            {dateApplied ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Applied
+              </>
+            ) : (
+              "Apply"
+            )}
+          </button>
+          {(dateFrom || dateTo || pendingFrom || pendingTo) && (
             <button
-              onClick={() => { onDateFromChange(""); onDateToChange(""); }}
+              onClick={clearDateFilter}
               className="text-xs text-muted-foreground hover:text-foreground underline"
             >
               Clear
