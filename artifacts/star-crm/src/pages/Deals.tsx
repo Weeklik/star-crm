@@ -529,10 +529,10 @@ export default function Deals() {
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [pendingFrom, setPendingFrom] = useState("");
   const [pendingTo, setPendingTo] = useState("");
+  const [appliedFrom, setAppliedFrom] = useState("");
+  const [appliedTo, setAppliedTo] = useState("");
   const [dateApplied, setDateApplied] = useState(false);
   const [stageFilter, setStageFilter] = useState<Stage | "">("");
   const [formOpen, setFormOpen] = useState(false);
@@ -558,8 +558,14 @@ export default function Deals() {
 
   const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions, getActiveDateBounds } = useOwnerControls();
 
+  const dealQueryParams = me?.role === "salesperson"
+    ? { salespersonId: me.id }
+    : {
+        ...(appliedFrom ? { startDate: appliedFrom } : {}),
+        ...(appliedTo   ? { endDate:   appliedTo   } : {}),
+      };
   const { data: deals, isLoading } = useListDeals(
-    me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
+    dealQueryParams,
     { query: { enabled: !!me } as any }
   );
 
@@ -574,19 +580,16 @@ export default function Deals() {
 
   const filteredDeals = deals
     ?.filter((d) => {
-      const dateStr = String(d.dealStartDate).split("T")[0];
       const q = search.toLowerCase();
       const matchesSearch =
         !q ||
         d.companyName.toLowerCase().includes(q) ||
         d.name.toLowerCase().includes(q) ||
         d.productItem.toLowerCase().includes(q);
-      const matchesFrom  = !dateFrom     || dateStr >= dateFrom;
-      const matchesTo    = !dateTo       || dateStr <= dateTo;
-      const matchesStage = !stageFilter  || d.stage === stageFilter;
+      const matchesStage  = !stageFilter || d.stage === stageFilter;
       const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
       const matchesRegion = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
-      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion;
+      return matchesSearch && matchesStage && matchesSp && matchesRegion;
     })
     .slice()
     .sort((a, b) => {
@@ -596,12 +599,12 @@ export default function Deals() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  // KPI deals: same region+sp filters as filteredDeals, plus the shared date range from context
-  // This makes the KPI boxes match the Dashboard exactly, while the table stays unfiltered by date.
   // ── Server-side KPI summary (same endpoint + params as Dashboard) ──────────
   const [ordersKpi, setOrdersKpi] = useState<{
-    quotationSentCount: number; confirmedDeals: number;
-    closedDeals: number; lostDeals: number;
+    quotationSentCount: number; quotationSentAmount: number;
+    confirmedDeals: number; confirmedAmount: number;
+    closedDeals: number; closedAmount: number;
+    lostDeals: number; lostAmount: number;
   } | null>(null);
 
   useEffect(() => {
@@ -615,25 +618,19 @@ export default function Deals() {
       .then((data) => {
         if (data && typeof data.quotationSentCount === "number") {
           setOrdersKpi({
-            quotationSentCount: data.quotationSentCount,
-            confirmedDeals:     data.confirmedDeals,
-            closedDeals:        data.closedDeals,
-            lostDeals:          data.lostDeals,
+            quotationSentCount:  data.quotationSentCount,
+            quotationSentAmount: data.quotationSentAmount ?? 0,
+            confirmedDeals:      data.confirmedDeals,
+            confirmedAmount:     data.confirmedAmount ?? 0,
+            closedDeals:         data.closedDeals,
+            closedAmount:        data.closedAmount ?? 0,
+            lostDeals:           data.lostDeals,
+            lostAmount:          data.lostAmount ?? 0,
           });
         }
       })
       .catch(() => {});
   }, [me, isOwner, filterSpId, selectedRegion, getActiveDateBounds]);
-
-  // kpiDeals still used for currency-converted amounts under each count
-  const { startDate: kpiStart, endDate: kpiEnd } = getActiveDateBounds();
-  const kpiDeals = deals?.filter((d) => {
-    const dateStr = String(d.dealStartDate).split("T")[0];
-    const matchesDate   = dateStr >= kpiStart && dateStr <= kpiEnd;
-    const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
-    const matchesRegion = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
-    return matchesDate && matchesSp && matchesRegion;
-  });
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
@@ -687,10 +684,6 @@ export default function Deals() {
   const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)     || 0) * dealRate(d), 0) ?? 0;
   const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)    || 0) * dealRate(d), 0) ?? 0;
   const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount) || 0) * dealRate(d), 0) ?? 0;
-  const stageCount  = (stage: string) => kpiDeals?.filter((d) => d.stage === stage).length ?? 0;
-  const stageAmount = (stage: string) =>
-    kpiDeals?.filter((d) => d.stage === stage)
-      .reduce((s, d) => s + (Number(d.agreedAmount) || 0) * dealRate(d), 0) ?? 0;
 
 
   // Reset to page 1 whenever filters or page size change
@@ -712,8 +705,8 @@ export default function Deals() {
       from = `${to.slice(0, 4)}-01-01`;
       setPendingFrom(from);
     }
-    setDateFrom(from);
-    setDateTo(to);
+    setAppliedFrom(from);
+    setAppliedTo(to);
     resetPage();
     setDateApplied(true);
     setTimeout(() => setDateApplied(false), 2000);
@@ -722,8 +715,8 @@ export default function Deals() {
   function clearDateFilter() {
     setPendingFrom("");
     setPendingTo("");
-    setDateFrom("");
-    setDateTo("");
+    setAppliedFrom("");
+    setAppliedTo("");
     setDateApplied(false);
     resetPage();
   }
@@ -1026,7 +1019,7 @@ export default function Deals() {
               "Apply"
             )}
           </button>
-          {(dateFrom || dateTo || pendingFrom || pendingTo) && (
+          {(appliedFrom || appliedTo || pendingFrom || pendingTo) && (
             <button
               onClick={clearDateFilter}
               className="text-xs text-muted-foreground hover:text-foreground underline"
@@ -1088,7 +1081,7 @@ export default function Deals() {
           </div>
           <p className="text-2xl font-bold tabular-nums">{ordersKpi?.quotationSentCount ?? "—"}</p>
           <p className="text-xs text-muted-foreground">All active quotations</p>
-          <p className="text-xs font-medium text-muted-foreground tabular-nums">{fmtCurrency(stageAmount("Quotation Sent"))}</p>
+          <p className="text-xs font-medium text-muted-foreground tabular-nums">{fmtCurrency(ordersKpi?.quotationSentAmount ?? 0)}</p>
         </div>
 
         {/* Confirmed Orders */}
@@ -1101,7 +1094,7 @@ export default function Deals() {
             {ordersKpi?.confirmedDeals ?? "—"}
           </p>
           <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 tabular-nums">
-            {fmtCurrency(stageAmount("Order Confirmed"))}
+            {fmtCurrency(ordersKpi?.confirmedAmount ?? 0)}
           </p>
         </div>
 
@@ -1115,7 +1108,7 @@ export default function Deals() {
             {ordersKpi?.closedDeals ?? "—"}
           </p>
           <p className="text-xs font-medium text-green-700 dark:text-green-300 tabular-nums">
-            {fmtCurrency(stageAmount("Order Closed"))}
+            {fmtCurrency(ordersKpi?.closedAmount ?? 0)}
           </p>
         </div>
 
@@ -1129,7 +1122,7 @@ export default function Deals() {
             {ordersKpi?.lostDeals ?? "—"}
           </p>
           <p className="text-xs font-medium text-red-700 dark:text-red-300 tabular-nums">
-            {fmtCurrency(stageAmount("Order Lost"))}
+            {fmtCurrency(ordersKpi?.lostAmount ?? 0)}
           </p>
         </div>
 
