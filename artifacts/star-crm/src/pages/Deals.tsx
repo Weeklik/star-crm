@@ -595,6 +595,34 @@ export default function Deals() {
 
   // KPI deals: same region+sp filters as filteredDeals, plus the shared date range from context
   // This makes the KPI boxes match the Dashboard exactly, while the table stays unfiltered by date.
+  // ── Server-side KPI summary (same endpoint + params as Dashboard) ──────────
+  const [ordersKpi, setOrdersKpi] = useState<{
+    quotationSentCount: number; confirmedDeals: number;
+    closedDeals: number; lostDeals: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!me) return;
+    const { startDate, endDate } = getActiveDateBounds();
+    const p = new URLSearchParams({ startDate, endDate });
+    if (isOwner && filterSpId !== "all") p.set("salespersonId", filterSpId);
+    if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
+    fetch(`/api/reports/summary?${p.toString()}`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.quotationSentCount === "number") {
+          setOrdersKpi({
+            quotationSentCount: data.quotationSentCount,
+            confirmedDeals:     data.confirmedDeals,
+            closedDeals:        data.closedDeals,
+            lostDeals:          data.lostDeals,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [me, isOwner, filterSpId, selectedRegion, getActiveDateBounds]);
+
+  // kpiDeals still used for currency-converted amounts under each count
   const { startDate: kpiStart, endDate: kpiEnd } = getActiveDateBounds();
   const kpiDeals = deals?.filter((d) => {
     const dateStr = String(d.dealStartDate).split("T")[0];
@@ -1010,7 +1038,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quotation Sent</span>
             <Clock4 className="w-4 h-4 text-muted-foreground" />
           </div>
-          <p className="text-2xl font-bold tabular-nums">{stageCount("Quotation Sent")}</p>
+          <p className="text-2xl font-bold tabular-nums">{ordersKpi?.quotationSentCount ?? "—"}</p>
           <p className="text-xs text-muted-foreground">All active quotations</p>
           <p className="text-xs font-medium text-muted-foreground tabular-nums">{fmtCurrency(stageAmount("Quotation Sent"))}</p>
         </div>
@@ -1022,7 +1050,7 @@ export default function Deals() {
             <CheckCircle2 className="w-4 h-4 text-yellow-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-yellow-600 dark:text-yellow-400">
-            {stageCount("Order Confirmed")}
+            {ordersKpi?.confirmedDeals ?? "—"}
           </p>
           <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 tabular-nums">
             {fmtCurrency(stageAmount("Order Confirmed"))}
@@ -1036,7 +1064,7 @@ export default function Deals() {
             <Handshake className="w-4 h-4 text-green-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
-            {stageCount("Order Closed")}
+            {ordersKpi?.closedDeals ?? "—"}
           </p>
           <p className="text-xs font-medium text-green-700 dark:text-green-300 tabular-nums">
             {fmtCurrency(stageAmount("Order Closed"))}
@@ -1050,7 +1078,7 @@ export default function Deals() {
             <XCircle className="w-4 h-4 text-red-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
-            {stageCount("Order Lost")}
+            {ordersKpi?.lostDeals ?? "—"}
           </p>
           <p className="text-xs font-medium text-red-700 dark:text-red-300 tabular-nums">
             {fmtCurrency(stageAmount("Order Lost"))}
