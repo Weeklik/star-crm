@@ -701,8 +701,19 @@ export default function Deals() {
   function onPageSizeChange(v: number) { setPageSize(v); resetPage(); }
 
   function applyDateFilter() {
-    setDateFrom(pendingFrom);
-    setDateTo(pendingTo);
+    let from = pendingFrom;
+    let to   = pendingTo;
+    // If only one bound is given, auto-fill the other to cover the full year
+    if (from && !to) {
+      to = `${from.slice(0, 4)}-12-31`;
+      setPendingTo(to);
+    }
+    if (!from && to) {
+      from = `${to.slice(0, 4)}-01-01`;
+      setPendingFrom(from);
+    }
+    setDateFrom(from);
+    setDateTo(to);
     resetPage();
     setDateApplied(true);
     setTimeout(() => setDateApplied(false), 2000);
