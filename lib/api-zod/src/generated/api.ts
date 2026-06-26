@@ -63,6 +63,7 @@ export const ListDealsResponseItem = zod.object({
   currency: zod.string(),
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
+  creditTerm: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -103,6 +104,7 @@ export const CreateDealBody = zod.object({
   currency: zod.string().optional(),
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
+  creditTerm: zod.string().nullish(),
 });
 
 /**
@@ -146,6 +148,7 @@ export const GetDealResponse = zod.object({
   currency: zod.string(),
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
+  creditTerm: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -191,6 +194,7 @@ export const UpdateDealBody = zod.object({
   currency: zod.string().optional(),
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
+  creditTerm: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
@@ -227,6 +231,7 @@ export const UpdateDealResponse = zod.object({
   currency: zod.string(),
   notes: zod.string().nullish(),
   lostReason: zod.string().nullish(),
+  creditTerm: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

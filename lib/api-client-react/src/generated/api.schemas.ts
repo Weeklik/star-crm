@@ -51,6 +51,8 @@ export interface Deal {
   notes?: string | null;
   /** @nullable */
   lostReason?: string | null;
+  /** @nullable */
+  creditTerm?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -94,6 +96,8 @@ export interface CreateDealBody {
   notes?: string | null;
   /** @nullable */
   lostReason?: string | null;
+  /** @nullable */
+  creditTerm?: string | null;
 }
 
 export type UpdateDealBodyStage =
@@ -135,6 +139,8 @@ export interface UpdateDealBody {
   notes?: string | null;
   /** @nullable */
   lostReason?: string | null;
+  /** @nullable */
+  creditTerm?: string | null;
 }
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];

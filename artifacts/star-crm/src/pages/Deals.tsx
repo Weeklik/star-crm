@@ -152,6 +152,7 @@ interface DealFormState {
   latestClosingDate: string;
   notes: string;
   lostReason: string;
+  creditTerm: string;
 }
 
 interface ImportRow extends DealFormState {
@@ -178,6 +179,7 @@ const emptyForm = (): DealFormState => ({
   latestClosingDate: "",
   notes: "",
   lostReason: "",
+  creditTerm: "",
 });
 
 function toPayload(f: DealFormState) {
@@ -198,6 +200,7 @@ function toPayload(f: DealFormState) {
     latestClosingDate: f.latestClosingDate || undefined,
     notes: f.notes || undefined,
     lostReason: f.stage === "Order Lost" ? (f.lostReason || undefined) : undefined,
+    creditTerm: f.creditTerm || undefined,
   };
 }
 
@@ -726,6 +729,7 @@ export default function Deals() {
           : "",
       notes: deal.notes ?? "",
       lostReason: deal.lostReason ?? "",
+      creditTerm: (deal as any).creditTerm ?? "",
     });
     setFormOpen(true);
   }
@@ -1506,6 +1510,18 @@ export default function Deals() {
                 value={form.notes}
                 onChange={(e) => set("notes", e.target.value)}
                 placeholder="Any additional notes..."
+              />
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>
+                Credit Term
+                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                type="text"
+                value={form.creditTerm}
+                onChange={(e) => set("creditTerm", e.target.value)}
+                placeholder="e.g. Net 30, 100% Advance, 50% upfront..."
               />
             </div>
           </div>

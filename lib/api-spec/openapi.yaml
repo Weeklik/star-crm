@@ -413,6 +413,8 @@ components:
           type: ["string", "null"]
         lostReason:
           type: ["string", "null"]
+        creditTerm:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -483,6 +485,8 @@ components:
           type: ["string", "null"]
         lostReason:
           type: ["string", "null"]
+        creditTerm:
+          type: ["string", "null"]
       required:
         - dealStartDate
         - name
@@ -539,6 +543,8 @@ components:
         notes:
           type: ["string", "null"]
         lostReason:
+          type: ["string", "null"]
+        creditTerm:
           type: ["string", "null"]
 
     User:

@@ -23,6 +23,7 @@ export const dealsTable = pgTable("deals", {
   currency: text("currency").notNull().default("USD"),
   notes: text("notes"),
   lostReason: text("lost_reason"),
+  creditTerm: text("credit_term"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
