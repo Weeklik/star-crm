@@ -64,7 +64,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useOwnerControls, MONTHS } from "@/contexts/OwnerControlsContext";
+import { useOwnerControls, getDateBounds, DateRange } from "@/contexts/OwnerControlsContext";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost" | "Sales Return";
@@ -529,11 +529,8 @@ export default function Deals() {
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [pendingFrom, setPendingFrom] = useState("");
-  const [pendingTo, setPendingTo] = useState("");
-  const [appliedFrom, setAppliedFrom] = useState("");
-  const [appliedTo, setAppliedTo] = useState("");
-  const [dateApplied, setDateApplied] = useState(false);
+  const [orderDateRange, setOrderDateRange] = useState<DateRange>("fullyear");
+  const [orderYear, setOrderYear] = useState(new Date().getFullYear());
   const [stageFilter, setStageFilter] = useState<Stage | "">("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -558,12 +555,10 @@ export default function Deals() {
 
   const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions, getActiveDateBounds } = useOwnerControls();
 
+  const { startDate: orderStart, endDate: orderEnd } = getDateBounds(orderDateRange, orderYear);
   const dealQueryParams = me?.role === "salesperson"
     ? { salespersonId: me.id }
-    : {
-        ...(appliedFrom ? { startDate: appliedFrom } : {}),
-        ...(appliedTo   ? { endDate:   appliedTo   } : {}),
-      };
+    : { startDate: orderStart, endDate: orderEnd };
   const { data: deals, isLoading } = useListDeals(
     dealQueryParams,
     { query: { enabled: !!me } as any }
@@ -609,8 +604,7 @@ export default function Deals() {
 
   useEffect(() => {
     if (!me) return;
-    const { startDate, endDate } = getActiveDateBounds();
-    const p = new URLSearchParams({ startDate, endDate });
+    const p = new URLSearchParams({ startDate: orderStart, endDate: orderEnd });
     if (isOwner && filterSpId !== "all") p.set("salespersonId", filterSpId);
     if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
     fetch(`/api/reports/summary?${p.toString()}`, { credentials: "include" })
@@ -630,7 +624,7 @@ export default function Deals() {
         }
       })
       .catch(() => {});
-  }, [me, isOwner, filterSpId, selectedRegion, getActiveDateBounds]);
+  }, [me, isOwner, filterSpId, selectedRegion, orderStart, orderEnd]);
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
@@ -693,33 +687,14 @@ export default function Deals() {
   function onStageFilterChange(v: Stage | "") { setStageFilter(v); resetPage(); }
   function onPageSizeChange(v: number) { setPageSize(v); resetPage(); }
 
-  function applyDateFilter() {
-    let from = pendingFrom;
-    let to   = pendingTo;
-    // If only one bound is given, auto-fill the other to cover the full year
-    if (from && !to) {
-      to = `${from.slice(0, 4)}-12-31`;
-      setPendingTo(to);
-    }
-    if (!from && to) {
-      from = `${to.slice(0, 4)}-01-01`;
-      setPendingFrom(from);
-    }
-    setAppliedFrom(from);
-    setAppliedTo(to);
-    resetPage();
-    setDateApplied(true);
-    setTimeout(() => setDateApplied(false), 2000);
-  }
-
-  function clearDateFilter() {
-    setPendingFrom("");
-    setPendingTo("");
-    setAppliedFrom("");
-    setAppliedTo("");
-    setDateApplied(false);
-    resetPage();
-  }
+  const yearOptions = [orderYear - 1, orderYear, orderYear + 1].filter(
+    (y) => y >= 2020 && y <= new Date().getFullYear() + 1
+  );
+  const datePresets: { key: DateRange; label: string }[] = [
+    { key: "fullyear", label: `Full ${orderYear}` },
+    { key: "last30",   label: "Last 30 Days" },
+    { key: "last7",    label: "Last 7 Days" },
+  ];
 
   function openAdd() {
     setEditingId(null);
@@ -983,50 +958,31 @@ export default function Deals() {
             data-testid="input-search-deals"
           />
         </div>
+        {/* Year selector + date preset buttons (same style as Dashboard) */}
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <CalendarRange className="w-4 h-4 text-muted-foreground" />
-          <input
-            type="date"
-            value={pendingFrom}
-            onChange={(e) => setPendingFrom(e.target.value)}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            title="From date"
-          />
-          <span className="text-muted-foreground text-sm">to</span>
-          <input
-            type="date"
-            value={pendingTo}
-            onChange={(e) => setPendingTo(e.target.value)}
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            title="To date"
-          />
-          <button
-            onClick={applyDateFilter}
-            className={`h-9 px-4 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 border ${
-              dateApplied
-                ? "bg-green-500 border-green-500 text-white"
-                : "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
-            }`}
+          <select
+            value={orderYear}
+            onChange={(e) => { setOrderYear(Number(e.target.value)); setOrderDateRange("fullyear"); resetPage(); }}
+            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            {dateApplied ? (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-                Applied
-              </>
-            ) : (
-              "Apply"
-            )}
-          </button>
-          {(appliedFrom || appliedTo || pendingFrom || pendingTo) && (
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          {datePresets.map(({ key, label }) => (
             <button
-              onClick={clearDateFilter}
-              className="text-xs text-muted-foreground hover:text-foreground underline"
+              key={key}
+              onClick={() => { setOrderDateRange(key); resetPage(); }}
+              className={`h-9 px-3 rounded-md text-sm font-medium transition-all border ${
+                orderDateRange === key
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
             >
-              Clear
+              {label}
             </button>
-          )}
+          ))}
         </div>
 
         {/* Stage filter */}
