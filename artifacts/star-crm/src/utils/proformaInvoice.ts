@@ -241,7 +241,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   }
   .note-block .note-title { font-weight: 700; text-transform: uppercase; }
 
-  /* ── Footer ── */
+  /* ── Signature Footer ── */
   .footer {
     margin-top: 40px;
     font-size: 11px;
@@ -262,8 +262,21 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   .accepted-label { font-weight: 700; font-size: 11px; letter-spacing: 0.3px; text-align: right; }
   .accepted-company { font-size: 10.5px; color: #444; text-align: right; margin-top: 2px; }
 
+  /* ── Address Footer ── */
+  .address-footer {
+    margin-top: 28px;
+    border-top: 2px solid #222;
+    padding-top: 6px;
+    text-align: center;
+    font-size: 10.5px;
+    line-height: 1.7;
+    color: #222;
+  }
+  .address-footer .af-line1 { font-weight: 700; }
+  .address-footer .af-line2 { font-weight: 700; }
+
   @media print {
-    body { padding: 10px 20px 20px; }
+    body { padding: 10px 20px 16px; }
     @page { margin: 8mm 10mm; size: A4; }
   }
 </style>
@@ -375,7 +388,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   Customer must provide local expenses (e.g. COVID19 Testing if needed, Gate Pass Charges, Delivery &amp; Off Loading Charges etc.)${data.notes ? `<br><br>${escHtml(data.notes)}` : ""}
 </div>
 
-<!-- ── FOOTER ── -->
+<!-- ── SIGNATURE FOOTER ── -->
 <div class="footer">
   <div class="footer-row-top">
     <div class="sig-name">${escHtml(data.salespersonName || "Authorized Signatory")}</div>
@@ -385,6 +398,12 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     <div class="sig-company">STAR.S.M.TRADING LLC</div>
     <div class="accepted-company">${escHtml(data.companyName)}</div>
   </div>
+</div>
+
+<!-- ── ADDRESS FOOTER ── -->
+<div class="address-footer">
+  <div class="af-line1">HEAD OFFICE : Al Qusais Ind. Area, Dubai &ndash; U.A.E. &nbsp; P.O. Box : 5354, &nbsp; Tel : 04-2679444 , &nbsp; Fax : 04-2679445</div>
+  <div class="af-line2">Email : star@starsew.com &nbsp;&nbsp; Website : www.starsew.com</div>
 </div>
 
 <script>
