@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetMe } from "@workspace/api-client-react";
-import { useOwnerControls } from "@/contexts/OwnerControlsContext";
+import { useOwnerControls, DateRange, getDateBounds, MONTHS } from "@/contexts/OwnerControlsContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -112,8 +112,6 @@ interface CategoryBreakdownRow {
   totalAmount: number;
 }
 
-type DateRange = "fullyear" | "h1" | "h2" | "last30" | "last7";
-
 const STAGE_COLORS: Record<string, string> = {
   "Quotation Sent": "#a78bfa",
   "Order Closed": "#fbbf24",
@@ -134,20 +132,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Dealer":    "#a78bfa",
 };
 
-function getDateBounds(range: DateRange, year: number): { startDate: string; endDate: string } {
-  if (range === "fullyear") return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
-  if (range === "h1")       return { startDate: `${year}-01-01`, endDate: `${year}-06-30` };
-  if (range === "h2")       return { startDate: `${year}-07-01`, endDate: `${year}-12-31` };
-  const now = new Date();
-  const pad = (d: Date) => d.toISOString().split("T")[0];
-  if (range === "last7") {
-    const s = new Date(now); s.setDate(s.getDate() - 6);
-    return { startDate: pad(s), endDate: pad(now) };
-  }
-  const s = new Date(now); s.setDate(s.getDate() - 29);
-  return { startDate: pad(s), endDate: pad(now) };
-}
-
 function fmtK(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
@@ -167,11 +151,11 @@ export default function Dashboard() {
   const {
     formatConverted, selectedRegion, selectedYear,
     getRateFor, loadMultiRates, selectedCurrency, conversionRate,
+    dateRange, setDateRange, fromMonth, setFromMonth, toMonth, setToMonth, getActiveDateBounds,
   } = useOwnerControls();
 
   const isOwner = me?.role === "owner";
 
-  const [dateRange, setDateRange] = useState<DateRange>("fullyear");
   const [selectedSpId, setSelectedSpId] = useState<string>("all");
   const [users, setUsers] = useState<UserOption[]>([]);
 
@@ -182,29 +166,6 @@ export default function Dashboard() {
   const [regionStageRaw, setRegionStageRaw] = useState<RegionStageRow[]>([]);
   const [categoryRaw, setCategoryRaw] = useState<CategoryBreakdownRow[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Month-range filter (0 = not set)
-  const [fromMonth, setFromMonth] = useState<number>(0);
-  const [toMonth,   setToMonth]   = useState<number>(0);
-
-  const MONTHS = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December",
-  ];
-
-  /** Returns date bounds honoring the custom month range when set, else the dateRange preset. */
-  const getActiveDateBounds = useCallback(() => {
-    if (fromMonth > 0 || toMonth > 0) {
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const f = fromMonth > 0 ? fromMonth : 1;
-      const t = toMonth   > 0 ? toMonth   : fromMonth > 0 ? fromMonth : 12;
-      const lastDay = new Date(selectedYear, t, 0).getDate();
-      return { startDate: `${selectedYear}-${pad(f)}-01`, endDate: `${selectedYear}-${pad(t)}-${lastDay}` };
-    }
-    return getDateBounds(dateRange, selectedYear);
-  }, [fromMonth, toMonth, dateRange, selectedYear]);
-
-  useEffect(() => { setDateRange("fullyear"); setFromMonth(0); setToMonth(0); }, [selectedYear]);
 
   useEffect(() => {
     if (isOwner) {

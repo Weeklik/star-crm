@@ -1,6 +1,27 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 
+export type DateRange = "fullyear" | "h1" | "h2" | "last30" | "last7";
+
+export const MONTHS = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+
+export function getDateBounds(range: DateRange, year: number): { startDate: string; endDate: string } {
+  if (range === "fullyear") return { startDate: `${year}-01-01`, endDate: `${year}-12-31` };
+  if (range === "h1")       return { startDate: `${year}-01-01`, endDate: `${year}-06-30` };
+  if (range === "h2")       return { startDate: `${year}-07-01`, endDate: `${year}-12-31` };
+  const now = new Date();
+  const pad = (d: Date) => d.toISOString().split("T")[0];
+  if (range === "last7") {
+    const s = new Date(now); s.setDate(s.getDate() - 6);
+    return { startDate: pad(s), endDate: pad(now) };
+  }
+  const s = new Date(now); s.setDate(s.getDate() - 29);
+  return { startDate: pad(s), endDate: pad(now) };
+}
+
 /**
  * Map of country names / codes / common variants → default currency code.
  * Used to auto-select the display currency when a region is chosen.
@@ -71,6 +92,15 @@ interface OwnerControlsContextValue {
   selectedYear: number;
   setSelectedYear: (y: number) => void;
 
+  /** Shared date range filter (synced across Dashboard and Orders) */
+  dateRange: DateRange;
+  setDateRange: (r: DateRange) => void;
+  fromMonth: number;
+  setFromMonth: (m: number) => void;
+  toMonth: number;
+  setToMonth: (m: number) => void;
+  getActiveDateBounds: () => { startDate: string; endDate: string };
+
   /** Owner's profile currency — always fixed to their account setting. */
   baseCurrency: string;
   /**
@@ -137,6 +167,13 @@ const OwnerControlsContext = createContext<OwnerControlsContextValue>({
   formatConvertedOrEmpty: (n) => (n ? n.toLocaleString() : ""),
   selectedYear: new Date().getFullYear(),
   setSelectedYear: () => {},
+  dateRange: "fullyear",
+  setDateRange: () => {},
+  fromMonth: 0,
+  setFromMonth: () => {},
+  toMonth: 0,
+  setToMonth: () => {},
+  getActiveDateBounds: () => ({ startDate: `${new Date().getFullYear()}-01-01`, endDate: `${new Date().getFullYear()}-12-31` }),
 });
 
 function fmt(n: number, currency: string): string {
@@ -172,6 +209,28 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
       .catch(() => {});
   }, [user]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Shared date range filter
+  const [dateRange, setDateRangeState] = useState<DateRange>("fullyear");
+  const [fromMonth, setFromMonthState] = useState(0);
+  const [toMonth, setToMonthState] = useState(0);
+  // Reset when year changes
+  useEffect(() => { setDateRangeState("fullyear"); setFromMonthState(0); setToMonthState(0); }, [selectedYear]);
+
+  const setDateRange = useCallback((r: DateRange) => setDateRangeState(r), []);
+  const setFromMonth = useCallback((m: number) => setFromMonthState(m), []);
+  const setToMonth   = useCallback((m: number) => setToMonthState(m), []);
+
+  const getActiveDateBounds = useCallback((): { startDate: string; endDate: string } => {
+    if (fromMonth > 0 || toMonth > 0) {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const f = fromMonth > 0 ? fromMonth : 1;
+      const t = toMonth   > 0 ? toMonth   : fromMonth > 0 ? fromMonth : 12;
+      const lastDay = new Date(selectedYear, t, 0).getDate();
+      return { startDate: `${selectedYear}-${pad(f)}-01`, endDate: `${selectedYear}-${pad(t)}-${lastDay}` };
+    }
+    return getDateBounds(dateRange, selectedYear);
+  }, [fromMonth, toMonth, dateRange, selectedYear]);
   // sourceCurrency = natural currency of the current view (region's or owner's)
   const [sourceCurrency, setSourceCurrencyState] = useState(baseCurrency);
   // selectedCurrency = what the user wants amounts displayed in
@@ -342,6 +401,13 @@ export function OwnerControlsProvider({ children }: { children: React.ReactNode 
         formatConvertedOrEmpty,
         selectedYear,
         setSelectedYear,
+        dateRange,
+        setDateRange,
+        fromMonth,
+        setFromMonth,
+        toMonth,
+        setToMonth,
+        getActiveDateBounds,
       }}
     >
       {children}

@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2,
   Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle,
-  Handshake, Wallet, Clock4, TrendingUp, CalendarRange, FileDown,
+  Handshake, Clock4, TrendingUp, CalendarRange, FileDown,
 } from "lucide-react";
 import { openProformaInvoice } from "@/utils/proformaInvoice";
 import * as XLSX from "xlsx";
@@ -64,7 +64,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useOwnerControls } from "@/contexts/OwnerControlsContext";
+import { useOwnerControls, MONTHS } from "@/contexts/OwnerControlsContext";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost" | "Sales Return";
@@ -528,18 +528,6 @@ export default function Deals() {
   const spNameById = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
-  const [filterYear, setFilterYear] = useState<string>("all");
-  const YEAR_OPTIONS = ["2025", "2026", "2027", "2028"];
-
-  const { data: deals, isLoading } = useListDeals(
-    me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
-    { query: { enabled: !!me } as any }
-  );
-
-  const createDeal = useCreateDeal();
-  const updateDeal = useUpdateDeal();
-  const deleteDeal = useDeleteDeal();
-
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -565,7 +553,21 @@ export default function Deals() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
-  const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions } = useOwnerControls();
+  const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions, getActiveDateBounds } = useOwnerControls();
+
+  const { startDate: dealsStart, endDate: dealsEnd } = getActiveDateBounds();
+  const { data: deals, isLoading } = useListDeals(
+    {
+      ...(me?.role === "salesperson" ? { salespersonId: me.id } : {}),
+      startDate: dealsStart,
+      endDate: dealsEnd,
+    },
+    { query: { enabled: !!me } as any }
+  );
+
+  const createDeal = useCreateDeal();
+  const updateDeal = useUpdateDeal();
+  const deleteDeal = useDeleteDeal();
 
   // Mirror the Dashboard's resolveRegionSpIds logic: filter by salesperson's country, not deal.region
   const regionSpIds = isOwner && selectedRegion !== "all"
@@ -586,8 +588,7 @@ export default function Deals() {
       const matchesStage = !stageFilter  || d.stage === stageFilter;
       const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
       const matchesRegion = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
-      const matchesYear  = filterYear === "all" || dateStr.startsWith(filterYear);
-      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion && matchesYear;
+      return matchesSearch && matchesFrom && matchesTo && matchesStage && matchesSp && matchesRegion;
     })
     .slice()
     .sort((a, b) => {
@@ -953,18 +954,6 @@ export default function Deals() {
           )}
         </div>
 
-        {/* Year filter */}
-        <select
-          value={filterYear}
-          onChange={(e) => { setFilterYear(e.target.value); setPage(1); }}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
-        >
-          <option value="all">All Years</option>
-          {YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-
         {/* Stage filter */}
         <select
           value={stageFilter}
@@ -1046,18 +1035,6 @@ export default function Deals() {
           <p className="text-xs font-medium text-green-700 dark:text-green-300 tabular-nums">
             {fmtCurrency(stageAmount("Order Closed"))}
           </p>
-        </div>
-
-        {/* Received Amount */}
-        <div className="bg-card border border-border border-l-4 border-l-blue-500 rounded-xl p-4 flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Received Amount</span>
-            <Wallet className="w-4 h-4 text-blue-500" />
-          </div>
-          <p className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
-            {fmtReceived(statsReceived)}
-          </p>
-          <p className="text-xs text-muted-foreground">total collected</p>
         </div>
 
         {/* Lost Orders */}
