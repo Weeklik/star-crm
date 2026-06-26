@@ -602,7 +602,6 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {kpiCards.map((card) => {
             const Icon = card.icon;
-            const hideData = selectedRegion === "all";
             return (
               <Card key={card.label} className="relative overflow-hidden border-border/60">
                 <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} to-transparent pointer-events-none`} />
@@ -620,17 +619,8 @@ export default function Dashboard() {
                       <Icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
                     </div>
                   </div>
-                  {hideData ? (
-                    <>
-                      <p className="text-2xl font-bold tracking-tight text-muted-foreground/30">—</p>
-                      <p className="text-xs text-muted-foreground/40 mt-1">Select a region</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-2xl font-bold tracking-tight">{card.value}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
-                    </>
-                  )}
+                  <p className="text-2xl font-bold tracking-tight">{card.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
                 </CardContent>
               </Card>
             );
