@@ -36,6 +36,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     ? `<img src="${data.logoUrl}" alt="Star Logo" class="logo-img" />`
     : `<div class="logo-placeholder">★</div>`;
 
+  const creditTermValue = data.creditTerm ? escHtml(data.creditTerm) : "&mdash;";
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
