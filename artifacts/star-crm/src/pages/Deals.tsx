@@ -16,6 +16,7 @@ import {
   Handshake, Clock4, TrendingUp, CalendarRange, FileDown,
 } from "lucide-react";
 import { openProformaInvoice } from "@/utils/proformaInvoice";
+import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1165,6 +1166,7 @@ export default function Deals() {
                             vatApplicable: deal.vatApplicable ?? false,
                             notes: deal.notes as string | undefined,
                             salespersonName: spNameById[deal.salespersonId ?? 0] ?? "",
+                            logoUrl: starLogo,
                           })
                         }
                       >

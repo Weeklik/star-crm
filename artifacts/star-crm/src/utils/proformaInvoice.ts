@@ -9,6 +9,7 @@ export interface ProformaInvoiceData {
   vatApplicable?: boolean;
   notes?: string | null;
   salespersonName: string;
+  logoUrl?: string;
 }
 
 function fmt(n: number, curr: string): string {
@@ -30,6 +31,10 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const vatAmt = data.vatApplicable ? Math.round(baseAmt * 0.05 * 100) / 100 : 0;
   const totalAmt = baseAmt + vatAmt;
 
+  const logoHtml = data.logoUrl
+    ? `<img src="${data.logoUrl}" alt="Star Logo" class="logo-img" />`
+    : `<div class="logo-placeholder">★</div>`;
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -42,16 +47,66 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     font-size: 11px;
     color: #111;
     background: #fff;
-    padding: 32px 40px;
+    padding: 20px 36px 32px;
     line-height: 1.5;
   }
 
-  /* ── Header ── */
+  /* ── Letterhead ── */
+  .letterhead {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 3px double #222;
+    margin-bottom: 12px;
+  }
+  .logo-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .logo-placeholder {
+    font-size: 60px;
+    line-height: 80px;
+    width: 80px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .company-info {
+    flex: 1;
+    text-align: center;
+  }
+  .company-info .co-name {
+    font-size: 18px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.3;
+  }
+  .company-info .co-sub {
+    font-size: 10px;
+    color: #555;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+  }
+  .company-info .co-contact {
+    font-size: 10px;
+    color: #333;
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+  .letterhead-spacer {
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  /* ── Customer Header ── */
   .header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 18px;
+    margin-bottom: 10px;
   }
   .customer-block {
     font-size: 11px;
@@ -76,7 +131,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     margin: 8px 0 4px;
   }
   .title-section h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -150,7 +205,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
   /* ── Payment & Bank ── */
   .section {
-    margin-top: 14px;
+    margin-top: 12px;
     font-size: 11px;
   }
   .section-title {
@@ -166,7 +221,6 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     margin-top: 4px;
   }
   .bank-key { font-weight: 600; }
-  .bank-val { }
 
   /* ── Terms ── */
   .terms {
@@ -189,32 +243,52 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
   /* ── Footer ── */
   .footer {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 32px;
-    padding-top: 12px;
-    border-top: 1px solid #aaa;
+    margin-top: 40px;
     font-size: 11px;
   }
-  .footer .sig-block { display: flex; flex-direction: column; gap: 4px; }
-  .footer .sig-name { font-weight: 700; font-size: 12px; text-transform: uppercase; }
-  .footer .sig-company { font-size: 10.5px; color: #444; }
-  .footer .accepted { text-align: right; font-weight: 700; font-size: 11px; letter-spacing: 0.3px; }
-  .footer .accepted-company { text-align: right; font-size: 10.5px; color: #444; }
+  .footer-row-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .footer-row-bottom {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #aaa;
+    padding-top: 6px;
+  }
+  .sig-name { font-weight: 700; font-size: 12px; text-transform: uppercase; }
+  .sig-company { font-size: 10.5px; color: #444; margin-top: 2px; }
+  .accepted-label { font-weight: 700; font-size: 11px; letter-spacing: 0.3px; text-align: right; }
+  .accepted-company { font-size: 10.5px; color: #444; text-align: right; margin-top: 2px; }
 
   @media print {
-    body { padding: 16px 24px; }
+    body { padding: 10px 20px 20px; }
     @page { margin: 8mm 10mm; size: A4; }
   }
 </style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
+<!-- ── LETTERHEAD ── -->
+<div class="letterhead">
+  ${logoHtml}
+  <div class="company-info">
+    <div class="co-name">Star Sewing Machines Trading L.L.C.</div>
+    <div class="co-sub">Industrial Sewing Machines &amp; Garment Equipment</div>
+    <div class="co-contact">
+      Dubai, United Arab Emirates &nbsp;|&nbsp; TRN: 100515959300003<br>
+      Tel: +971 4 XXX XXXX &nbsp;|&nbsp; Email: info@starsmt.ae
+    </div>
+  </div>
+  <div class="letterhead-spacer"></div>
+</div>
+
+<!-- ── CUSTOMER HEADER ── -->
 <div class="header">
   <div class="customer-block">
     <div class="company-name">${escHtml(data.companyName)}</div>
-    ${data.contactName ? `<div>${escHtml(data.contactName)}</div>` : ""}
+    ${data.contactName ? `<div>MR : ${escHtml(data.contactName)}</div>` : ""}
   </div>
   <div class="date-block">${dateStr}</div>
 </div>
@@ -278,12 +352,12 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <div class="section">
   <div class="section-title">Our Bank Details</div>
   <div class="bank-grid">
-    <span class="bank-key">Account Name</span><span class="bank-val">Star Sewing Machines Trading LLC</span>
-    <span class="bank-key">Account Number</span><span class="bank-val">1011006864301</span>
-    <span class="bank-key">IBAN (23 Chars)</span><span class="bank-val">AE20026000101 1006864301</span>
-    <span class="bank-key">Currency</span><span class="bank-val">AED</span>
-    <span class="bank-key">Bank Name</span><span class="bank-val">Emirates NBD Bank PJSC</span>
-    <span class="bank-key">Swift</span><span class="bank-val">EBILAEAD</span>
+    <span class="bank-key">Account Name</span><span>Star Sewing Machines Trading LLC</span>
+    <span class="bank-key">Account Number</span><span>1011006864301</span>
+    <span class="bank-key">IBAN (23 Chars)</span><span>AE20026000101 1006864301</span>
+    <span class="bank-key">Currency</span><span>AED</span>
+    <span class="bank-key">Bank Name</span><span>Emirates NBD Bank PJSC</span>
+    <span class="bank-key">Swift</span><span>EBILAEAD</span>
   </div>
 </div>
 
@@ -298,17 +372,17 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <!-- ── NOTE ── -->
 <div class="note-block">
   <span class="note-title">Note: </span>
-  Customer must provide local expenses (e.g. Gate Pass Charges, Delivery &amp; Off Loading Charges, etc.)${data.notes ? `<br><br>${escHtml(data.notes)}` : ""}
+  Customer must provide local expenses (e.g. COVID19 Testing if needed, Gate Pass Charges, Delivery &amp; Off Loading Charges etc.)${data.notes ? `<br><br>${escHtml(data.notes)}` : ""}
 </div>
 
 <!-- ── FOOTER ── -->
 <div class="footer">
-  <div class="sig-block">
+  <div class="footer-row-top">
     <div class="sig-name">${escHtml(data.salespersonName || "Authorized Signatory")}</div>
-    <div class="sig-company">STAR SEWING MACHINES TRADING LLC</div>
+    <div class="accepted-label">Accepted &amp; Confirmed</div>
   </div>
-  <div>
-    <div class="accepted">Accepted &amp; Confirmed</div>
+  <div class="footer-row-bottom">
+    <div class="sig-company">STAR.S.M.TRADING LLC</div>
     <div class="accepted-company">${escHtml(data.companyName)}</div>
   </div>
 </div>
