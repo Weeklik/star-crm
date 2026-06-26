@@ -528,18 +528,8 @@ export default function Deals() {
   const spNameById = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
-  const [filterRegion, setFilterRegion] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<string>("all");
   const YEAR_OPTIONS = ["2025", "2026", "2027", "2028"];
-  const [regions, setRegions] = useState<{ country: string }[]>([]);
-
-  useEffect(() => {
-    if (!isOwner) return;
-    fetch("/api/lookup/regions", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setRegions(data); })
-      .catch(() => {});
-  }, [isOwner]);
 
   const { data: deals, isLoading } = useListDeals(
     me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
@@ -575,9 +565,11 @@ export default function Deals() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
+  const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions } = useOwnerControls();
+
   // Mirror the Dashboard's resolveRegionSpIds logic: filter by salesperson's country, not deal.region
-  const regionSpIds = isOwner && filterRegion !== "all"
-    ? new Set((users ?? []).filter((u) => u.country === filterRegion).map((u) => u.id))
+  const regionSpIds = isOwner && selectedRegion !== "all"
+    ? new Set((users ?? []).filter((u) => u.country === selectedRegion).map((u) => u.id))
     : null;
 
   const filteredDeals = deals
@@ -612,7 +604,6 @@ export default function Deals() {
 
   const { formatAmount, currency: userCurrency } = useCurrency();
   const formatCurrency = formatAmount;
-  const { getRateFor, selectedCurrency } = useOwnerControls();
 
   // Convert a deal's amount to the display currency using the same logic as Dashboard
   const dealRate = (d: any) => getRateFor((d as any).currency ?? "");
@@ -635,7 +626,7 @@ export default function Deals() {
     "NG":  "NGN",
     "TN":  "TND",
   };
-  const receivedCurrency = REGION_CURRENCY_MAP[filterRegion] ?? "AED";
+  const receivedCurrency = REGION_CURRENCY_MAP[selectedRegion] ?? "AED";
   const fmtReceived = (n: number) => {
     try {
       return new Intl.NumberFormat("en-US", { style: "currency", currency: receivedCurrency, maximumFractionDigits: 0 }).format(n);
@@ -1003,8 +994,8 @@ export default function Deals() {
         {/* Region filter — owner only */}
         {isOwner && regions.length > 0 && (
           <select
-            value={filterRegion}
-            onChange={(e) => { setFilterRegion(e.target.value); setPage(1); }}
+            value={selectedRegion}
+            onChange={(e) => { setSelectedRegion(e.target.value); setPage(1); }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
             <option value="all">All Regions</option>
