@@ -555,13 +555,8 @@ export default function Deals() {
 
   const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions, getActiveDateBounds } = useOwnerControls();
 
-  const { startDate: dealsStart, endDate: dealsEnd } = getActiveDateBounds();
   const { data: deals, isLoading } = useListDeals(
-    {
-      ...(me?.role === "salesperson" ? { salespersonId: me.id } : {}),
-      startDate: dealsStart,
-      endDate: dealsEnd,
-    },
+    me?.role === "salesperson" ? { salespersonId: me.id } : undefined,
     { query: { enabled: !!me } as any }
   );
 
@@ -597,6 +592,17 @@ export default function Deals() {
       if (db2 !== da) return db2 - da;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+
+  // KPI deals: same region+sp filters as filteredDeals, plus the shared date range from context
+  // This makes the KPI boxes match the Dashboard exactly, while the table stays unfiltered by date.
+  const { startDate: kpiStart, endDate: kpiEnd } = getActiveDateBounds();
+  const kpiDeals = deals?.filter((d) => {
+    const dateStr = String(d.dealStartDate).split("T")[0];
+    const matchesDate   = dateStr >= kpiStart && dateStr <= kpiEnd;
+    const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
+    const matchesRegion = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
+    return matchesDate && matchesSp && matchesRegion;
+  });
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
@@ -650,9 +656,9 @@ export default function Deals() {
   const statsAgreed      = filteredDeals?.reduce((s, d) => s + (Number(d.agreedAmount)     || 0) * dealRate(d), 0) ?? 0;
   const statsReceived    = filteredDeals?.reduce((s, d) => s + (Number(d.receivedAmount)    || 0) * dealRate(d), 0) ?? 0;
   const statsOutstanding = filteredDeals?.reduce((s, d) => s + (Number(d.outstandingAmount) || 0) * dealRate(d), 0) ?? 0;
-  const stageCount  = (stage: string) => filteredDeals?.filter((d) => d.stage === stage).length ?? 0;
+  const stageCount  = (stage: string) => kpiDeals?.filter((d) => d.stage === stage).length ?? 0;
   const stageAmount = (stage: string) =>
-    filteredDeals?.filter((d) => d.stage === stage)
+    kpiDeals?.filter((d) => d.stage === stage)
       .reduce((s, d) => s + (Number(d.agreedAmount) || 0) * dealRate(d), 0) ?? 0;
 
 
