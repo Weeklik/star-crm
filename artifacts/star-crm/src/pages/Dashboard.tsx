@@ -648,8 +648,6 @@ export default function Dashboard() {
                       outerRadius={95}
                       paddingAngle={3}
                       dataKey="value"
-                      labelLine={false}
-                      label={renderCustomPieLabel}
                     >
                       {pieData.map((entry) => (
                         <Cell key={entry.name} fill={STAGE_COLORS[entry.name] ?? "#94a3b8"} stroke="transparent" />
