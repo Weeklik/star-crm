@@ -382,13 +382,6 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   </div>
 </div>
 
-<!-- ── TERMS ── -->
-<div class="terms">
-  <div class="row"><span class="key">Delivery :</span><span>Available Ex-Stock, For Subject to Prior Sale</span></div>
-  <div class="row"><span class="key">Installation &amp; Training :</span><span>Free Installation &amp; Training Provided in U.A.E</span></div>
-  <div class="row"><span class="key">Validity :</span><span>01 Weeks</span></div>
-  <div class="row"><span class="key">Warranty :</span><span>One Year from Date of Invoice</span></div>
-</div>
 
 <!-- ── NOTE ── -->
 <div class="note-block">
