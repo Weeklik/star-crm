@@ -505,6 +505,7 @@ export default function Dashboard() {
     },
     {
       label: "Lost Orders",
+      sublabel: "Last 90 days",
       value: String(useConverted ? (allRegionsTotals?.lostDeals ?? 0) : (summary?.lostDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.lostAmount ?? 0) : (summary?.lostAmount ?? 0)),
       icon: Target,
@@ -582,9 +583,14 @@ export default function Dashboard() {
                 <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} to-transparent pointer-events-none`} />
                 <CardContent className="p-5 relative">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      {card.label}
-                    </p>
+                    <div>
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        {card.label}
+                      </p>
+                      {(card as any).sublabel && (
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{(card as any).sublabel}</p>
+                      )}
+                    </div>
                     <div className={`p-1.5 ${card.iconBg} rounded-lg`}>
                       <Icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
                     </div>
