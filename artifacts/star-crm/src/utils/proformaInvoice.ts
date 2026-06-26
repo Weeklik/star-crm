@@ -359,7 +359,12 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
 <!-- ── PAYMENT ── -->
 <div class="section">
-  <span class="section-title">Payment:</span> ${data.creditTerm ? escHtml(data.creditTerm) : "100% Advance"}
+  <span class="section-title">Payment:</span> 100% Advance
+</div>
+
+<!-- ── CREDIT TERM ── -->
+<div class="section">
+  <span class="section-title">Credit Term:</span> ${escHtml(data.creditTerm) || "&mdash;"}
 </div>
 
 <!-- ── BANK DETAILS ── -->
