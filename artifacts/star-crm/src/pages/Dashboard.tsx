@@ -632,9 +632,6 @@ export default function Dashboard() {
           <Card className="border-border/60">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Orders by Stage</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                % shown relative to Quotation Sent total · updates with region &amp; date filter
-              </p>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex flex-col gap-4">
@@ -659,12 +656,9 @@ export default function Dashboard() {
 
                 {/* Custom legend — % relative to Quotation Sent */}
                 {(() => {
-                  const qsCount = pieData.find((d) => d.name === "Quotation Sent")?.value ?? 0;
                   return (
                     <div className="grid grid-cols-2 gap-2">
                       {pieData.map((entry) => {
-                        const isQS = entry.name === "Quotation Sent";
-                        const pct = qsCount > 0 ? Math.round((entry.value / qsCount) * 100) : 0;
                         return (
                           <div key={entry.name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50">
                             <span
@@ -675,9 +669,6 @@ export default function Dashboard() {
                               <p className="text-[11px] text-muted-foreground truncate">{entry.name}</p>
                               <p className="text-sm font-bold leading-tight">
                                 {entry.value}
-                                <span className="text-[10px] font-normal text-muted-foreground ml-1">
-                                  {isQS ? "(Total)" : `(${pct}%)`}
-                                </span>
                               </p>
                             </div>
                           </div>
@@ -939,7 +930,6 @@ export default function Dashboard() {
                         <th className="text-left py-2 pr-6 font-semibold text-muted-foreground">Category</th>
                         <th className="text-center py-2 px-4 font-semibold text-muted-foreground">Count</th>
                         <th className="text-right py-2 pl-4 font-semibold text-muted-foreground">Amount ({selectedCurrency})</th>
-                        <th className="text-right py-2 pl-4 font-semibold text-muted-foreground">Share</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -970,17 +960,6 @@ export default function Dashboard() {
                                   <td className="py-3 pl-4 text-right tabular-nums font-semibold" style={{ color }}>
                                     {fmtK(d.totalAmount)}
                                   </td>
-                                  <td className="py-3 pl-4 text-right tabular-nums">
-                                    <div className="flex items-center justify-end gap-2">
-                                      <div className="w-20 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                        <div
-                                          className="h-full rounded-full"
-                                          style={{ width: `${pct}%`, background: color }}
-                                        />
-                                      </div>
-                                      <span className="text-muted-foreground text-xs w-8 text-right">{pct}%</span>
-                                    </div>
-                                  </td>
                                 </tr>
                               );
                             })}
@@ -988,7 +967,6 @@ export default function Dashboard() {
                               <td className="py-2 pr-6 text-sm">Total</td>
                               <td className="py-2 px-4 text-center tabular-nums">{grandCount}</td>
                               <td className="py-2 pl-4 text-right tabular-nums">{fmtK(grandTotal)}</td>
-                              <td className="py-2 pl-4 text-right text-muted-foreground text-xs">100%</td>
                             </tr>
                           </>
                         );
