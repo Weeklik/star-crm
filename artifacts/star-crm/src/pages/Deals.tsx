@@ -1207,6 +1207,7 @@ export default function Deals() {
                             notes: deal.notes as string | undefined,
                             salespersonName: spNameById[deal.salespersonId ?? 0] ?? "",
                             logoUrl: starLogo,
+                            creditTerm: (deal as any).creditTerm ?? undefined,
                           })
                         }
                       >

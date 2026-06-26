@@ -10,6 +10,7 @@ export interface ProformaInvoiceData {
   notes?: string | null;
   salespersonName: string;
   logoUrl?: string;
+  creditTerm?: string | null;
 }
 
 function fmt(n: number, curr: string): string {
@@ -358,7 +359,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
 <!-- ── PAYMENT ── -->
 <div class="section">
-  <span class="section-title">Payment:</span> 100% Advance
+  <span class="section-title">Payment:</span> ${data.creditTerm ? escHtml(data.creditTerm) : "100% Advance"}
 </div>
 
 <!-- ── BANK DETAILS ── -->
