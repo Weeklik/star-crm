@@ -32,6 +32,7 @@ import {
   Briefcase,
   Target,
   Users,
+  CalendarRange,
 } from "lucide-react";
 
 interface SummaryData {
@@ -182,7 +183,28 @@ export default function Dashboard() {
   const [categoryRaw, setCategoryRaw] = useState<CategoryBreakdownRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { setDateRange("fullyear"); }, [selectedYear]);
+  // Month-range filter (0 = not set)
+  const [fromMonth, setFromMonth] = useState<number>(0);
+  const [toMonth,   setToMonth]   = useState<number>(0);
+
+  const MONTHS = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December",
+  ];
+
+  /** Returns date bounds honoring the custom month range when set, else the dateRange preset. */
+  const getActiveDateBounds = useCallback(() => {
+    if (fromMonth > 0 || toMonth > 0) {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const f = fromMonth > 0 ? fromMonth : 1;
+      const t = toMonth   > 0 ? toMonth   : fromMonth > 0 ? fromMonth : 12;
+      const lastDay = new Date(selectedYear, t, 0).getDate();
+      return { startDate: `${selectedYear}-${pad(f)}-01`, endDate: `${selectedYear}-${pad(t)}-${lastDay}` };
+    }
+    return getDateBounds(dateRange, selectedYear);
+  }, [fromMonth, toMonth, dateRange, selectedYear]);
+
+  useEffect(() => { setDateRange("fullyear"); setFromMonth(0); setToMonth(0); }, [selectedYear]);
 
   useEffect(() => {
     if (isOwner) {
@@ -194,23 +216,23 @@ export default function Dashboard() {
   }, [isOwner]);
 
   const buildQs = useCallback(() => {
-    const { startDate, endDate } = getDateBounds(dateRange, selectedYear);
+    const { startDate, endDate } = getActiveDateBounds();
     const p = new URLSearchParams({ startDate, endDate });
     if (isOwner && selectedSpId !== "all") p.set("salespersonId", selectedSpId);
     if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
     return p.toString();
-  }, [dateRange, selectedSpId, isOwner, selectedRegion, selectedYear]);
+  }, [getActiveDateBounds, selectedSpId, isOwner, selectedRegion]);
 
   // Fetch region-stage breakdown independently (always all regions, only date-filtered)
   useEffect(() => {
     if (!me || !isOwner) return;
-    const { startDate, endDate } = getDateBounds(dateRange, selectedYear);
+    const { startDate, endDate } = getActiveDateBounds();
     const qs = new URLSearchParams({ startDate, endDate }).toString();
     fetch(`/api/reports/region-stage-breakdown?${qs}`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => setRegionStageRaw(Array.isArray(data) ? data : []))
       .catch(() => {});
-  }, [me, isOwner, dateRange, selectedYear]);
+  }, [me, isOwner, getActiveDateBounds]);
 
   // Fetch category (dealType) breakdown for closed orders — respects all filters
   useEffect(() => {
@@ -534,17 +556,58 @@ export default function Dashboard() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Analytics overview · {dateRangeOptions.find((o) => o.key === dateRange)?.label}
+              Analytics overview ·{" "}
+              {fromMonth > 0 || toMonth > 0
+                ? `${fromMonth > 0 ? MONTHS[fromMonth - 1] : "Jan"} → ${toMonth > 0 ? MONTHS[toMonth - 1] : MONTHS[(fromMonth > 0 ? fromMonth : 12) - 1]} ${selectedYear}`
+                : dateRangeOptions.find((o) => o.key === dateRange)?.label}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
+            {/* Month range selectors */}
+            <div className="flex items-center gap-1.5 border border-border rounded-md px-2 py-1 bg-background">
+              <CalendarRange className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <select
+                value={fromMonth}
+                onChange={(e) => {
+                  setFromMonth(Number(e.target.value));
+                }}
+                className="bg-transparent text-sm text-foreground focus:outline-none cursor-pointer pr-1"
+              >
+                <option value={0}>From</option>
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <span className="text-muted-foreground text-xs">→</span>
+              <select
+                value={toMonth}
+                onChange={(e) => {
+                  setToMonth(Number(e.target.value));
+                }}
+                className="bg-transparent text-sm text-foreground focus:outline-none cursor-pointer pr-1"
+              >
+                <option value={0}>To</option>
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              {(fromMonth > 0 || toMonth > 0) && (
+                <button
+                  onClick={() => { setFromMonth(0); setToMonth(0); }}
+                  className="text-muted-foreground hover:text-foreground text-xs ml-0.5"
+                  title="Clear month filter"
+                >✕</button>
+              )}
+            </div>
+
+            {/* Preset range buttons — greyed when month filter active */}
             {dateRangeOptions.map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setDateRange(key)}
+                onClick={() => { setDateRange(key); setFromMonth(0); setToMonth(0); }}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
-                  dateRange === key
+                  dateRange === key && fromMonth === 0 && toMonth === 0
                     ? "bg-primary text-primary-foreground border-primary shadow-sm"
                     : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
