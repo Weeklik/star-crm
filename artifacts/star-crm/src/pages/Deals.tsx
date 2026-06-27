@@ -1042,7 +1042,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quotation Sent</span>
             <Clock4 className="w-4 h-4 text-muted-foreground" />
           </div>
-          {selectedRegion === "all" ? (
+          {isOwner && selectedRegion === "all" ? (
             <>
               <p className="text-2xl font-bold tabular-nums text-muted-foreground/30">—</p>
               <p className="text-xs text-muted-foreground/40">Select a region</p>
@@ -1062,7 +1062,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Confirmed Orders</span>
             <CheckCircle2 className="w-4 h-4 text-yellow-500" />
           </div>
-          {selectedRegion === "all" ? (
+          {isOwner && selectedRegion === "all" ? (
             <>
               <p className="text-2xl font-bold tabular-nums text-muted-foreground/30">—</p>
               <p className="text-xs text-muted-foreground/40">Select a region</p>
@@ -1085,7 +1085,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Closed Orders</span>
             <Handshake className="w-4 h-4 text-green-500" />
           </div>
-          {selectedRegion === "all" ? (
+          {isOwner && selectedRegion === "all" ? (
             <>
               <p className="text-2xl font-bold tabular-nums text-muted-foreground/30">—</p>
               <p className="text-xs text-muted-foreground/40">Select a region</p>
@@ -1108,7 +1108,7 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lost Orders</span>
             <XCircle className="w-4 h-4 text-red-500" />
           </div>
-          {selectedRegion === "all" ? (
+          {isOwner && selectedRegion === "all" ? (
             <>
               <p className="text-2xl font-bold tabular-nums text-muted-foreground/30">—</p>
               <p className="text-xs text-muted-foreground/40">Select a region</p>
