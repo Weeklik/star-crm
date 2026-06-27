@@ -71,6 +71,17 @@ const CANONICAL_REGIONS: { country: string; currency: string }[] = [
   { country: "Ethiopia", currency: "ETB" },
 ];
 
+/** Normalize legacy ISO codes or alternate spellings to canonical country names. */
+const COUNTRY_NORMALIZE: Record<string, string> = {
+  AE: "UAE", SA: "KSA",
+  KE: "Kenya", NG: "Nigeria", TN: "Tunisia",
+  EG: "Egypt", GH: "Ghana", ET: "Ethiopia",
+};
+
+function normalizeCountry(code: string): string {
+  return COUNTRY_NORMALIZE[code] ?? code;
+}
+
 router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
   // Pull salesperson countries from DB — their currency setting takes precedence.
   const rows = await db
@@ -81,9 +92,13 @@ router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
     .from(usersTable)
     .where(and(eq(usersTable.role, "salesperson"), isNotNull(usersTable.country)));
 
+  // Build a map of normalized country → currency from DB rows.
   const dbMap = new Map<string, string | null>();
   for (const r of rows) {
-    if (r.country?.trim()) dbMap.set(r.country, r.currency ?? null);
+    if (r.country?.trim()) {
+      const normalized = normalizeCountry(r.country.trim());
+      dbMap.set(normalized, r.currency ?? null);
+    }
   }
 
   // Merge: canonical list first, DB currency overrides default when present.
@@ -91,7 +106,7 @@ router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
   for (const c of CANONICAL_REGIONS) {
     merged.set(c.country, dbMap.get(c.country) ?? c.currency);
   }
-  // Also include any DB countries not in the canonical list.
+  // Also include any DB countries not in the canonical list (after normalization).
   for (const [country, currency] of dbMap) {
     if (!merged.has(country)) merged.set(country, currency);
   }
