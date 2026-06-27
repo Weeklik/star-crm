@@ -46,6 +46,9 @@ interface RegionConfig {
   customerLabel?: string;      // label before customer name
   addressLabel?: string;       // label before address
   attentionLabel?: string;     // "A l'attention de" label
+  // wave header variant (Tunisia / North Africa style)
+  headerVariant?: "wave";
+  waveCompanyName?: string;    // text shown in the white wave area (e.g. "STAR NORTH AFRICA")
 }
 
 const REGION_CONFIGS: Record<string, RegionConfig> = {
@@ -133,6 +136,9 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
       "Machines disponibles en stock. Le client est responsable des frais de livraison et de déchargement.",
     footerLine1: "Star Sewing Machines &ndash; Tunisie",
     footerLine2: "Email : star@starsew.com &nbsp;&nbsp; Website : www.starsew.com",
+    // wave header
+    headerVariant:    "wave",
+    waveCompanyName:  "STAR NORTH AFRICA",
     // French label overrides
     docTitle:       "DEVIS",
     colBrand:       "Marque",
@@ -221,7 +227,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     line-height: 1.5;
   }
 
-  /* ── Letterhead ── */
+  /* ── Letterhead (standard) ── */
   .letterhead {
     display: flex;
     align-items: center;
@@ -269,6 +275,81 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   .letterhead-spacer {
     width: 80px;
     flex-shrink: 0;
+  }
+
+  /* ── Wave Header (Tunisia / North Africa) ── */
+  .wave-header {
+    position: relative;
+    height: 88px;
+    background: #8C2222;
+    overflow: hidden;
+    margin: -20px -36px 0;
+    display: flex;
+    align-items: center;
+    padding-left: 36px;
+  }
+  /* lighter diagonal highlight inside the red area */
+  .wave-header::before {
+    content: "";
+    position: absolute;
+    top: -30%;
+    left: 10%;
+    width: 30%;
+    height: 200%;
+    background: rgba(255,255,255,0.08);
+    transform: rotate(-15deg);
+    pointer-events: none;
+  }
+  .wave-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+  }
+  .wave-white {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 56%;
+    height: 100%;
+    background: #f0eeeb;
+    clip-path: polygon(14% 0%, 100% 0%, 100% 100%, 0% 100%);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 36px;
+    z-index: 1;
+  }
+  .wave-company {
+    font-size: 17px;
+    font-weight: 900;
+    color: #111;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-align: right;
+  }
+  /* DEVIS title for wave variant */
+  .devis-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 900;
+    color: #8C2222;
+    letter-spacing: 10px;
+    text-transform: uppercase;
+    margin: 18px 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+  .devis-ref {
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 14px;
+    letter-spacing: 0.4px;
   }
 
   /* ── Customer Header ── */
@@ -453,7 +534,20 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 </head>
 <body>
 
-<!-- ── LETTERHEAD ── -->
+${cfg.headerVariant === "wave" ? `
+<!-- ── WAVE LETTERHEAD (Tunisia / North Africa) ── -->
+<div class="wave-header">
+  ${data.logoUrl ? `<img src="${data.logoUrl}" alt="Star Logo" class="wave-logo" />` : `<div style="color:#fff;font-size:48px;line-height:1;position:relative;z-index:2;">★</div>`}
+  <div class="wave-white">
+    <span class="wave-company">${cfg.waveCompanyName ?? cfg.companyName}</span>
+  </div>
+</div>
+
+<!-- ── DEVIS TITLE ── -->
+<div class="devis-title">${docTitle}</div>
+<div class="devis-ref">${invoiceNo}</div>
+` : `
+<!-- ── LETTERHEAD (standard) ── -->
 <div class="letterhead">
   ${logoHtml}
   <div class="company-info">
@@ -466,6 +560,13 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   </div>
   <div class="letterhead-spacer"></div>
 </div>
+
+<!-- ── TITLE ── -->
+<div class="title-section">
+  <h1>${docTitle}</h1>
+</div>
+<div class="invoice-no">${invoiceNo}</div>
+`}
 
 <!-- ── CUSTOMER HEADER ── -->
 <div class="header">
@@ -480,12 +581,6 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   </div>
   <div class="date-block">${dateStr}</div>
 </div>
-
-<!-- ── TITLE ── -->
-<div class="title-section">
-  <h1>${docTitle}</h1>
-</div>
-<div class="invoice-no">${invoiceNo}</div>
 
 <!-- ── ITEMS TABLE ── -->
 <table class="invoice-table">
