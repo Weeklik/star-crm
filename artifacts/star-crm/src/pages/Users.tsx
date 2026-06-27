@@ -29,10 +29,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
 ];
 
 const CURRENCIES = [
-  "AED","ARS","AUD","BDT","BHD","BRL","CAD","CHF","CLP","CNY","COP","DKK","EGP",
-  "ETB","EUR","GBP","GHS","HKD","IDR","ILS","INR","JPY","KES","KRW","KWD","LKR",
-  "MXN","MYR","NGN","NOK","NZD","OMR","PHP","PKR","PLN","QAR","RUB","SAR","SEK",
-  "SGD","THB","TND","TRY","TWD","USD","VND","ZAR",
+  "USD","EUR","JPY","AED","SAR","KES","NGN","TND",
 ];
 
 const selectClass =
