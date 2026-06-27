@@ -368,12 +368,11 @@ export default function Dashboard() {
 
   const topPersons = [...byPerson]
     .map((p) => ({
-      name: (p.salespersonName || p.email || "Unknown").split(" ")[0],
+      name: p.salespersonName || p.email || "Unknown",
       closedAmount: Math.round((p.totalAgreedAmount ?? 0) * getRateFor(p.currency ?? "")),
       deals: p.closedDeals ?? 0,
     }))
-    .sort((a, b) => b.closedAmount - a.closedAmount)
-    .slice(0, 8);
+    .sort((a, b) => b.closedAmount - a.closedAmount);
 
   const CustomPieTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -717,22 +716,24 @@ export default function Dashboard() {
                     {t("dashboard.noData")}
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={270}>
-                    <BarChart
-                      data={topPersons}
-                      layout="vertical"
-                      margin={{ left: 0, right: 48, top: 4, bottom: 4 }}
-                      barCategoryGap="25%"
-                    >
-                      <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
-                      <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={56} />
-                      <Tooltip content={<CustomBarTooltip />} />
-                      <Bar dataKey="closedAmount" name="Closed Orders Amount" fill="#fbbf24" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                        <LabelList dataKey="closedAmount" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div style={{ overflowY: "auto", maxHeight: 420 }}>
+                    <ResponsiveContainer width="100%" height={Math.max(220, topPersons.length * 36)}>
+                      <BarChart
+                        data={topPersons}
+                        layout="vertical"
+                        margin={{ left: 0, right: 56, top: 4, bottom: 4 }}
+                        barCategoryGap="25%"
+                      >
+                        <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                        <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={110} />
+                        <Tooltip content={<CustomBarTooltip />} />
+                        <Bar dataKey="closedAmount" name="Closed Orders Amount" fill="#fbbf24" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                          <LabelList dataKey="closedAmount" position="right" formatter={fmtK} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 )
               ) : (
                 convertedStageData.every((s) => s.totalAgreedAmount === 0) ? (
