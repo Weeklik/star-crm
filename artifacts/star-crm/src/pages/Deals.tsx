@@ -16,8 +16,7 @@ import {
   Handshake, Clock4, TrendingUp, CalendarRange, FileDown,
 } from "lucide-react";
 import { openProformaInvoice } from "@/utils/proformaInvoice";
-import starLogo   from "@assets/Star-Logo_1782471527362.webp";
-import starLogoKE from "@assets/image_1782547070509.png";
+import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1210,9 +1209,7 @@ export default function Deals() {
                             salespersonName: spNameById[deal.salespersonId ?? 0] ?? me?.name ?? "",
                             creditTerm: (deal as any).creditTerm ?? undefined,
                             region: spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country ?? undefined,
-                            logoUrl: (spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country) === "KE"
-                              ? starLogoKE
-                              : starLogo,
+                            logoUrl: starLogo,
                           })
                         }
                       >
