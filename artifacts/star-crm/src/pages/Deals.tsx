@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { openProformaInvoice } from "@/utils/proformaInvoice";
 import starLogo    from "@assets/Star-Logo_1782471527362.webp";
-import starLogoKSA from "@assets/image_1782547824331.png";
+import starLogoKSA from "@assets/image_1782548029206.png";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
