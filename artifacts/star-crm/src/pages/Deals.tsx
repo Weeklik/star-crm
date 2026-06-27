@@ -1074,10 +1074,13 @@ export default function Deals() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 
         {/* Quotation Sent */}
-        <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
+        <div
+          className={`bg-card border rounded-xl p-4 flex flex-col gap-1 cursor-pointer transition-all hover:shadow-md ${stageFilter === "Quotation Sent" ? "border-violet-500 ring-2 ring-violet-500/30" : "border-border hover:border-violet-400/50"}`}
+          onClick={() => { onStageFilterChange(stageFilter === "Quotation Sent" ? "" : "Quotation Sent"); }}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiQuotation")}</span>
-            <Clock4 className="w-4 h-4 text-muted-foreground" />
+            <Clock4 className={`w-4 h-4 ${stageFilter === "Quotation Sent" ? "text-violet-500" : "text-muted-foreground"}`} />
           </div>
           {isOwner && selectedRegion === "all" ? (
             <>
@@ -1094,7 +1097,10 @@ export default function Deals() {
         </div>
 
         {/* Confirmed Orders */}
-        <div className="bg-card border border-border border-l-4 border-l-yellow-500 rounded-xl p-4 flex flex-col gap-1">
+        <div
+          className={`bg-card border border-l-4 border-l-yellow-500 rounded-xl p-4 flex flex-col gap-1 cursor-pointer transition-all hover:shadow-md ${stageFilter === "Order Confirmed" ? "border-yellow-500 ring-2 ring-yellow-500/30" : "border-border hover:border-yellow-400/50"}`}
+          onClick={() => { onStageFilterChange(stageFilter === "Order Confirmed" ? "" : "Order Confirmed"); }}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiConfirmed")}</span>
             <CheckCircle2 className="w-4 h-4 text-yellow-500" />
@@ -1117,7 +1123,10 @@ export default function Deals() {
         </div>
 
         {/* Closed Orders */}
-        <div className="bg-card border border-border border-l-4 border-l-green-500 rounded-xl p-4 flex flex-col gap-1">
+        <div
+          className={`bg-card border border-l-4 border-l-green-500 rounded-xl p-4 flex flex-col gap-1 cursor-pointer transition-all hover:shadow-md ${stageFilter === "Order Closed" ? "border-green-500 ring-2 ring-green-500/30" : "border-border hover:border-green-400/50"}`}
+          onClick={() => { onStageFilterChange(stageFilter === "Order Closed" ? "" : "Order Closed"); }}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiClosed")}</span>
             <Handshake className="w-4 h-4 text-green-500" />
@@ -1140,7 +1149,10 @@ export default function Deals() {
         </div>
 
         {/* Lost Orders */}
-        <div className="bg-card border border-border border-l-4 border-l-red-500 rounded-xl p-4 flex flex-col gap-1">
+        <div
+          className={`bg-card border border-l-4 border-l-red-500 rounded-xl p-4 flex flex-col gap-1 cursor-pointer transition-all hover:shadow-md ${stageFilter === "Order Lost" ? "border-red-500 ring-2 ring-red-500/30" : "border-border hover:border-red-400/50"}`}
+          onClick={() => { onStageFilterChange(stageFilter === "Order Lost" ? "" : "Order Lost"); }}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiLost")}</span>
             <XCircle className="w-4 h-4 text-red-500" />
