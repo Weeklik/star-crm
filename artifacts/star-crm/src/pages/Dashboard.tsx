@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useGetMe } from "@workspace/api-client-react";
 import { useOwnerControls, DateRange, getDateBounds, MONTHS } from "@/contexts/OwnerControlsContext";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -149,6 +150,7 @@ const TOOLTIP_STYLE = {
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const { data: me } = useGetMe();
   const {
     formatConverted, selectedRegion, selectedYear,
@@ -463,6 +465,7 @@ export default function Dashboard() {
   const kpiCards = [
     {
       label: t("dashboard.quotationSent"),
+      stage: "Quotation Sent",
       value: String(useConverted ? (allRegionsTotals?.quotationSentCount ?? 0) : (summary?.quotationSentCount ?? 0)),
       sub: fmtAmt(quotationSentAmt),
       icon: Briefcase,
@@ -472,6 +475,7 @@ export default function Dashboard() {
     },
     {
       label: t("dashboard.confirmedOrders"),
+      stage: "Order Confirmed",
       value: String(useConverted ? (allRegionsTotals?.confirmedDeals ?? 0) : (summary?.confirmedDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.confirmedAmount ?? 0) : (summary?.confirmedAmount ?? 0)),
       icon: Target,
@@ -481,6 +485,7 @@ export default function Dashboard() {
     },
     {
       label: t("dashboard.closedOrders"),
+      stage: "Order Closed",
       value: String(useConverted ? (allRegionsTotals?.closedDeals ?? 0) : (summary?.closedDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.closedAmount ?? 0) : (summary?.closedAmount ?? 0)),
       icon: TrendingUp,
@@ -490,6 +495,7 @@ export default function Dashboard() {
     },
     {
       label: t("dashboard.lostOrders"),
+      stage: "Order Lost",
       sublabel: t("dashboard.last90Days"),
       value: String(useConverted ? (allRegionsTotals?.lostDeals ?? 0) : (summary?.lostDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.lostAmount ?? 0) : (summary?.lostAmount ?? 0)),
@@ -604,8 +610,18 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {kpiCards.map((card) => {
             const Icon = card.icon;
+            const handleKpiClick = () => {
+              const params = new URLSearchParams();
+              params.set("stage", card.stage);
+              if (isOwner && selectedSpId !== "all") params.set("salespersonId", selectedSpId);
+              navigate(`/deals?${params.toString()}`);
+            };
             return (
-              <Card key={card.label} className="relative overflow-hidden border-border/60">
+              <Card
+                key={card.label}
+                className="relative overflow-hidden border-border/60 cursor-pointer hover:shadow-lg hover:border-border transition-all"
+                onClick={handleKpiClick}
+              >
                 <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} to-transparent pointer-events-none`} />
                 <CardContent className="p-5 relative">
                   <div className="flex items-center justify-between mb-3">

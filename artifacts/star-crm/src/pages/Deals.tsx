@@ -552,11 +552,17 @@ export default function Deals() {
   const spNameById    = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
   const spCountryById = Object.fromEntries((users ?? []).map((u) => [u.id, u.country]));
 
-  const [filterSpId, setFilterSpId] = useState<string>("all");
+  const [filterSpId, setFilterSpId] = useState<string>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("salespersonId") ?? "all";
+  });
   const [search, setSearch] = useState("");
   const [orderDateRange, setOrderDateRange] = useState<DateRange>("fullyear");
   const [orderYear, setOrderYear] = useState(new Date().getFullYear());
-  const [stageFilter, setStageFilter] = useState<Stage | "">("");
+  const [stageFilter, setStageFilter] = useState<Stage | "">(() => {
+    const p = new URLSearchParams(window.location.search);
+    return (p.get("stage") as Stage) ?? "";
+  });
   const [dealTypeFilter, setDealTypeFilter] = useState<string>("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
