@@ -73,6 +73,27 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
       "P.O. Box : 11404-00400, River Road Nairobi &ndash; Kenya &nbsp; Tel : +254-20-2186560",
     footerLine2: "Email : starsewingkenya@gmail.com &nbsp;&nbsp; Website : www.starsew.com",
   },
+  KSA: {
+    currency: "SAR",
+    vatRate: 15,
+    totalLabel: "Total Ex-Works",
+    companyName: "Yousef Amer M. S. Bagheran Est",
+    companySubTitle: "For Wholesale and Retail in Sewing &amp; Embroidery Machines",
+    letterheadContact:
+      "Ash Sharafiyah Dist. Jeddah 23217 &ndash; 6192, Saudi Arabia<br>C.R : 4030287042",
+    bank: [
+      { key: "Bank Name",       value: "—" },
+      { key: "Account Number",  value: "—" },
+      { key: "IBAN",            value: "—" },
+      { key: "Currency",        value: "SAR" },
+    ],
+    paymentText: "100% Advance",
+    noteText:
+      "Customer must provide local expenses including Gate Pass Charges, Delivery &amp; Off Loading Charges etc.",
+    footerLine1:
+      "Askan Building - No : 3 Group 6 Ground Floor, 3228 King Abdullah Road, Ash Sharafiyah Dist. Jeddah 23217 &ndash; 6192",
+    footerLine2: "C.R : 4030287042",
+  },
 };
 
 function getRegionConfig(region?: string | null): RegionConfig {
