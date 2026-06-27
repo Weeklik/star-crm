@@ -385,7 +385,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <div class="letterhead">
   ${logoHtml}
   <div class="company-info">
-    ${data.companyNameImageUrl ? `<img src="${data.companyNameImageUrl}" alt="" style="max-height:1.6em;width:auto;display:block;margin-bottom:2px;" />` : ""}
+    ${data.companyNameImageUrl ? `<img src="${data.companyNameImageUrl}" alt="" style="height:23px;width:auto;max-width:100%;display:block;margin:0 auto 3px;" />` : ""}
     <div class="co-name">${cfg.companyName}</div>
     <div class="co-sub">${cfg.companySubTitle}</div>
     <div class="co-contact">
