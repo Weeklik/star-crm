@@ -7,6 +7,9 @@ export interface ProformaInvoiceData {
   contactName: string;
   dealStartDate?: string | null;
   productItem: string;
+  brand?: string | null;
+  model?: string | null;
+  quantity?: number | null;
   agreedAmount: number;
   currency?: string | null;
   vatApplicable?: boolean;
@@ -214,6 +217,9 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const bankRowsHtml = cfg.bank
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
     .join("\n    ");
+
+  const qty = data.quantity ?? 1;
+  const unitAmt = qty > 0 ? baseAmt / qty : baseAmt;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -556,11 +562,11 @@ ${cfg.headerVariant === "wave" ? `
   </thead>
   <tbody>
     <tr>
-      <td class="center"></td>
-      <td class="center"></td>
+      <td class="center">${escHtml(data.brand)}</td>
+      <td class="center">${escHtml(data.model)}</td>
       <td>${escHtml(data.productItem)}</td>
-      <td class="center">1</td>
-      <td class="right">${fmt(baseAmt, curr)} ${curr}</td>
+      <td class="center">${qty}</td>
+      <td class="right">${fmt(unitAmt, curr)} ${curr}</td>
       <td class="right">${fmt(baseAmt, curr)} ${curr}</td>
     </tr>
   </tbody>

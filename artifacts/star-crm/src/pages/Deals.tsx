@@ -142,6 +142,9 @@ interface DealFormState {
   name: string;
   companyName: string;
   productItem: string;
+  brand: string;
+  model: string;
+  quantity: number;
   stage: Stage;
   dealType: "New Deal" | "Recurring" | "Dealer";
   region: string;
@@ -169,6 +172,9 @@ const emptyForm = (): DealFormState => ({
   name: "",
   companyName: "",
   productItem: "",
+  brand: "",
+  model: "",
+  quantity: 1,
   stage: "Quotation Sent",
   dealType: "New Deal",
   region: "",
@@ -190,6 +196,9 @@ function toPayload(f: DealFormState) {
     name: f.name,
     companyName: f.companyName,
     productItem: f.productItem,
+    brand: f.brand || undefined,
+    model: f.model || undefined,
+    quantity: Number(f.quantity) || 1,
     stage: f.stage,
     dealType: f.dealType,
     region: f.region || undefined,
@@ -717,6 +726,9 @@ export default function Deals() {
       name: deal.name,
       companyName: deal.companyName,
       productItem: deal.productItem,
+      brand: (deal as any).brand ?? "",
+      model: (deal as any).model ?? "",
+      quantity: (deal as any).quantity ?? 1,
       stage: deal.stage as Stage,
       dealType: (deal.dealType as "New Deal" | "Recurring" | "Dealer") ?? "New Deal",
       region: deal.region ?? "",
@@ -1205,6 +1217,9 @@ export default function Deals() {
                             contactName: deal.name ?? "",
                             dealStartDate: deal.dealStartDate as string | undefined,
                             productItem: deal.productItem ?? "",
+                            brand: (deal as any).brand ?? undefined,
+                            model: (deal as any).model ?? undefined,
+                            quantity: (deal as any).quantity ?? 1,
                             agreedAmount: deal.agreedAmount ?? 0,
                             currency: (deal as any).currency,
                             vatApplicable: deal.vatApplicable ?? false,
@@ -1341,6 +1356,31 @@ export default function Deals() {
                 onChange={(v) => set("productItem", v)}
                 lookupType="product"
                 placeholder="e.g. SaaS Pro Plan"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("orders.brand")}</Label>
+              <Input
+                value={form.brand}
+                onChange={(e) => set("brand", e.target.value)}
+                placeholder="e.g. Juki"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("orders.model")}</Label>
+              <Input
+                value={form.model}
+                onChange={(e) => set("model", e.target.value)}
+                placeholder="e.g. DDL-9000C"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("orders.quantity")}</Label>
+              <Input
+                type="number"
+                min={1}
+                value={form.quantity}
+                onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
               />
             </div>
             <div className="space-y-1.5">

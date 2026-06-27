@@ -53,6 +53,12 @@ export interface Deal {
   lostReason?: string | null;
   /** @nullable */
   creditTerm?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  model?: string | null;
+  /** @minimum 1 */
+  quantity?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -98,6 +104,12 @@ export interface CreateDealBody {
   lostReason?: string | null;
   /** @nullable */
   creditTerm?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  model?: string | null;
+  /** @minimum 1 */
+  quantity?: number;
 }
 
 export type UpdateDealBodyStage =
@@ -141,6 +153,12 @@ export interface UpdateDealBody {
   lostReason?: string | null;
   /** @nullable */
   creditTerm?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  model?: string | null;
+  /** @minimum 1 */
+  quantity?: number;
 }
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];

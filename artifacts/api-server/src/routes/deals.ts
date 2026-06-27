@@ -132,6 +132,9 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       notes: data.notes ?? null,
       lostReason: data.lostReason ?? null,
       creditTerm: (data as any).creditTerm ?? null,
+      brand: (data as any).brand ?? null,
+      model: (data as any).model ?? null,
+      quantity: (data as any).quantity ?? 1,
     })
     .returning();
 
@@ -224,6 +227,9 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if (d.notes !== undefined) updateData.notes = d.notes;
   if (d.lostReason !== undefined) updateData.lostReason = d.lostReason;
   if ((d as any).creditTerm !== undefined) updateData.creditTerm = (d as any).creditTerm;
+  if ((d as any).brand !== undefined) updateData.brand = (d as any).brand;
+  if ((d as any).model !== undefined) updateData.model = (d as any).model;
+  if ((d as any).quantity !== undefined) updateData.quantity = (d as any).quantity;
 
   const [updated] = await db
     .update(dealsTable)

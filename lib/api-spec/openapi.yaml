@@ -415,6 +415,13 @@ components:
           type: ["string", "null"]
         creditTerm:
           type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        model:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+          minimum: 1
         createdAt:
           type: string
           format: date-time
@@ -487,6 +494,13 @@ components:
           type: ["string", "null"]
         creditTerm:
           type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        model:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+          minimum: 1
       required:
         - dealStartDate
         - name
@@ -546,6 +560,13 @@ components:
           type: ["string", "null"]
         creditTerm:
           type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        model:
+          type: ["string", "null"]
+        quantity:
+          type: integer
+          minimum: 1
 
     User:
       type: object
