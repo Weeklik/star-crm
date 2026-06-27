@@ -25,13 +25,14 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },
   { code: "Kenya",    name: "Kenya (KES)",     currency: "KES" },
   { code: "Ethiopia", name: "Ethiopia (ETB)",  currency: "ETB" },
+  { code: "Ghana",    name: "Ghana (GHS)",     currency: "GHS" },
 ];
 
 const CURRENCIES = [
   "AED","ARS","AUD","BDT","BHD","BRL","CAD","CHF","CLP","CNY","COP","DKK","EGP",
-  "EUR","GBP","HKD","IDR","ILS","INR","JPY","KES","KRW","KWD","LKR","MXN","MYR",
-  "NGN","NOK","NZD","OMR","PHP","PKR","PLN","QAR","RUB","SAR","SEK","SGD","THB",
-  "TND","TRY","TWD","USD","VND","ZAR",
+  "ETB","EUR","GBP","GHS","HKD","IDR","ILS","INR","JPY","KES","KRW","KWD","LKR",
+  "MXN","MYR","NGN","NOK","NZD","OMR","PHP","PKR","PLN","QAR","RUB","SAR","SEK",
+  "SGD","THB","TND","TRY","TWD","USD","VND","ZAR",
 ];
 
 const selectClass =

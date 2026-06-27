@@ -18,6 +18,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },
   { code: "Kenya",    name: "Kenya (KES)",     currency: "KES" },
   { code: "Ethiopia", name: "Ethiopia (ETB)",  currency: "ETB" },
+  { code: "Ghana",    name: "Ghana (GHS)",     currency: "GHS" },
 ];
 
 const CURRENCIES = [
@@ -34,8 +35,10 @@ const CURRENCIES = [
   { code: "COP", label: "COP — Colombian Peso" },
   { code: "DKK", label: "DKK — Danish Krone" },
   { code: "EGP", label: "EGP — Egyptian Pound" },
+  { code: "ETB", label: "ETB — Ethiopian Birr" },
   { code: "EUR", label: "EUR — Euro" },
   { code: "GBP", label: "GBP — British Pound" },
+  { code: "GHS", label: "GHS — Ghanaian Cedi" },
   { code: "HKD", label: "HKD — Hong Kong Dollar" },
   { code: "IDR", label: "IDR — Indonesian Rupiah" },
   { code: "ILS", label: "ILS — Israeli Shekel" },
@@ -60,6 +63,7 @@ const CURRENCIES = [
   { code: "SEK", label: "SEK — Swedish Krona" },
   { code: "SGD", label: "SGD — Singapore Dollar" },
   { code: "THB", label: "THB — Thai Baht" },
+  { code: "TND", label: "TND — Tunisian Dinar" },
   { code: "TRY", label: "TRY — Turkish Lira" },
   { code: "TWD", label: "TWD — Taiwan Dollar" },
   { code: "USD", label: "USD — US Dollar" },
