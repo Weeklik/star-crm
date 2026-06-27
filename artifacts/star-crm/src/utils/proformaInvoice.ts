@@ -18,6 +18,8 @@ interface RegionConfig {
   currency: string;
   vatRate: number;
   totalLabel: string;
+  companyName: string;
+  companySubTitle: string;
   letterheadContact: string;
   bank: Array<{ key: string; value: string }>;
   paymentText: string;
@@ -31,6 +33,8 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     currency: "AED",
     vatRate: 5,
     totalLabel: "Ex-Works Dubai",
+    companyName: "Star Sewing Machines Trading L.L.C.",
+    companySubTitle: "Industrial Sewing Machines &amp; Garment Equipment",
     letterheadContact:
       "Dubai, United Arab Emirates &nbsp;|&nbsp; TRN: 100515959300003<br>Tel: +971 4 2679444 &nbsp;|&nbsp; Email: star@starsew.com",
     bank: [
@@ -52,6 +56,8 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     currency: "KSHS",
     vatRate: 16,
     totalLabel: "Total",
+    companyName: "Star Sewing Machine (K) Ltd",
+    companySubTitle: "Industrial Sewing Machines &amp; Garment Equipment",
     letterheadContact:
       "P.O. Box : 11404-00400, River Road Nairobi &ndash; Kenya<br>Tel : +254-20-2186560 &nbsp;|&nbsp; Email : starsewingkenya@gmail.com",
     bank: [
@@ -357,8 +363,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <div class="letterhead">
   ${logoHtml}
   <div class="company-info">
-    <div class="co-name">Star Sewing Machines Trading L.L.C.</div>
-    <div class="co-sub">Industrial Sewing Machines &amp; Garment Equipment</div>
+    <div class="co-name">${cfg.companyName}</div>
+    <div class="co-sub">${cfg.companySubTitle}</div>
     <div class="co-contact">
       ${cfg.letterheadContact}
     </div>
