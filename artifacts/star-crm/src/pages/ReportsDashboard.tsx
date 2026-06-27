@@ -34,6 +34,8 @@ import {
   Target,
   AlertCircle,
   Users,
+  ArrowLeftRight,
+  TrendingDown,
 } from "lucide-react";
 
 interface SummaryData {
@@ -154,6 +156,16 @@ export default function ReportsDashboard() {
   const [byPerson, setByPerson] = useState<EnrichedPerson[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ── Year-to-Year comparison state ──
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareYear, setCompareYear] = useState(new Date().getFullYear() - 1);
+  const [compareData, setCompareData] = useState<{
+    summary: SummaryData | null;
+    stageData: StageItem[];
+    weeklyData: WeeklyItem[];
+  }>({ summary: null, stageData: [], weeklyData: [] });
+  const [compareLoading, setCompareLoading] = useState(false);
+
   // When year changes, reset to full year view
   useEffect(() => { setDateRange("fullyear"); }, [selectedYear]);
 
@@ -173,6 +185,13 @@ export default function ReportsDashboard() {
     if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
     return p.toString();
   }, [dateRange, selectedSpId, isOwner, selectedRegion, selectedYear]);
+
+  const buildQsForYear = useCallback((year: number) => {
+    const p = new URLSearchParams({ startDate: `${year}-01-01`, endDate: `${year}-12-31` });
+    if (isOwner && selectedSpId !== "all") p.set("salespersonId", selectedSpId);
+    if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
+    return p.toString();
+  }, [isOwner, selectedSpId, selectedRegion]);
 
   useEffect(() => {
     if (!me) return;
@@ -201,6 +220,72 @@ export default function ReportsDashboard() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [me, buildQs, isOwner, selectedSpId, selectedRegion, loadMultiRates]);
+
+  // ── Fetch compare year data ──
+  useEffect(() => {
+    if (!compareMode || !me) return;
+    setCompareLoading(true);
+    const qs = buildQsForYear(compareYear);
+    Promise.all([
+      fetch(`/api/reports/summary?${qs}`, { credentials: "include" }).then((r) => r.json()),
+      fetch(`/api/reports/stage-breakdown?${qs}`, { credentials: "include" }).then((r) => r.json()),
+      fetch(`/api/reports/weekly-stage-breakdown?${qs}`, { credentials: "include" }).then((r) => r.json()),
+    ])
+      .then(([sum, stages, weekly]) => {
+        setCompareData({
+          summary: sum && !sum.error ? sum : null,
+          stageData: Array.isArray(stages) ? stages : [],
+          weeklyData: Array.isArray(weekly) ? weekly : [],
+        });
+      })
+      .catch(() => {})
+      .finally(() => setCompareLoading(false));
+  }, [compareMode, compareYear, me, buildQsForYear]);
+
+  // ── Monthly comparison data (aggregate weekly → monthly) ──
+  const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  const monthlyComparisonData = useMemo(() => {
+    if (!compareMode) return [];
+    const toMonthly = (weekly: WeeklyItem[]) => {
+      const arr = new Array(12).fill(0);
+      weekly.forEach((w) => {
+        const m = new Date(w.weekStart + "T00:00:00").getMonth();
+        arr[m] += (w.orderClosedAmount ?? 0) + (w.orderConfirmedAmount ?? 0);
+      });
+      return arr;
+    };
+    const curMonths = toMonthly(weeklyData);
+    const cmpMonths = toMonthly(compareData.weeklyData);
+    return MONTH_LABELS.map((label, i) => ({
+      month: label,
+      [String(selectedYear)]: Math.round(curMonths[i]),
+      [String(compareYear)]: Math.round(cmpMonths[i]),
+    }));
+  }, [compareMode, weeklyData, compareData.weeklyData, selectedYear, compareYear]);
+
+  // ── Stage comparison data ──
+  const stageComparisonData = useMemo(() => {
+    if (!compareMode) return [];
+    const allStages = [...new Set([...stageData.map((s) => s.stage), ...compareData.stageData.map((s) => s.stage)])];
+    return allStages.map((stage) => {
+      const cur = stageData.find((s) => s.stage === stage);
+      const cmp = compareData.stageData.find((s) => s.stage === stage);
+      return {
+        stage: stage.replace("Order ", ""),
+        [String(selectedYear)]: cur?.totalAgreedAmount ?? 0,
+        [String(compareYear)]: cmp?.totalAgreedAmount ?? 0,
+        [`${selectedYear}_count`]: cur?.count ?? 0,
+        [`${compareYear}_count`]: cmp?.count ?? 0,
+      };
+    });
+  }, [compareMode, stageData, compareData.stageData, selectedYear, compareYear]);
+
+  // ── KPI delta helper ──
+  const delta = (cur: number, cmp: number) => {
+    if (cmp === 0) return null;
+    return Math.round(((cur - cmp) / cmp) * 100);
+  };
 
   // Properly converted totals for "All Regions" + "All Salespersons"
   const allRegionsTotals = useMemo(() => {
@@ -407,6 +492,19 @@ export default function ReportsDashboard() {
             </button>
           ))}
 
+          {/* Year vs Year toggle */}
+          <button
+            onClick={() => setCompareMode((m) => !m)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
+              compareMode
+                ? "bg-indigo-500 text-white border-indigo-500 shadow-sm"
+                : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            Year vs Year
+          </button>
+
           {isOwner && (
             <Select value={selectedSpId} onValueChange={setSelectedSpId}>
               <SelectTrigger className="w-48 h-9">
@@ -595,6 +693,184 @@ export default function ReportsDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Year-to-Year Comparison Section ── */}
+      {compareMode && (
+        <div className="space-y-6">
+          {/* Year picker header */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-4 py-2">
+              <ArrowLeftRight className="w-4 h-4 text-indigo-400" />
+              <span className="text-sm font-semibold text-indigo-400">Year vs Year</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{selectedYear}</span>
+              <span>vs</span>
+              <Select value={String(compareYear)} onValueChange={(v) => setCompareYear(Number(v))}>
+                <SelectTrigger className="w-28 h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 8 }, (_, i) => new Date().getFullYear() - i)
+                    .filter((y) => y !== selectedYear)
+                    .map((y) => (
+                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {compareLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+          </div>
+
+          {/* KPI delta cards */}
+          {(() => {
+            const curSum  = summary;
+            const cmpSum  = compareData.summary;
+            const kpiDeltaCards = [
+              {
+                label: "Total Orders",
+                cur: curSum?.totalDeals ?? 0,
+                cmp: cmpSum?.totalDeals ?? 0,
+                fmt: (n: number) => String(n),
+                color: "violet",
+              },
+              {
+                label: "Pipeline Value",
+                cur: curSum?.totalAgreedAmount ?? 0,
+                cmp: cmpSum?.totalAgreedAmount ?? 0,
+                fmt: fmtK,
+                color: "blue",
+              },
+              {
+                label: "Received",
+                cur: curSum?.totalReceivedAmount ?? 0,
+                cmp: cmpSum?.totalReceivedAmount ?? 0,
+                fmt: fmtK,
+                color: "emerald",
+              },
+              {
+                label: "Closed Deals",
+                cur: curSum?.closedDeals ?? 0,
+                cmp: cmpSum?.closedDeals ?? 0,
+                fmt: (n: number) => String(n),
+                color: "amber",
+              },
+              {
+                label: "Lost Deals",
+                cur: curSum?.lostDeals ?? 0,
+                cmp: cmpSum?.lostDeals ?? 0,
+                fmt: (n: number) => String(n),
+                color: "red",
+                invertDelta: true,
+              },
+            ];
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {kpiDeltaCards.map((card) => {
+                  const d = delta(card.cur, card.cmp);
+                  const isUp = d !== null && (card.invertDelta ? d < 0 : d > 0);
+                  const isDown = d !== null && (card.invertDelta ? d > 0 : d < 0);
+                  return (
+                    <Card key={card.label} className="border-indigo-500/20 bg-indigo-500/5">
+                      <CardContent className="p-4">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{card.label}</p>
+                        <div className="flex items-end justify-between gap-1">
+                          <div>
+                            <p className="text-lg font-bold">{card.fmt(card.cur)}</p>
+                            <p className="text-xs text-muted-foreground">{selectedYear}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-muted-foreground">{card.fmt(card.cmp)}</p>
+                            <p className="text-xs text-muted-foreground">{compareYear}</p>
+                          </div>
+                        </div>
+                        {d !== null && (
+                          <div className={`flex items-center gap-1 mt-2 text-xs font-semibold ${isUp ? "text-emerald-400" : isDown ? "text-red-400" : "text-muted-foreground"}`}>
+                            {isUp ? <TrendingUp className="w-3 h-3" /> : isDown ? <TrendingDown className="w-3 h-3" /> : null}
+                            {d > 0 ? "+" : ""}{d}% vs {compareYear}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Monthly comparison chart */}
+          <Card className="border-indigo-500/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Monthly Revenue — {selectedYear} vs {compareYear}</CardTitle>
+              <p className="text-xs text-muted-foreground">Order Closed + Confirmed amounts by month</p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyComparisonData} margin={{ top: 16, right: 16, left: 0, bottom: 4 }} barCategoryGap="20%" barGap={4}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={44} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div style={TOOLTIP_STYLE} className="p-3 shadow-xl min-w-40">
+                          <p className="font-semibold mb-2">{label}</p>
+                          {payload.map((p: any) => (
+                            <div key={p.name} className="flex justify-between gap-6 py-0.5">
+                              <span style={{ color: p.fill }} className="text-xs font-medium">{p.name}</span>
+                              <span className="text-xs">{fmtK(p.value ?? 0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend iconType="circle" iconSize={8} formatter={(v) => <span className="text-xs text-foreground/80">{v}</span>} />
+                  <Bar dataKey={String(selectedYear)} name={String(selectedYear)} fill="#6366f1" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={20} />
+                  <Bar dataKey={String(compareYear)} name={String(compareYear)} fill="#94a3b8" fillOpacity={0.6} radius={[4, 4, 0, 0]} maxBarSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Stage comparison chart */}
+          <Card className="border-indigo-500/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Stage Breakdown — {selectedYear} vs {compareYear}</CardTitle>
+              <p className="text-xs text-muted-foreground">Agreed amount per stage, both years</p>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={stageComparisonData} margin={{ top: 16, right: 16, left: 0, bottom: 4 }} barCategoryGap="25%" barGap={4}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.6} />
+                  <XAxis dataKey="stage" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={44} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      return (
+                        <div style={TOOLTIP_STYLE} className="p-3 shadow-xl min-w-44">
+                          <p className="font-semibold mb-2">{label}</p>
+                          {payload.map((p: any) => (
+                            <div key={p.name} className="flex justify-between gap-6 py-0.5">
+                              <span style={{ color: p.fill }} className="text-xs font-medium">{p.name}</span>
+                              <span className="text-xs">{fmtK(p.value ?? 0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend iconType="circle" iconSize={8} formatter={(v) => <span className="text-xs text-foreground/80">{v}</span>} />
+                  <Bar dataKey={String(selectedYear)} name={String(selectedYear)} fill="#6366f1" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey={String(compareYear)} name={String(compareYear)} fill="#94a3b8" fillOpacity={0.6} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* ── Export Bar ── */}
       <div className="flex justify-end gap-3">
