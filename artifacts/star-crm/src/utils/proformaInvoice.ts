@@ -12,6 +12,7 @@ export interface ProformaInvoiceData {
   logoUrl?: string;
   creditTerm?: string | null;
   region?: string | null;
+  companyNameImageUrl?: string;
 }
 
 interface RegionConfig {
@@ -384,6 +385,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <div class="letterhead">
   ${logoHtml}
   <div class="company-info">
+    ${data.companyNameImageUrl ? `<img src="${data.companyNameImageUrl}" alt="" style="max-height:1.6em;width:auto;display:block;margin-bottom:2px;" />` : ""}
     <div class="co-name">${cfg.companyName}</div>
     <div class="co-sub">${cfg.companySubTitle}</div>
     <div class="co-contact">
