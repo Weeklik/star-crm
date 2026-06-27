@@ -1,4 +1,5 @@
 import tnHeaderBanner from "@assets/image_1782552446892.png";
+import tnFooterBanner from "@assets/image_1782553154223.png";
 
 export interface ProformaInvoiceData {
   id: number;
@@ -468,7 +469,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   .accepted-label { font-weight: 700; font-size: 11px; letter-spacing: 0.3px; text-align: right; }
   .accepted-company { font-size: 10.5px; color: #444; text-align: right; margin-top: 2px; }
 
-  /* ── Address Footer ── */
+  /* ── Address Footer (standard) ── */
   .address-footer {
     margin-top: 28px;
     border-top: 2px solid #222;
@@ -480,6 +481,14 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   }
   .address-footer .af-line1 { font-weight: 700; }
   .address-footer .af-line2 { font-weight: 700; }
+
+  /* ── Banner Footer (Tunisia) ── */
+  .footer-banner-img {
+    display: block;
+    width: calc(100% + 72px);
+    margin: 28px -36px -32px;
+    height: auto;
+  }
 
   @media print {
     body { padding: 10px 20px 16px; }
@@ -616,10 +625,13 @@ ${cfg.validityText ? `<div class="section" style="font-style:italic;color:#555;"
 </div>
 
 <!-- ── ADDRESS FOOTER ── -->
-<div class="address-footer">
+${cfg.headerVariant === "wave"
+  ? `<img src="${tnFooterBanner}" alt="Star North Africa Footer" class="footer-banner-img" />`
+  : `<div class="address-footer">
   <div class="af-line1">${cfg.footerLine1}</div>
   <div class="af-line2">${cfg.footerLine2}</div>
-</div>
+</div>`
+}
 
 <script>
   window.onload = function () { window.print(); };
