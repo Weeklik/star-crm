@@ -1,3 +1,5 @@
+import tnHeaderBanner from "@assets/image_1782552446892.png";
+
 export interface ProformaInvoiceData {
   id: number;
   companyName: string;
@@ -277,59 +279,12 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     flex-shrink: 0;
   }
 
-  /* ── Wave Header (Tunisia / North Africa) ── */
-  .wave-header {
-    position: relative;
-    height: 88px;
-    background: #8C2222;
-    overflow: hidden;
+  /* ── Wave / Banner Header (Tunisia / North Africa) ── */
+  .wave-banner-img {
+    display: block;
+    width: calc(100% + 72px);
     margin: -20px -36px 0;
-    display: flex;
-    align-items: center;
-    padding-left: 36px;
-  }
-  /* lighter diagonal highlight inside the red area */
-  .wave-header::before {
-    content: "";
-    position: absolute;
-    top: -30%;
-    left: 10%;
-    width: 30%;
-    height: 200%;
-    background: rgba(255,255,255,0.08);
-    transform: rotate(-15deg);
-    pointer-events: none;
-  }
-  .wave-logo {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-    position: relative;
-    z-index: 2;
-    flex-shrink: 0;
-  }
-  .wave-white {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 56%;
-    height: 100%;
-    background: #f0eeeb;
-    clip-path: polygon(14% 0%, 100% 0%, 100% 100%, 0% 100%);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 36px;
-    z-index: 1;
-  }
-  .wave-company {
-    font-size: 17px;
-    font-weight: 900;
-    color: #111;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    text-align: right;
+    height: auto;
   }
   /* DEVIS title for wave variant */
   .devis-title {
@@ -339,7 +294,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     color: #8C2222;
     letter-spacing: 10px;
     text-transform: uppercase;
-    margin: 18px 0 14px;
+    margin: 18px 0 6px;
     padding-bottom: 10px;
     border-bottom: 1px solid #ddd;
   }
@@ -535,13 +490,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <body>
 
 ${cfg.headerVariant === "wave" ? `
-<!-- ── WAVE LETTERHEAD (Tunisia / North Africa) ── -->
-<div class="wave-header">
-  ${data.logoUrl ? `<img src="${data.logoUrl}" alt="Star Logo" class="wave-logo" />` : `<div style="color:#fff;font-size:48px;line-height:1;position:relative;z-index:2;">★</div>`}
-  <div class="wave-white">
-    <span class="wave-company">${cfg.waveCompanyName ?? cfg.companyName}</span>
-  </div>
-</div>
+<!-- ── BANNER LETTERHEAD (Tunisia / North Africa) ── -->
+<img src="${tnHeaderBanner}" alt="Star North Africa" class="wave-banner-img" />
 
 <!-- ── DEVIS TITLE ── -->
 <div class="devis-title">${docTitle}</div>
