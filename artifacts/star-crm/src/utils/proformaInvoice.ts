@@ -27,6 +27,25 @@ interface RegionConfig {
   noteText: string;
   footerLine1: string;
   footerLine2: string;
+  // optional French/localisation overrides
+  docTitle?: string;           // e.g. "DEVIS" instead of "Proforma Invoice"
+  colBrand?: string;           // column header for brand
+  colModel?: string;           // column header for model / ref
+  colDesc?: string;            // column header for description
+  colQty?: string;             // column header for qty
+  colUnitPrice?: string;       // column header for unit price
+  colTotal?: string;           // column header for total
+  paymentLabel?: string;       // label before payment text
+  creditTermLabel?: string;    // label before credit term
+  bankLabel?: string;          // label for bank section
+  noteLabel?: string;          // label for note section
+  validityText?: string;       // extra line printed below totals (e.g. "Validité du devis : 10 jours")
+  vatLabel?: string;           // label for VAT row
+  acceptedLabel?: string;      // right-side footer label
+  sigCompanyLabel?: string;    // left sig company name
+  customerLabel?: string;      // label before customer name
+  addressLabel?: string;       // label before address
+  attentionLabel?: string;     // "A l'attention de" label
 }
 
 const REGION_CONFIGS: Record<string, RegionConfig> = {
@@ -95,6 +114,45 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
       "Askan Building - No : 3 Group 6 Ground Floor, 3228 King Abdullah Road, Ash Sharafiyah Dist. Jeddah 23217 &ndash; 6192",
     footerLine2: "C.R : 4030287042",
   },
+  TN: {
+    currency: "EUR",
+    vatRate: 19,
+    totalLabel: "Total HT EX-works",
+    companyName: "Star Sewing Machines &ndash; Tunisie",
+    companySubTitle: "Machines à coudre industrielles &amp; Équipements de confection",
+    letterheadContact:
+      "Tunisie<br>Email : star@starsew.com",
+    bank: [
+      { key: "Banque",          value: "—" },
+      { key: "Numéro de compte", value: "—" },
+      { key: "IBAN",            value: "—" },
+      { key: "Devise",          value: "EUR" },
+    ],
+    paymentText: "A convenir",
+    noteText:
+      "Machines disponibles en stock. Le client est responsable des frais de livraison et de déchargement.",
+    footerLine1: "Star Sewing Machines &ndash; Tunisie",
+    footerLine2: "Email : star@starsew.com &nbsp;&nbsp; Website : www.starsew.com",
+    // French label overrides
+    docTitle:       "DEVIS",
+    colBrand:       "Marque",
+    colModel:       "Référence",
+    colDesc:        "Désignation",
+    colQty:         "Qté",
+    colUnitPrice:   "P. Unitaire HT",
+    colTotal:       "Total HT",
+    paymentLabel:   "Conditions de règlement",
+    creditTermLabel:"Délai de livraison",
+    bankLabel:      "Coordonnées bancaires",
+    noteLabel:      "Remarque",
+    validityText:   "Validité du devis : 10 jours",
+    vatLabel:       "TVA",
+    acceptedLabel:  "Accepté &amp; Confirmé",
+    sigCompanyLabel:"STAR SEWING MACHINES",
+    customerLabel:  "Destinataire",
+    addressLabel:   "Adresse",
+    attentionLabel: "À l'attention de",
+  },
 };
 
 function getRegionConfig(region?: string | null): RegionConfig {
@@ -129,6 +187,20 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     : `<div class="logo-placeholder">★</div>`;
 
   const creditTermValue = data.creditTerm ? escHtml(data.creditTerm) : "&mdash;";
+  const docTitle       = cfg.docTitle       ?? "Proforma Invoice";
+  const colBrand       = cfg.colBrand       ?? "Brand";
+  const colModel       = cfg.colModel       ?? "Model";
+  const colDesc        = cfg.colDesc        ?? "Description";
+  const colQty         = cfg.colQty         ?? "Qty";
+  const colUnitPrice   = cfg.colUnitPrice   ?? `Unit Price<br>(${curr})`;
+  const colTotal       = cfg.colTotal       ?? `Total<br>(${curr})`;
+  const paymentLabel   = cfg.paymentLabel   ?? "Payment";
+  const creditTermLabel= cfg.creditTermLabel?? "Credit Term";
+  const bankLabel      = cfg.bankLabel      ?? "Our Bank Details";
+  const noteLabel      = cfg.noteLabel      ?? "Note";
+  const vatLabel       = cfg.vatLabel       ?? `VAT @ ${cfg.vatRate}%`;
+  const acceptedLabel  = cfg.acceptedLabel  ?? "Accepted &amp; Confirmed";
+  const sigCompanyLabel= cfg.sigCompanyLabel?? "STAR.S.M.TRADING LLC";
   const bankRowsHtml = cfg.bank
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
     .join("\n    ");
@@ -398,15 +470,20 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <!-- ── CUSTOMER HEADER ── -->
 <div class="header">
   <div class="customer-block">
+    ${cfg.customerLabel ? `<div><strong>${cfg.customerLabel} :</strong></div>` : ""}
     <div class="company-name">${escHtml(data.companyName)}</div>
-    ${data.contactName ? `<div>MR : ${escHtml(data.contactName)}</div>` : ""}
+    ${data.contactName
+      ? cfg.attentionLabel
+        ? `<div>${cfg.attentionLabel} : ${escHtml(data.contactName)}</div>`
+        : `<div>MR : ${escHtml(data.contactName)}</div>`
+      : ""}
   </div>
   <div class="date-block">${dateStr}</div>
 </div>
 
 <!-- ── TITLE ── -->
 <div class="title-section">
-  <h1>Proforma Invoice</h1>
+  <h1>${docTitle}</h1>
 </div>
 <div class="invoice-no">${invoiceNo}</div>
 
@@ -414,12 +491,12 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <table class="invoice-table">
   <thead>
     <tr>
-      <th class="left" style="width:14%">Brand</th>
-      <th class="left" style="width:16%">Model</th>
-      <th class="left" style="width:36%">Description</th>
-      <th style="width:6%">Qty</th>
-      <th style="width:14%">Unit Price<br>(${curr})</th>
-      <th style="width:14%">Total<br>(${curr})</th>
+      <th class="left" style="width:14%">${colBrand}</th>
+      <th class="left" style="width:16%">${colModel}</th>
+      <th class="left" style="width:36%">${colDesc}</th>
+      <th style="width:6%">${colQty}</th>
+      <th style="width:14%">${colUnitPrice}</th>
+      <th style="width:14%">${colTotal}</th>
     </tr>
   </thead>
   <tbody>
@@ -428,8 +505,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
       <td class="center"></td>
       <td>${escHtml(data.productItem)}</td>
       <td class="center">1</td>
-      <td class="right">${fmt(baseAmt, curr)}</td>
-      <td class="right">${fmt(baseAmt, curr)}</td>
+      <td class="right">${fmt(baseAmt, curr)} ${curr}</td>
+      <td class="right">${fmt(baseAmt, curr)} ${curr}</td>
     </tr>
   </tbody>
 </table>
@@ -438,35 +515,37 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <table class="totals-table">
   <tr>
     <td class="label">${cfg.totalLabel} (${curr})</td>
-    <td class="value">${fmt(baseAmt, curr)}</td>
+    <td class="value">${fmt(baseAmt, curr)} ${curr}</td>
   </tr>
   ${
     data.vatApplicable
       ? `<tr>
-    <td class="label">VAT @ ${cfg.vatRate}% (${curr})</td>
-    <td class="value">${fmt(vatAmt, curr)}</td>
+    <td class="label">${vatLabel} (${curr})</td>
+    <td class="value">${fmt(vatAmt, curr)} ${curr}</td>
   </tr>`
       : ""
   }
   <tr class="grand">
     <td class="label">Grand Total (${curr})</td>
-    <td class="value">${fmt(totalAmt, curr)}</td>
+    <td class="value">${fmt(totalAmt, curr)} ${curr}</td>
   </tr>
 </table>
 
+${cfg.validityText ? `<div class="section" style="font-style:italic;color:#555;">${cfg.validityText}</div>` : ""}
+
 <!-- ── PAYMENT ── -->
 <div class="section">
-  <span class="section-title">Payment:</span> ${cfg.paymentText}
+  <span class="section-title">${paymentLabel} :</span> ${cfg.paymentText}
 </div>
 
 <!-- ── CREDIT TERM ── -->
 <div class="section">
-  <span class="section-title">Credit Term:</span> ${escHtml(data.creditTerm) || "&mdash;"}
+  <span class="section-title">${creditTermLabel} :</span> ${escHtml(data.creditTerm) || "&mdash;"}
 </div>
 
 <!-- ── BANK DETAILS ── -->
 <div class="section">
-  <div class="section-title">Our Bank Details</div>
+  <div class="section-title">${bankLabel}</div>
   <div class="bank-grid">
     ${bankRowsHtml}
   </div>
@@ -475,7 +554,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
 <!-- ── NOTE ── -->
 <div class="note-block">
-  <span class="note-title">Note: </span>
+  <span class="note-title">${noteLabel} : </span>
   ${cfg.noteText}${data.notes ? `<br><br>${escHtml(data.notes)}` : ""}
 </div>
 
@@ -483,10 +562,10 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <div class="footer">
   <div class="footer-row-top">
     <div class="sig-name">${escHtml(data.salespersonName || "Authorized Signatory")}</div>
-    <div class="accepted-label">Accepted &amp; Confirmed</div>
+    <div class="accepted-label">${acceptedLabel}</div>
   </div>
   <div class="footer-row-bottom">
-    <div class="sig-company">STAR.S.M.TRADING LLC</div>
+    <div class="sig-company">${sigCompanyLabel}</div>
     <div class="accepted-company">${escHtml(data.companyName)}</div>
   </div>
 </div>
