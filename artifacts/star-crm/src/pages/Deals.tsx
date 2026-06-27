@@ -529,7 +529,8 @@ export default function Deals() {
 
   const { data: users } = useListUsers({ query: { enabled: isOwner } } as any);
   const salespersons = users?.filter((u) => u.role === "salesperson") ?? [];
-  const spNameById = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
+  const spNameById    = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
+  const spCountryById = Object.fromEntries((users ?? []).map((u) => [u.id, u.country]));
 
   const [filterSpId, setFilterSpId] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -1205,9 +1206,10 @@ export default function Deals() {
                             currency: (deal as any).currency,
                             vatApplicable: deal.vatApplicable ?? false,
                             notes: deal.notes as string | undefined,
-                            salespersonName: spNameById[deal.salespersonId ?? 0] ?? "",
+                            salespersonName: spNameById[deal.salespersonId ?? 0] ?? me?.name ?? "",
                             logoUrl: starLogo,
                             creditTerm: (deal as any).creditTerm ?? undefined,
+                            region: spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country ?? undefined,
                           })
                         }
                       >

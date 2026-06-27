@@ -11,6 +11,69 @@ export interface ProformaInvoiceData {
   salespersonName: string;
   logoUrl?: string;
   creditTerm?: string | null;
+  region?: string | null;
+}
+
+interface RegionConfig {
+  currency: string;
+  vatRate: number;
+  totalLabel: string;
+  letterheadContact: string;
+  bank: Array<{ key: string; value: string }>;
+  paymentText: string;
+  noteText: string;
+  footerLine1: string;
+  footerLine2: string;
+}
+
+const REGION_CONFIGS: Record<string, RegionConfig> = {
+  UAE: {
+    currency: "AED",
+    vatRate: 5,
+    totalLabel: "Ex-Works Dubai",
+    letterheadContact:
+      "Dubai, United Arab Emirates &nbsp;|&nbsp; TRN: 100515959300003<br>Tel: +971 4 2679444 &nbsp;|&nbsp; Email: star@starsew.com",
+    bank: [
+      { key: "Account Name",    value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number",  value: "1011006864301" },
+      { key: "IBAN (23 Chars)", value: "AE20026000101 1006864301" },
+      { key: "Currency",        value: "AED" },
+      { key: "Bank Name",       value: "Emirates NBD Bank PJSC" },
+      { key: "Swift",           value: "EBILAEAD" },
+    ],
+    paymentText: "100% Advance",
+    noteText:
+      "Customer must provide local expenses (e.g. COVID19 Testing if needed, Gate Pass Charges, Delivery &amp; Off Loading Charges etc.)",
+    footerLine1:
+      "HEAD OFFICE : Al Qusais Ind. Area, Dubai &ndash; U.A.E. &nbsp; P.O. Box : 5354, &nbsp; Tel : 04-2679444 , &nbsp; Fax : 04-2679445",
+    footerLine2: "Email : star@starsew.com &nbsp;&nbsp; Website : www.starsew.com",
+  },
+  KE: {
+    currency: "KSHS",
+    vatRate: 16,
+    totalLabel: "Total",
+    letterheadContact:
+      "P.O. Box : 11404-00400, River Road Nairobi &ndash; Kenya<br>Tel : +254-20-2186560 &nbsp;|&nbsp; Email : starsewingkenya@gmail.com",
+    bank: [
+      { key: "Bank Name",       value: "KCB Bank" },
+      { key: "Account Number",  value: "1147479941" },
+      { key: "Branch",          value: "River Road Branch" },
+      { key: "Currency",        value: "KSHS" },
+    ],
+    paymentText: "CASH or 100% Bank Transfer",
+    noteText:
+      "Free installation and training will be provided. Customer must provide transport and accommodation for our engineers for installations outside Nairobi.",
+    footerLine1:
+      "P.O. Box : 11404-00400, River Road Nairobi &ndash; Kenya &nbsp; Tel : +254-20-2186560",
+    footerLine2: "Email : starsewingkenya@gmail.com &nbsp;&nbsp; Website : www.starsew.com",
+  },
+};
+
+function getRegionConfig(region?: string | null): RegionConfig {
+  if (region && REGION_CONFIGS[region.toUpperCase()]) {
+    return REGION_CONFIGS[region.toUpperCase()];
+  }
+  return REGION_CONFIGS["UAE"];
 }
 
 function fmt(n: number, curr: string): string {
@@ -24,12 +87,13 @@ function fmtDate(dateStr?: string | null): string {
 }
 
 export function openProformaInvoice(data: ProformaInvoiceData): void {
-  const curr = data.currency || "AED";
+  const cfg = getRegionConfig(data.region);
+  const curr = data.currency || cfg.currency;
   const yr = new Date().getFullYear().toString().slice(-2);
   const invoiceNo = `SSMT/PI-${yr}/${String(data.id).padStart(3, "0")}`;
   const dateStr = fmtDate(data.dealStartDate);
   const baseAmt = data.agreedAmount ?? 0;
-  const vatAmt = data.vatApplicable ? Math.round(baseAmt * 0.05 * 100) / 100 : 0;
+  const vatAmt = data.vatApplicable ? Math.round(baseAmt * (cfg.vatRate / 100) * 100) / 100 : 0;
   const totalAmt = baseAmt + vatAmt;
 
   const logoHtml = data.logoUrl
@@ -37,6 +101,9 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     : `<div class="logo-placeholder">★</div>`;
 
   const creditTermValue = data.creditTerm ? escHtml(data.creditTerm) : "&mdash;";
+  const bankRowsHtml = cfg.bank
+    .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
+    .join("\n    ");
 
   const html = `<!DOCTYPE html>
 <html>
@@ -293,8 +360,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     <div class="co-name">Star Sewing Machines Trading L.L.C.</div>
     <div class="co-sub">Industrial Sewing Machines &amp; Garment Equipment</div>
     <div class="co-contact">
-      Dubai, United Arab Emirates &nbsp;|&nbsp; TRN: 100515959300003<br>
-      Tel: +971 4 XXX XXXX &nbsp;|&nbsp; Email: info@starsmt.ae
+      ${cfg.letterheadContact}
     </div>
   </div>
   <div class="letterhead-spacer"></div>
@@ -342,26 +408,26 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <!-- ── TOTALS ── -->
 <table class="totals-table">
   <tr>
-    <td class="label">Total Ex-Works Dubai (${curr})</td>
+    <td class="label">${cfg.totalLabel} (${curr})</td>
     <td class="value">${fmt(baseAmt, curr)}</td>
   </tr>
   ${
     data.vatApplicable
       ? `<tr>
-    <td class="label">VAT @ 5% (${curr})</td>
+    <td class="label">VAT @ ${cfg.vatRate}% (${curr})</td>
     <td class="value">${fmt(vatAmt, curr)}</td>
   </tr>`
       : ""
   }
   <tr class="grand">
-    <td class="label">Total on Ex-Works Dubai Basis (${curr})</td>
+    <td class="label">Grand Total (${curr})</td>
     <td class="value">${fmt(totalAmt, curr)}</td>
   </tr>
 </table>
 
 <!-- ── PAYMENT ── -->
 <div class="section">
-  <span class="section-title">Payment:</span> 100% Advance
+  <span class="section-title">Payment:</span> ${cfg.paymentText}
 </div>
 
 <!-- ── CREDIT TERM ── -->
@@ -373,12 +439,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <div class="section">
   <div class="section-title">Our Bank Details</div>
   <div class="bank-grid">
-    <span class="bank-key">Account Name</span><span>Star Sewing Machines Trading LLC</span>
-    <span class="bank-key">Account Number</span><span>1011006864301</span>
-    <span class="bank-key">IBAN (23 Chars)</span><span>AE20026000101 1006864301</span>
-    <span class="bank-key">Currency</span><span>AED</span>
-    <span class="bank-key">Bank Name</span><span>Emirates NBD Bank PJSC</span>
-    <span class="bank-key">Swift</span><span>EBILAEAD</span>
+    ${bankRowsHtml}
   </div>
 </div>
 
@@ -386,7 +447,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 <!-- ── NOTE ── -->
 <div class="note-block">
   <span class="note-title">Note: </span>
-  Customer must provide local expenses (e.g. COVID19 Testing if needed, Gate Pass Charges, Delivery &amp; Off Loading Charges etc.)${data.notes ? `<br><br>${escHtml(data.notes)}` : ""}
+  ${cfg.noteText}${data.notes ? `<br><br>${escHtml(data.notes)}` : ""}
 </div>
 
 <!-- ── SIGNATURE FOOTER ── -->
@@ -403,8 +464,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
 <!-- ── ADDRESS FOOTER ── -->
 <div class="address-footer">
-  <div class="af-line1">HEAD OFFICE : Al Qusais Ind. Area, Dubai &ndash; U.A.E. &nbsp; P.O. Box : 5354, &nbsp; Tel : 04-2679444 , &nbsp; Fax : 04-2679445</div>
-  <div class="af-line2">Email : star@starsew.com &nbsp;&nbsp; Website : www.starsew.com</div>
+  <div class="af-line1">${cfg.footerLine1}</div>
+  <div class="af-line2">${cfg.footerLine2}</div>
 </div>
 
 <script>
