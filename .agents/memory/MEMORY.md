@@ -1,1 +1,1 @@
-- [Drizzle set() with Zod optional types](drizzle-zod-set-bug.md) — Drizzle ORM's set() silently skips all columns when passed a Zod-inferred object with optional fields; use raw SQL instead.
+- [Two DB connections: NEON_DATABASE_URL vs DATABASE_URL](neon-vs-database-url.md) — server uses NEON_DATABASE_URL; always run migrations against it, not DATABASE_URL
