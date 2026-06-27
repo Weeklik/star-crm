@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/i18n/LanguageContext";
+import { LANGUAGE_CONFIGS, type Language } from "@/i18n/translations";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +15,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, isLoading, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { t, language, setLanguage } = useTranslation();
 
   const isReportsActive =
     location === "/reports" || location.startsWith("/reports/");
@@ -20,14 +23,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
 
   const topItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/deals", label: "Orders", icon: Briefcase },
-    { href: "/planner", label: "Planner", icon: CalendarDays },
+    { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { href: "/deals",     label: t("nav.orders"),    icon: Briefcase },
+    { href: "/planner",   label: t("nav.planner"),   icon: CalendarDays },
   ];
 
   const reportsChildren = [
-    { href: "/reports/summary-sales", label: "Monthly Report", icon: TableProperties },
-    { href: "/reports/sales-breakdown", label: "Summary Report", icon: TrendingUp },
+    { href: "/reports/summary-sales",   label: t("nav.monthlyReport"),  icon: TableProperties },
+    { href: "/reports/sales-breakdown", label: t("nav.summaryReport"),  icon: TrendingUp },
   ];
 
   return (
@@ -52,7 +55,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
-                  data-testid={`nav-${item.label.toLowerCase()}`}
+                  data-testid={`nav-${item.href.slice(1)}`}
                 >
                   <Icon className="w-5 h-5" />
                   {item.label}
@@ -69,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <div className="flex items-center gap-3">
                   <BarChart3 className="w-5 h-5" />
-                  Reports
+                  {t("nav.reports")}
                 </div>
                 <ChevronDown className={`w-4 h-4 transition-transform ${reportsOpen ? "rotate-180" : ""}`} />
               </button>
@@ -101,18 +104,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 data-testid="nav-users"
               >
                 <Users className="w-5 h-5" />
-                Users
+                {t("nav.users")}
               </Link>
             )}
-
           </nav>
         </div>
 
-        {/* Bottom section: theme + user + sign out */}
+        {/* Bottom section */}
         <div className="p-4 border-t border-border space-y-3">
+          {/* Language toggle */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground px-1 mb-1.5">{t("nav.language")}</p>
+            <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+              {LANGUAGE_CONFIGS.map((cfg) => (
+                <button
+                  key={cfg.code}
+                  onClick={() => setLanguage(cfg.code as Language)}
+                  title={cfg.name}
+                  className={`flex-1 flex items-center justify-center px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    language === cfg.code
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {cfg.nativeName}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Theme toggle */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground px-1 mb-1.5">Appearance</p>
+            <p className="text-xs font-medium text-muted-foreground px-1 mb-1.5">{t("nav.appearance")}</p>
             <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
               <button
                 onClick={() => setTheme("light")}
@@ -123,7 +146,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Sun className="w-3.5 h-3.5" />
-                Light
+                {t("nav.light")}
               </button>
               <button
                 onClick={() => setTheme("dark")}
@@ -134,12 +157,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Moon className="w-3.5 h-3.5" />
-                Dark
+                {t("nav.dark")}
               </button>
             </div>
           </div>
 
-          {/* User info — clicking navigates to /profile */}
+          {/* User info */}
           {isLoading ? (
             <div className="flex items-center justify-center p-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -167,7 +190,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             data-testid="btn-signout"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sign out
+            {t("nav.signOut")}
           </Button>
         </div>
       </aside>

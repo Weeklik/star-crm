@@ -1,6 +1,7 @@
 import { useGetMe } from "@workspace/api-client-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useOwnerControls } from "@/contexts/OwnerControlsContext";
+import { useTranslation } from "@/i18n/LanguageContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { useHistoricalRates } from "@/hooks/useHistoricalRates";
 import { MonthRateCell } from "@/components/MonthRateCell";
@@ -287,6 +288,7 @@ function DealDrillDownModal({
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SalesBreakdown() {
   const { data: me } = useGetMe();
+  const { t } = useTranslation();
   const now = new Date();
   const currentYear = now.getFullYear();
 
@@ -408,9 +410,9 @@ export default function SalesBreakdown() {
         {/* Page header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Summary Report</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t("summaryReport.title")}</h1>
             <p className="text-muted-foreground text-sm mt-0.5">
-              Weekly summary report by deal stage. Click any value to see the deals behind it.
+              {t("summaryReport.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">

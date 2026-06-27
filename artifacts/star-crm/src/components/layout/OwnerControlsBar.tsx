@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useOwnerControls, CURRENCIES, type RegionOption } from "@/contexts/OwnerControlsContext";
+import { useTranslation } from "@/i18n/LanguageContext";
 
 const YEAR_OPTIONS = [2024, 2025, 2026, 2027, 2028];
 
@@ -35,6 +36,8 @@ export function OwnerControlsBar() {
     selectedYear, setSelectedYear,
   } = useOwnerControls();
 
+  const { t } = useTranslation();
+
   const [rateInput, setRateInput] = useState<string>("");
   const [editingRate, setEditingRate] = useState(false);
 
@@ -56,7 +59,7 @@ export function OwnerControlsBar() {
       {/* Year filter */}
       <div className="flex items-center gap-2 min-w-0">
         <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
-        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Year</Label>
+        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.year")}</Label>
         <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
           <SelectTrigger className="h-7 text-xs w-24 bg-background">
             <SelectValue />
@@ -74,20 +77,20 @@ export function OwnerControlsBar() {
       {/* Region filter */}
       <div className="flex items-center gap-2 min-w-0">
         <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Region</Label>
+        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.region")}</Label>
         <Select value={selectedRegion} onValueChange={setSelectedRegion}>
           <SelectTrigger className="h-7 text-xs w-36 bg-background">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
+            <SelectItem value="all">{t("ownerControls.allRegions")}</SelectItem>
             {regions.map((r: RegionOption) => (
               <SelectItem key={r.country} value={r.country}>
                 {countryLabel(r.country)}
               </SelectItem>
             ))}
             {regions.length === 0 && (
-              <div className="px-3 py-2 text-xs text-muted-foreground">No salesperson countries set yet</div>
+              <div className="px-3 py-2 text-xs text-muted-foreground">{t("ownerControls.noSalespersonCountries")}</div>
             )}
           </SelectContent>
         </Select>
@@ -98,7 +101,7 @@ export function OwnerControlsBar() {
       {/* Currency converter */}
       <div className="flex items-center gap-2 flex-wrap">
         <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
-        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Display Currency</Label>
+        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.displayCurrency")}</Label>
         <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
           <SelectTrigger className="h-7 text-xs w-44 bg-background">
             <SelectValue />
@@ -130,7 +133,7 @@ export function OwnerControlsBar() {
               <button
                 onClick={startEditingRate}
                 className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors"
-                title="Click to edit rate"
+                title={t("ownerControls.clickToEditRate")}
               >
                 {displayRate}
                 <Pencil className="w-3 h-3 opacity-50" />
@@ -139,7 +142,7 @@ export function OwnerControlsBar() {
             <span className="whitespace-nowrap">{selectedCurrency}</span>
             {rateEdited && (
               <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500/50 text-amber-600 dark:text-amber-400">
-                custom
+                {t("common.custom")}
               </Badge>
             )}
           </div>

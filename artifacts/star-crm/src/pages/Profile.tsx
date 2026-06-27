@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/i18n/LanguageContext";
+import { LANGUAGE_CONFIGS, type Language } from "@/i18n/translations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,6 +73,7 @@ const selectClass =
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
+  const { t, language, setLanguage } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(user?.name ?? "");
@@ -98,7 +101,7 @@ export default function Profile() {
 
   function handleImageFile(file: File) {
     if (file.size > 3 * 1024 * 1024) {
-      toast({ title: "Image too large", description: "Please choose an image under 3 MB.", variant: "destructive" });
+      toast({ title: t("profile.imageTooLarge"), description: t("profile.imageTooLargeDesc"), variant: "destructive" });
       return;
     }
     const reader = new FileReader();
@@ -120,9 +123,9 @@ export default function Profile() {
         throw new Error(d.error || "Failed to save");
       }
       await refreshUser();
-      toast({ title: "Profile saved", description: "Your profile has been updated." });
+      toast({ title: t("profile.savedTitle"), description: t("profile.savedDesc") });
     } catch (e: any) {
-      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+      toast({ title: t("profile.saveFailedTitle"), description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -133,13 +136,35 @@ export default function Profile() {
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground mt-1">Manage your personal details and preferences.</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("profile.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("profile.subtitle")}</p>
+      </div>
+
+      {/* Language Settings */}
+      <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("profile.languageSettings")}</h2>
+        <p className="text-xs text-muted-foreground">{t("profile.languageDescription")}</p>
+        <div className="flex gap-2">
+          {LANGUAGE_CONFIGS.map((cfg) => (
+            <button
+              key={cfg.code}
+              onClick={() => setLanguage(cfg.code as Language)}
+              className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                language === cfg.code
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              <span className="block font-semibold">{cfg.nativeName}</span>
+              <span className="block text-xs opacity-70">{cfg.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Profile picture */}
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Profile Picture</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("profile.profilePicture")}</h2>
         <div className="flex items-center gap-6">
           <div className="relative group">
             <div className="w-24 h-24 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center border-2 border-border">
@@ -159,14 +184,14 @@ export default function Profile() {
           <div className="space-y-1.5">
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
               <Camera className="w-4 h-4 mr-2" />
-              Upload photo
+              {t("profile.uploadPhoto")}
             </Button>
             {profilePicture && (
               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setProfilePicture(null)}>
-                Remove
+                {t("profile.remove")}
               </Button>
             )}
-            <p className="text-xs text-muted-foreground">JPG, PNG or WebP · Max 3 MB</p>
+            <p className="text-xs text-muted-foreground">{t("profile.photoFormats")}</p>
           </div>
           <input
             ref={fileRef}
@@ -180,33 +205,33 @@ export default function Profile() {
 
       {/* Personal info */}
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Personal Information</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("profile.personalInformation")}</h2>
 
         <div className="grid grid-cols-1 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("profile.email")}</Label>
             <div className="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-1 text-sm items-center text-muted-foreground select-none">
               {user?.email}
             </div>
-            <p className="text-xs text-muted-foreground">Email cannot be changed.</p>
+            <p className="text-xs text-muted-foreground">{t("profile.emailCannotBeChanged")}</p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">{t("profile.fullName")}</Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
+                placeholder={t("profile.fullNamePlaceholder")}
                 className="pl-9"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="dateOfJoining">Date of Joining</Label>
+            <Label htmlFor="dateOfJoining">{t("profile.dateOfJoining")}</Label>
             <Input
               id="dateOfJoining"
               type="date"
@@ -222,21 +247,19 @@ export default function Profile() {
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Regional Settings</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              The selected currency is shown on all amounts throughout the app.
-            </p>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("profile.regionalSettings")}</h2>
+            <p className="text-xs text-muted-foreground mt-1">{t("profile.regionalDescription")}</p>
           </div>
           {user?.role === "salesperson" && (
             <span className="shrink-0 text-xs text-muted-foreground border border-border rounded px-2 py-1 bg-secondary/50">
-              Set by owner
+              {t("profile.setByOwner")}
             </span>
           )}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="country">Country</Label>
+            <Label htmlFor="country">{t("profile.country")}</Label>
             {user?.role === "salesperson" ? (
               <div className="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-1 text-sm items-center text-muted-foreground select-none">
                 {COUNTRIES.find((c) => c.code === country)?.name || country || "—"}
@@ -248,7 +271,7 @@ export default function Profile() {
                 onChange={(e) => handleCountryChange(e.target.value)}
                 className={selectClass}
               >
-                <option value="">— Select country —</option>
+                <option value="">{t("profile.selectCountry")}</option>
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>{c.name}</option>
                 ))}
@@ -257,7 +280,7 @@ export default function Profile() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="currency">Currency</Label>
+            <Label htmlFor="currency">{t("profile.currency")}</Label>
             {user?.role === "salesperson" ? (
               <div className="flex h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-1 text-sm items-center text-muted-foreground select-none">
                 {currency || "—"}
@@ -274,7 +297,7 @@ export default function Profile() {
                     <option key={c.code} value={c.code}>{c.label}</option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground">Auto-set by country, but you can change it.</p>
+                <p className="text-xs text-muted-foreground">{t("profile.autoSetByCurrency")}</p>
               </>
             )}
           </div>
@@ -284,7 +307,7 @@ export default function Profile() {
       {/* Save */}
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} className="min-w-[120px]">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Profile"}
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("profile.saveProfile")}
         </Button>
       </div>
     </div>

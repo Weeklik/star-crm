@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useOwnerControls, DateRange, getDateBounds, MONTHS } from "@/contexts/OwnerControlsContext";
+import { useTranslation } from "@/i18n/LanguageContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -147,6 +148,7 @@ const TOOLTIP_STYLE = {
 };
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { data: me } = useGetMe();
   const {
     formatConverted, selectedRegion, selectedYear,
@@ -460,7 +462,7 @@ export default function Dashboard() {
 
   const kpiCards = [
     {
-      label: "Quotation Sent",
+      label: t("dashboard.quotationSent"),
       value: String(useConverted ? (allRegionsTotals?.quotationSentCount ?? 0) : (summary?.quotationSentCount ?? 0)),
       sub: fmtAmt(quotationSentAmt),
       icon: Briefcase,
@@ -469,7 +471,7 @@ export default function Dashboard() {
       iconColor: "text-violet-400",
     },
     {
-      label: "Confirmed Orders",
+      label: t("dashboard.confirmedOrders"),
       value: String(useConverted ? (allRegionsTotals?.confirmedDeals ?? 0) : (summary?.confirmedDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.confirmedAmount ?? 0) : (summary?.confirmedAmount ?? 0)),
       icon: Target,
@@ -478,7 +480,7 @@ export default function Dashboard() {
       iconColor: "text-blue-400",
     },
     {
-      label: "Closed Orders",
+      label: t("dashboard.closedOrders"),
       value: String(useConverted ? (allRegionsTotals?.closedDeals ?? 0) : (summary?.closedDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.closedAmount ?? 0) : (summary?.closedAmount ?? 0)),
       icon: TrendingUp,
@@ -487,8 +489,8 @@ export default function Dashboard() {
       iconColor: "text-emerald-400",
     },
     {
-      label: "Lost Orders",
-      sublabel: "Last 90 days",
+      label: t("dashboard.lostOrders"),
+      sublabel: t("dashboard.last90Days"),
       value: String(useConverted ? (allRegionsTotals?.lostDeals ?? 0) : (summary?.lostDeals ?? 0)),
       sub: fmtAmt(useConverted ? (allRegionsTotals?.lostAmount ?? 0) : (summary?.lostAmount ?? 0)),
       icon: Target,
@@ -499,11 +501,11 @@ export default function Dashboard() {
   ];
 
   const dateRangeOptions = [
-    { key: "fullyear" as DateRange, label: `Full ${selectedYear}` },
-    { key: "h1"       as DateRange, label: "H1" },
-    { key: "h2"       as DateRange, label: "H2" },
-    { key: "last30"   as DateRange, label: "Last 30 Days" },
-    { key: "last7"    as DateRange, label: "Last 7 Days" },
+    { key: "fullyear" as DateRange, label: `${t("dashboard.fullYear")} ${selectedYear}` },
+    { key: "h1"       as DateRange, label: t("dashboard.h1") },
+    { key: "h2"       as DateRange, label: t("dashboard.h2") },
+    { key: "last30"   as DateRange, label: t("dashboard.last30Days") },
+    { key: "last7"    as DateRange, label: t("dashboard.last7Days") },
   ];
 
   const showPersonChart = isOwner && selectedSpId === "all";
@@ -515,9 +517,9 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t("dashboard.title")}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Analytics overview ·{" "}
+              {t("dashboard.analyticsOverview")} ·{" "}
               {fromMonth > 0 || toMonth > 0
                 ? `${fromMonth > 0 ? MONTHS[fromMonth - 1] : "Jan"} → ${toMonth > 0 ? MONTHS[toMonth - 1] : MONTHS[(fromMonth > 0 ? fromMonth : 12) - 1]} ${selectedYear}`
                 : dateRangeOptions.find((o) => o.key === dateRange)?.label}
@@ -535,7 +537,7 @@ export default function Dashboard() {
                 }}
                 className="bg-transparent text-sm text-foreground focus:outline-none cursor-pointer pr-1"
               >
-                <option value={0}>From</option>
+                <option value={0}>{t("dashboard.from")}</option>
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>{m}</option>
                 ))}
@@ -548,7 +550,7 @@ export default function Dashboard() {
                 }}
                 className="bg-transparent text-sm text-foreground focus:outline-none cursor-pointer pr-1"
               >
-                <option value={0}>To</option>
+                <option value={0}>{t("dashboard.to")}</option>
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>{m}</option>
                 ))}
@@ -581,10 +583,10 @@ export default function Dashboard() {
               <Select value={selectedSpId} onValueChange={setSelectedSpId}>
                 <SelectTrigger className="w-48 h-9">
                   <Users className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
-                  <SelectValue placeholder="All Salespersons" />
+                  <SelectValue placeholder={t("dashboard.allSalespersons")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Salespersons</SelectItem>
+                  <SelectItem value="all">{t("dashboard.allSalespersons")}</SelectItem>
                   {users
                     .filter((u) => u.id !== me.id)
                     .map((u) => (
@@ -631,7 +633,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="border-border/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Orders by Stage</CardTitle>
+              <CardTitle className="text-base font-semibold">{t("dashboard.orderStageDistribution")}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex flex-col gap-4">
@@ -684,19 +686,19 @@ export default function Dashboard() {
           <Card className="border-border/60">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">
-                {showPersonChart ? "Closed Orders" : "Stage Amount Breakdown"}
+                {showPersonChart ? t("dashboard.closedOrders") : t("dashboard.stageAmountBreakdown")}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 {showPersonChart
-                  ? "Closed orders agreed amount by salesperson · highest to lowest"
-                  : "Agreed amount per deal stage"}
+                  ? t("dashboard.closedOrdersByPerson")
+                  : t("dashboard.agreedAmountPerStage")}
               </p>
             </CardHeader>
             <CardContent className="pt-0">
               {showPersonChart ? (
                 topPersons.length === 0 ? (
                   <div className="h-[270px] flex items-center justify-center text-muted-foreground text-sm">
-                    No data for selected period
+                    {t("dashboard.noData")}
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={270}>
@@ -745,7 +747,7 @@ export default function Dashboard() {
         {/* Weekly Sales Comparison Chart */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Weekly Sales Comparison</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("dashboard.weeklyPerformance")}</CardTitle>
             <p className="text-xs text-muted-foreground">
               Order Closed amounts vs Received amounts · trend follows Order Closed
             </p>
@@ -753,7 +755,7 @@ export default function Dashboard() {
           <CardContent className="pt-0">
             {convertedWeeklyData.length === 0 || convertedWeeklyData.every((w) => w.totalDeals === 0) ? (
               <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
-                No data for selected period
+                {t("dashboard.noData")}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={320}>
@@ -782,7 +784,7 @@ export default function Dashboard() {
         {isOwner && (
           <Card className="border-border/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Region-wise Pipeline Breakdown</CardTitle>
+              <CardTitle className="text-base font-semibold">{t("dashboard.regionBreakdown")}</CardTitle>
               <p className="text-xs text-muted-foreground">
                 Agreed amounts by stage across all regions · filtered by selected period · hover for deal counts
               </p>
@@ -877,7 +879,7 @@ export default function Dashboard() {
         {/* ── Closed Orders by Customer Category ── */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Closed Orders by Customer Category</CardTitle>
+            <CardTitle className="text-base font-semibold">{t("dashboard.orderCategory")}</CardTitle>
             <p className="text-xs text-muted-foreground">
               Agreed amounts &amp; deal counts for Order Closed · filtered by selected period
             </p>

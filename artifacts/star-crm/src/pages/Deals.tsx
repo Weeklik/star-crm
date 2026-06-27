@@ -68,6 +68,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useOwnerControls, getDateBounds, DateRange } from "@/contexts/OwnerControlsContext";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useTranslation } from "@/i18n/LanguageContext";
 
 type Stage = "Quotation Sent" | "Order Confirmed" | "Order Closed" | "Order Lost" | "Sales Return";
 
@@ -524,6 +525,7 @@ function exportDealsToExcel(deals: Deal[] | undefined) {
 
 export default function Deals() {
   const { data: me } = useGetMe();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isOwner = me?.role === "owner";
@@ -697,9 +699,9 @@ export default function Deals() {
     (y) => y >= 2020 && y <= new Date().getFullYear() + 1
   );
   const datePresets: { key: DateRange; label: string }[] = [
-    { key: "fullyear", label: `Full ${orderYear}` },
-    { key: "last30",   label: "Last 30 Days" },
-    { key: "last7",    label: "Last 7 Days" },
+    { key: "fullyear", label: `${t("dashboard.fullYear")} ${orderYear}` },
+    { key: "last30",   label: t("dashboard.last30Days") },
+    { key: "last7",    label: t("dashboard.last7Days") },
   ];
 
   function openAdd() {
@@ -920,9 +922,9 @@ export default function Deals() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("orders.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your active pipeline and closed won/lost orders.
+            {t("orders.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -936,19 +938,19 @@ export default function Deals() {
           />
           <Button variant="outline" onClick={downloadTemplate} title="Download Excel template">
             <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Template
+            {t("orders.downloadTemplate")}
           </Button>
           <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="w-4 h-4 mr-2" />
-            Import Excel
+            {t("orders.importExcel")}
           </Button>
           <Button variant="outline" onClick={() => exportDealsToExcel(filteredDeals)} title="Export current orders to Excel">
             <Download className="w-4 h-4 mr-2" />
-            Export Excel
+            {t("orders.exportExcel")}
           </Button>
           <Button className="shrink-0" onClick={openAdd} data-testid="btn-add-deal">
             <Plus className="w-4 h-4 mr-2" />
-            Add Order
+            {t("orders.addOrder")}
           </Button>
         </div>
       </div>
@@ -958,7 +960,7 @@ export default function Deals() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search company, contact, or product..."
+            placeholder={t("orders.searchPlaceholder")}
             className="pl-9"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -998,7 +1000,7 @@ export default function Deals() {
           onChange={(e) => onStageFilterChange(e.target.value as Stage | "")}
           className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
         >
-          <option value="">All Stages</option>
+          <option value="">{t("orders.allStages")}</option>
           {STAGES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
@@ -1011,7 +1013,7 @@ export default function Deals() {
             onChange={(e) => { setFilterSpId(e.target.value); setPage(1); }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
-            <option value="all">All Salespersons</option>
+            <option value="all">{t("orders.allSalespersons")}</option>
             {salespersons.map((u) => (
               <option key={u.id} value={String(u.id)}>{u.name ?? u.email}</option>
             ))}
@@ -1025,7 +1027,7 @@ export default function Deals() {
             onChange={(e) => { setSelectedRegion(e.target.value); setPage(1); }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
-            <option value="all">All Regions</option>
+            <option value="all">{t("ownerControls.allRegions")}</option>
             {regions.map((r) => (
               <option key={r.country} value={r.country}>{r.country}</option>
             ))}
@@ -1039,7 +1041,7 @@ export default function Deals() {
         {/* Quotation Sent */}
         <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Quotation Sent</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiQuotation")}</span>
             <Clock4 className="w-4 h-4 text-muted-foreground" />
           </div>
           {isOwner && selectedRegion === "all" ? (
@@ -1059,7 +1061,7 @@ export default function Deals() {
         {/* Confirmed Orders */}
         <div className="bg-card border border-border border-l-4 border-l-yellow-500 rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Confirmed Orders</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiConfirmed")}</span>
             <CheckCircle2 className="w-4 h-4 text-yellow-500" />
           </div>
           {isOwner && selectedRegion === "all" ? (
@@ -1082,7 +1084,7 @@ export default function Deals() {
         {/* Closed Orders */}
         <div className="bg-card border border-border border-l-4 border-l-green-500 rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Closed Orders</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiClosed")}</span>
             <Handshake className="w-4 h-4 text-green-500" />
           </div>
           {isOwner && selectedRegion === "all" ? (
@@ -1105,7 +1107,7 @@ export default function Deals() {
         {/* Lost Orders */}
         <div className="bg-card border border-border border-l-4 border-l-red-500 rounded-xl p-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lost Orders</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiLost")}</span>
             <XCircle className="w-4 h-4 text-red-500" />
           </div>
           {isOwner && selectedRegion === "all" ? (
@@ -1131,14 +1133,14 @@ export default function Deals() {
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary/50">
-              <TableHead>Start Date</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Salesperson</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Product</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead className="text-right">Value</TableHead>
-              <TableHead className="text-right">Progress</TableHead>
+              <TableHead>{t("orders.date")}</TableHead>
+              <TableHead>{t("orders.company")}</TableHead>
+              <TableHead>{t("common.salesperson")}</TableHead>
+              <TableHead>{t("orders.customer")}</TableHead>
+              <TableHead>{t("orders.product")}</TableHead>
+              <TableHead>{t("orders.stage")}</TableHead>
+              <TableHead className="text-right">{t("orders.agreed")}</TableHead>
+              <TableHead className="text-right">{t("orders.salesperson")}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -1146,7 +1148,7 @@ export default function Deals() {
             {pagedDeals?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  No deals found
+                  {t("orders.noOrders")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -1282,7 +1284,7 @@ export default function Deals() {
               disabled={safePage === 1}
               className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
             >
-              Previous
+              ‹
             </button>
             <span className="px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold tabular-nums">
               {safePage} / {totalPages}
@@ -1292,7 +1294,7 @@ export default function Deals() {
               disabled={safePage === totalPages}
               className="px-2.5 py-1 rounded-md bg-secondary text-xs font-medium disabled:opacity-40 hover:bg-secondary/80 transition-colors"
             >
-              Next
+              ›
             </button>
             <button
               onClick={() => setPage(totalPages)}
@@ -1310,12 +1312,12 @@ export default function Deals() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId !== null ? "Edit Order" : "Add Order"}</DialogTitle>
+            <DialogTitle>{editingId !== null ? t("orders.editOrderTitle") : t("orders.addOrderTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5">
-              <Label>Customer Name *</Label>
+              <Label>{t("orders.customerName")} *</Label>
               <AutocompleteInput
                 value={form.name}
                 onChange={(v) => set("name", v)}
@@ -1324,7 +1326,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Company Name *</Label>
+              <Label>{t("orders.companyName")} *</Label>
               <AutocompleteInput
                 value={form.companyName}
                 onChange={(v) => set("companyName", v)}
@@ -1333,7 +1335,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Product / Item *</Label>
+              <Label>{t("orders.productItem")} *</Label>
               <AutocompleteInput
                 value={form.productItem}
                 onChange={(v) => set("productItem", v)}
@@ -1342,14 +1344,14 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Start Date *</Label>
+              <Label>{t("orders.orderDate")} *</Label>
               <DatePicker
                 value={form.dealStartDate}
                 onChange={(v) => set("dealStartDate", v)}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Stage</Label>
+              <Label>{t("orders.orderStage")}</Label>
               <Select
                 value={form.stage}
                 onValueChange={(v) => {
@@ -1377,7 +1379,7 @@ export default function Deals() {
             {(form.stage === "Quotation Sent" || form.stage === "Order Confirmed") && (
               <div className="space-y-1.5">
                 <Label>
-                  Expected Closure Date
+                  {t("orders.earliestClosingDate")}
                   <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
                 </Label>
                 <DatePicker
@@ -1395,7 +1397,7 @@ export default function Deals() {
                 : "";
               return (
                 <div className="space-y-2">
-                  <Label>Lost Reason *</Label>
+                  <Label>{t("orders.lostReason")} *</Label>
                   <Select
                     value={dropdownVal}
                     onValueChange={(v) => {
@@ -1428,7 +1430,7 @@ export default function Deals() {
             })()}
             <div className="space-y-1.5">
               <Label>
-                Order Type
+                {t("orders.orderType")}
                 <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
               </Label>
               <Select
@@ -1439,15 +1441,15 @@ export default function Deals() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New Deal">New Customer</SelectItem>
-                  <SelectItem value="Recurring">Existing Customer</SelectItem>
-                  <SelectItem value="Dealer">Dealer Customer</SelectItem>
+                  <SelectItem value="New Deal">{t("orders.newDeal")}</SelectItem>
+                  <SelectItem value="Recurring">{t("orders.recurring")}</SelectItem>
+                  <SelectItem value="Dealer">{t("orders.dealer")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>
-                Region
+                {t("orders.region")}
                 <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
               </Label>
               <Select value={form.region || "__none__"} onValueChange={(v) => set("region", v === "__none__" ? "" : v)}>
@@ -1468,7 +1470,7 @@ export default function Deals() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Sales Chances</Label>
+              <Label>{t("orders.salesChances")}</Label>
               <Select value={form.salesStatus} onValueChange={(v) => set("salesStatus", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select chances" />
@@ -1483,7 +1485,7 @@ export default function Deals() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Price ($)</Label>
+              <Label>{t("orders.agreedAmount")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -1492,7 +1494,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Received Amount ($)</Label>
+              <Label>{t("orders.receivedAmount")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -1501,7 +1503,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Outstanding Amount ($)</Label>
+              <Label>{t("orders.outstandingAmount")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -1510,7 +1512,7 @@ export default function Deals() {
               />
             </div>
             <div className="sm:col-span-2 space-y-1.5">
-              <Label>Notes</Label>
+              <Label>{t("common.notes")}</Label>
               <Textarea
                 rows={3}
                 value={form.notes}
@@ -1520,7 +1522,7 @@ export default function Deals() {
             </div>
             <div className="sm:col-span-2 space-y-1.5">
               <Label>
-                Credit Term
+                {t("orders.creditTerm")}
                 <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
               </Label>
               <Input
@@ -1534,7 +1536,7 @@ export default function Deals() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setFormOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -1552,19 +1554,19 @@ export default function Deals() {
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Order</AlertDialogTitle>
+            <AlertDialogTitle>{t("orders.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the deal. This action cannot be undone.
+              {t("orders.deleteConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="btn-confirm-delete"
             >
-              Delete
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

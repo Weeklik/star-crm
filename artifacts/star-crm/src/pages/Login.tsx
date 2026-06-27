@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +8,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +21,7 @@ export default function Login() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+      setError(err.message || t("login.invalidCredentials"));
     } finally {
       setLoading(false);
     }
@@ -34,17 +36,17 @@ export default function Login() {
               <img src="/logo.png" alt="Star Sewing Machines" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-base font-bold tracking-tight text-foreground leading-tight">STAR SEWING MACHINES TRADING L.L.C</h1>
-            <p className="text-sm text-muted-foreground">Sign in to your portal</p>
+            <p className="text-sm text-muted-foreground">{t("login.signInToPortal")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email">{t("login.emailAddress")}</Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={t("login.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -53,7 +55,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -74,7 +76,7 @@ export default function Login() {
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("login.signingIn") : t("login.signIn")}
             </Button>
           </form>
         </div>

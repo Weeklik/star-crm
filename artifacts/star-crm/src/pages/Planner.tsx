@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/i18n/LanguageContext";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -89,6 +90,7 @@ interface CalendarTabProps {
 function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
   const today    = new Date();
   const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate());
+  const { t } = useTranslation();
 
   const [year,      setYear]      = useState(today.getFullYear());
   const [month,     setMonth]     = useState(today.getMonth());
@@ -149,17 +151,17 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
       if (isOwner && spId !== "all") payload.salespersonId = Number(spId);
       return apiFetch("/api/planner/meetings", { method: "POST", body: JSON.stringify(payload) });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planner-meetings"] }); setModalOpen(false); toast({ title: "Meeting saved" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planner-meetings"] }); setModalOpen(false); toast({ title: t("planner.meetingSaved") }); },
     onError:   (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
   const update = useMutation({
     mutationFn: ({ id, ...b }: Meeting) => apiFetch(`/api/planner/meetings/${id}`, { method: "PUT", body: JSON.stringify(b) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planner-meetings"] }); setModalOpen(false); toast({ title: "Meeting updated" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planner-meetings"] }); setModalOpen(false); toast({ title: t("planner.meetingUpdated") }); },
     onError:   (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
   const del = useMutation({
     mutationFn: (id: number) => apiFetch(`/api/planner/meetings/${id}`, { method: "DELETE" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planner-meetings"] }); setModalOpen(false); toast({ title: "Meeting deleted" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["planner-meetings"] }); setModalOpen(false); toast({ title: t("planner.meetingDeleted") }); },
     onError:   (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
@@ -184,14 +186,14 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
           {/* "All salespersons" hint */}
           {isOwner && spId === "all" && (
             <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-              Select a salesperson above to add meetings
+              {t("planner.selectSalesperson")}
             </span>
           )}
           <button
             onClick={() => { setMonth(today.getMonth()); setYear(today.getFullYear()); }}
             className="px-4 py-1.5 text-sm border border-border rounded-lg hover:bg-accent transition-colors font-medium"
           >
-            Today
+            {t("planner.today")}
           </button>
         </div>
       </div>
@@ -199,7 +201,7 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
       {/* ── Salesperson legend (only in "all" mode) ── */}
       {isOwner && spId === "all" && users.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 px-6 py-2 border-b border-border bg-muted/20 text-xs flex-shrink-0">
-          <span className="text-muted-foreground font-medium mr-1">Salespersons:</span>
+          <span className="text-muted-foreground font-medium mr-1">{t("planner.allSalespersons")}:</span>
           {users.map(u => (
             <span key={u.id} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-white font-medium"
               style={{ backgroundColor: getSpColor(u.id) }}>
@@ -511,6 +513,7 @@ interface MeetingModalProps {
 
 function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDelete, saving, deleting }: MeetingModalProps) {
   const [form, setForm] = useState({ companyName: "", productName: "", meetingTime: "", location: "", notes: "" });
+  const { t } = useTranslation();
   const prevOpen = useRef(false);
 
   if (open !== prevOpen.current) {
@@ -547,44 +550,44 @@ function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDele
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{meeting ? "Edit Meeting" : "New Meeting"}</DialogTitle>
+          <DialogTitle>{meeting ? t("planner.editMeeting") : t("planner.newMeeting")}</DialogTitle>
           <p className="text-sm text-muted-foreground">{displayDate}</p>
         </DialogHeader>
         <div className="space-y-4 py-1">
           <div className="space-y-1.5">
-            <Label>Company Name <span className="text-destructive">*</span></Label>
+            <Label>{t("planner.companyName")} <span className="text-destructive">*</span></Label>
             <LookupCombobox type="company" value={form.companyName} onChange={v => set("companyName", v)}
               placeholder="Search or add company…" required autoFocus />
           </div>
           <div className="space-y-1.5">
-            <Label>Product / Service <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+            <Label>{t("planner.productName")} <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
             <LookupCombobox type="product" value={form.productName} onChange={v => set("productName", v)}
               placeholder="Search or add product…" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Time <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+              <Label>{t("planner.time")} <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
               <Input value={form.meetingTime} onChange={e => set("meetingTime", e.target.value)} placeholder="e.g. 10:30 AM" />
             </div>
             <div className="space-y-1.5">
-              <Label>Location <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+              <Label>{t("planner.location")} <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
               <Input value={form.location} onChange={e => set("location", e.target.value)} placeholder="Office / Zoom" />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Notes <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+            <Label>{t("planner.notes")} <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
             <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Any extra details…" rows={3} />
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           {meeting && (
             <Button variant="destructive" size="sm" onClick={() => onDelete(meeting.id)} disabled={deleting} className="mr-auto">
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />{deleting ? "Deleting…" : "Delete"}
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />{deleting ? "…" : t("planner.deleteMeeting")}
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{t("planner.cancel")}</Button>
           <Button onClick={handleSave} disabled={saving || !form.companyName.trim()}>
-            {saving ? "Saving…" : meeting ? "Save Changes" : "Add Meeting"}
+            {saving ? "…" : meeting ? t("planner.updateMeeting") : t("planner.saveMeeting")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -779,6 +782,7 @@ type Tab = "calendar" | "targets";
 
 export default function Planner() {
   const { user }   = useAuth();
+  const { t }      = useTranslation();
   const isOwner    = user?.role === "owner";
   const [tab, setTab]   = useState<Tab>("calendar");
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -811,13 +815,13 @@ export default function Planner() {
     <div>
       {/* Page header */}
       <div className="flex flex-wrap items-center gap-3 px-6 py-3 border-b border-border bg-card">
-        <h1 className="text-lg font-semibold">Planner</h1>
+        <h1 className="text-lg font-semibold">{t("nav.planner")}</h1>
 
         {/* Tab switcher */}
         <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
           {([
-            { key: "calendar" as Tab, label: "Calendar",      Icon: CalendarDays },
-            { key: "targets"  as Tab, label: "Meeting Targets", Icon: Target },
+            { key: "calendar" as Tab, label: t("planner.calendar"),  Icon: CalendarDays },
+            { key: "targets"  as Tab, label: t("planner.targets"),   Icon: Target },
           ]).map(({ key, label, Icon }) => (
             <button key={key} onClick={() => handleTabChange(key)}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all
@@ -839,7 +843,7 @@ export default function Planner() {
                 <SelectValue placeholder="Select salesperson" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Salespersons</SelectItem>
+                <SelectItem value="all">{t("planner.allSalespersons")}</SelectItem>
                 {users.map(u => (
                   <SelectItem key={u.id} value={String(u.id)}>
                     {u.name ?? `User ${u.id}`}

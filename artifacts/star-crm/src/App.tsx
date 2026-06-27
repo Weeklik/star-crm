@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { OwnerControlsProvider } from "@/contexts/OwnerControlsContext";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -96,18 +97,20 @@ function AppRoutes() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <TooltipProvider>
-        <WouterRouter base={basePath}>
-          <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <AppRoutes />
-            </AuthProvider>
-          </QueryClientProvider>
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <WouterRouter base={basePath}>
+            <QueryClientProvider client={queryClient}>
+              <AuthProvider>
+                <AppRoutes />
+              </AuthProvider>
+            </QueryClientProvider>
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

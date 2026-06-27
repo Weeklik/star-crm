@@ -1,5 +1,6 @@
 import { useGetMe } from "@workspace/api-client-react";
 import { useOwnerControls } from "@/contexts/OwnerControlsContext";
+import { useTranslation } from "@/i18n/LanguageContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { useHistoricalRates } from "@/hooks/useHistoricalRates";
 import { MonthRateCell } from "@/components/MonthRateCell";
@@ -69,6 +70,7 @@ function fmtCurrency(n: number, currency: string, rate: number): string {
 
 export default function SummarySalesReport() {
   const { data: me } = useGetMe();
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   const [year, setYear]               = useState(String(currentYear));
@@ -244,9 +246,9 @@ export default function SummarySalesReport() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Monthly Report</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("monthlyReport.title")}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            Year-to-date sales per salesperson. Click any month cell to expand weekly breakdown.
+            {t("monthlyReport.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-nowrap">
@@ -260,10 +262,10 @@ export default function SummarySalesReport() {
           {me?.role === "owner" && (
             <Select value={filterSpId} onValueChange={setFilterSpId}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="All salespersons" />
+                <SelectValue placeholder={t("monthlyReport.allSalespersons")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All salespersons</SelectItem>
+                <SelectItem value="all">{t("monthlyReport.allSalespersons")}</SelectItem>
                 {users.map((u) => (
                   <SelectItem key={u.id} value={String(u.id)}>{u.name || u.email}</SelectItem>
                 ))}
@@ -288,7 +290,7 @@ export default function SummarySalesReport() {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base print:text-center print:text-xl">Monthly Report {year}</CardTitle>
+          <CardTitle className="text-base print:text-center print:text-xl">{t("monthlyReport.title")} {year}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -302,9 +304,9 @@ export default function SummarySalesReport() {
                   {/* Main header row */}
                   <tr className="bg-muted/60 border-b border-border">
                     <th className="px-2 py-2.5 text-center font-semibold whitespace-nowrap w-8 sticky left-0 bg-muted/60">#</th>
-                    <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap sticky left-8 bg-muted/60">Name</th>
-                    <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">Avg Monthly {year}</th>
-                    <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">Total {year}</th>
+                    <th className="px-3 py-2.5 text-left font-semibold whitespace-nowrap sticky left-8 bg-muted/60">{t("monthlyReport.name")}</th>
+                    <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{t("monthlyReport.avgMonthly")} {year}</th>
+                    <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{t("monthlyReport.total")} {year}</th>
                     {MONTHS.map((m, idx) => {
                       const isCurrentCol = idx + 1 === currentMonth;
                       return (
