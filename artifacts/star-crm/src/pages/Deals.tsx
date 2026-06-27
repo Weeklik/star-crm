@@ -226,6 +226,14 @@ function missingFields(row: ImportRow): Set<keyof DealFormState> {
   return missing;
 }
 
+const DEAL_TYPES = ["New Deal", "Recurring", "Dealer"] as const;
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "New Deal":  "New Customer",
+  "Recurring": "Existing Customer",
+  "Dealer":    "Dealer Customer",
+};
+
 const getStageColor = (stage: string) => {
   switch (stage) {
     case "Quotation Sent": return "bg-blue-500/20 text-blue-500";
@@ -549,6 +557,7 @@ export default function Deals() {
   const [orderDateRange, setOrderDateRange] = useState<DateRange>("fullyear");
   const [orderYear, setOrderYear] = useState(new Date().getFullYear());
   const [stageFilter, setStageFilter] = useState<Stage | "">("");
+  const [dealTypeFilter, setDealTypeFilter] = useState<string>("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<DealFormState>(emptyForm());
@@ -598,10 +607,11 @@ export default function Deals() {
         d.companyName.toLowerCase().includes(q) ||
         d.name.toLowerCase().includes(q) ||
         d.productItem.toLowerCase().includes(q);
-      const matchesStage  = !stageFilter || d.stage === stageFilter;
-      const matchesSp     = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
-      const matchesRegion = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
-      return matchesSearch && matchesStage && matchesSp && matchesRegion;
+      const matchesStage    = !stageFilter || d.stage === stageFilter;
+      const matchesDealType = !dealTypeFilter || (d as any).dealType === dealTypeFilter;
+      const matchesSp       = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
+      const matchesRegion   = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
+      return matchesSearch && matchesStage && matchesDealType && matchesSp && matchesRegion;
     })
     .slice()
     .sort((a, b) => {
@@ -702,6 +712,7 @@ export default function Deals() {
 
   function onSearchChange(v: string) { setSearch(v); resetPage(); }
   function onStageFilterChange(v: Stage | "") { setStageFilter(v); resetPage(); }
+  function onDealTypeFilterChange(v: string) { setDealTypeFilter(v); resetPage(); }
   function onPageSizeChange(v: number) { setPageSize(v); resetPage(); }
 
   const yearOptions = [orderYear - 1, orderYear, orderYear + 1].filter(
@@ -1015,6 +1026,18 @@ export default function Deals() {
           <option value="">{t("orders.allStages")}</option>
           {STAGES.map((s) => (
             <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+
+        {/* Order Category filter */}
+        <select
+          value={dealTypeFilter}
+          onChange={(e) => onDealTypeFilterChange(e.target.value)}
+          className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
+        >
+          <option value="">{t("orders.allCategories")}</option>
+          {DEAL_TYPES.map((dt) => (
+            <option key={dt} value={dt}>{CATEGORY_LABELS[dt]}</option>
           ))}
         </select>
 
