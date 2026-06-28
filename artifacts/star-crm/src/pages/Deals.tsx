@@ -1440,7 +1440,7 @@ export default function Deals() {
                   set("stage", stage);
                   if (stage !== "Order Lost") set("lostReason", "");
                   if (stage === "Quotation Sent") set("salesStatus", "25%");
-                  else if (stage === "Order Confirmed") set("salesStatus", "75%");
+                  else if (stage === "Order Confirmed") set("salesStatus", "90%");
                   else if (stage === "Order Closed") set("salesStatus", "100%");
                   else if (stage === "Order Lost") set("salesStatus", "0%");
                 }}
