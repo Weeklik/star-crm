@@ -605,6 +605,18 @@ export default function Deals() {
     ? new Set((users ?? []).filter((u) => u.country === selectedRegion).map((u) => u.id))
     : null;
 
+  // Salespersons visible in the filter dropdown — scoped to selected region
+  const filteredSalespersons = isOwner && selectedRegion !== "all"
+    ? salespersons.filter((u) => u.country === selectedRegion)
+    : salespersons;
+
+  // Reset SP filter when the selected SP is not in the newly chosen region
+  useEffect(() => {
+    if (filterSpId === "all") return;
+    const stillVisible = filteredSalespersons.some((u) => String(u.id) === filterSpId);
+    if (!stillVisible) setFilterSpId("all");
+  }, [selectedRegion]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const filteredDeals = deals
     ?.filter((d) => {
       const q = search.toLowerCase();
@@ -1047,15 +1059,15 @@ export default function Deals() {
           ))}
         </select>
 
-        {/* Salesperson filter — owner only */}
-        {isOwner && salespersons.length > 0 && (
+        {/* Salesperson filter — owner only, scoped to selected region */}
+        {isOwner && filteredSalespersons.length > 0 && (
           <select
             value={filterSpId}
             onChange={(e) => { setFilterSpId(e.target.value); setPage(1); }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
             <option value="all">{t("orders.allSalespersons")}</option>
-            {salespersons.map((u) => (
+            {filteredSalespersons.map((u) => (
               <option key={u.id} value={String(u.id)}>{u.name ?? u.email}</option>
             ))}
           </select>
