@@ -59,14 +59,13 @@ router.post("/lookup", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json({ name: row.name });
 });
 
-/**
- * Regions that are always shown in the dropdown regardless of whether
- * a salesperson is assigned to them. Kenya, Nigeria, Tunisia are NOT
- * included here — they only appear when a salesperson is assigned.
- */
+/** Canonical region list — always shown once in the dropdown regardless of salesperson assignment. */
 const CANONICAL_REGIONS: { country: string; currency: string }[] = [
   { country: "UAE",      currency: "AED" },
   { country: "KSA",      currency: "SAR" },
+  { country: "Kenya",    currency: "KES" },
+  { country: "Nigeria",  currency: "NGN" },
+  { country: "Tunisia",  currency: "TND" },
   { country: "Egypt",    currency: "EGP" },
   { country: "Ghana",    currency: "GHS" },
   { country: "Ethiopia", currency: "ETB" },
