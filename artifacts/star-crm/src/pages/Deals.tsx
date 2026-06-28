@@ -570,6 +570,7 @@ export default function Deals() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [extraItems, setExtraItems] = useState<Array<{ product: string; amount: number }>>([]);
+  const [unitPrice, setUnitPrice] = useState<number>(0);
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -747,6 +748,7 @@ export default function Deals() {
     setEditingId(null);
     setForm(emptyForm());
     setExtraItems([]);
+    setUnitPrice(0);
     setFormOpen(true);
   }
 
@@ -779,6 +781,9 @@ export default function Deals() {
       creditTerm: (deal as any).creditTerm ?? "",
     });
     setExtraItems([]);
+    // Derive unit price from existing agreed amount ÷ quantity
+    const qty = (deal as any).quantity ?? 1;
+    setUnitPrice(qty > 0 ? Math.round((Number(deal.agreedAmount) || 0) / qty) : 0);
     setFormOpen(true);
   }
 
@@ -1479,8 +1484,31 @@ export default function Deals() {
                 type="number"
                 min={1}
                 value={form.quantity}
-                onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => {
+                  const qty = Math.max(1, parseInt(e.target.value) || 1);
+                  set("quantity", qty);
+                  if (unitPrice > 0) set("agreedAmount", unitPrice * qty);
+                }}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Unit Price</Label>
+              <Input
+                type="number"
+                min={0}
+                value={unitPrice || ""}
+                placeholder="Price per unit"
+                onChange={(e) => {
+                  const up = Number(e.target.value) || 0;
+                  setUnitPrice(up);
+                  set("agreedAmount", up * (form.quantity || 1));
+                }}
+              />
+              {unitPrice > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {unitPrice.toLocaleString()} × {form.quantity} = <span className="font-semibold text-foreground">{(unitPrice * form.quantity).toLocaleString()}</span>
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.orderDate")} *</Label>
