@@ -1234,15 +1234,20 @@ export default function Deals() {
                     {fmtDealAmt((deal as any).currency, deal.agreedAmount)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs text-muted-foreground">{deal.progress}%</span>
-                      <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="bg-primary h-full"
-                          style={{ width: `${deal.progress}%` }}
-                        />
-                      </div>
-                    </div>
+                    {(() => {
+                      const pct = parseInt((deal.salesStatus ?? "0").replace("%", ""), 10) || 0;
+                      return (
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs text-muted-foreground">{pct}%</span>
+                          <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                            <div
+                              className="bg-primary h-full"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-0.5">
