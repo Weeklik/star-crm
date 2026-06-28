@@ -681,12 +681,15 @@ export default function Deals() {
 
   // Region → native currency code for the Received Amount label
   const REGION_CURRENCY_MAP: Record<string, string> = {
-    "all": "USD",
-    "UAE": "AED",
-    "KSA": "SAR",
-    "KE":  "KES",
-    "NG":  "NGN",
-    "TN":  "TND",
+    "all":      "USD",
+    "UAE":      "AED",
+    "KSA":      "SAR",
+    "KE":       "KES",
+    "NG":       "NGN",
+    "TN":       "TND",
+    "Egypt":    "EGP",
+    "Ghana":    "GHS",
+    "Ethiopia": "ETB",
   };
   const receivedCurrency = REGION_CURRENCY_MAP[selectedRegion] ?? "AED";
   const fmtReceived = (n: number) => {

@@ -59,8 +59,24 @@ router.post("/lookup", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json({ name: row.name });
 });
 
+/**
+ * Always-visible regions. Kenya / Nigeria / Tunisia are intentionally excluded —
+ * they appear only when a salesperson is assigned to them.
+ */
+const CANONICAL_REGIONS: { country: string; currency: string }[] = [
+  { country: "Egypt",    currency: "EGP" },
+  { country: "Ghana",    currency: "GHS" },
+  { country: "Ethiopia", currency: "ETB" },
+];
+
+/** Normalise legacy ISO codes so DB entries don't create duplicates. */
+const COUNTRY_NORMALIZE: Record<string, string> = {
+  AE: "UAE", SA: "KSA",
+  EG: "Egypt", GH: "Ghana", ET: "Ethiopia",
+  KE: "Kenya", NG: "Nigeria", TN: "Tunisia",
+};
+
 router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
-  // Use DISTINCT ON (country) to get one row per country, including that salesperson's currency
   const rows = await db
     .selectDistinctOn([usersTable.country], {
       country: usersTable.country,
@@ -69,9 +85,27 @@ router.get("/lookup/regions", requireAuth, async (_req, res): Promise<void> => {
     .from(usersTable)
     .where(and(eq(usersTable.role, "salesperson"), isNotNull(usersTable.country)));
 
-  const regions = rows
-    .filter((r): r is { country: string; currency: string | null } => !!r.country?.trim())
-    .map((r) => ({ country: r.country as string, currency: r.currency ?? null }))
+  // Normalise DB country codes and build a currency map.
+  const dbMap = new Map<string, string | null>();
+  for (const r of rows) {
+    if (r.country?.trim()) {
+      const key = COUNTRY_NORMALIZE[r.country.trim()] ?? r.country.trim();
+      dbMap.set(key, r.currency ?? null);
+    }
+  }
+
+  // Seed with canonical regions; DB currency overrides the default when present.
+  const merged = new Map<string, string | null>();
+  for (const c of CANONICAL_REGIONS) {
+    merged.set(c.country, dbMap.get(c.country) ?? c.currency);
+  }
+  // Append any DB countries not already in the map.
+  for (const [country, currency] of dbMap) {
+    if (!merged.has(country)) merged.set(country, currency);
+  }
+
+  const regions = Array.from(merged.entries())
+    .map(([country, currency]) => ({ country, currency }))
     .sort((a, b) => a.country.localeCompare(b.country));
 
   res.json(regions);

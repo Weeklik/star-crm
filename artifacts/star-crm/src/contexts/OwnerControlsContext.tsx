@@ -28,7 +28,7 @@ export function getDateBounds(range: DateRange, year: number): { startDate: stri
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
   "KSA": "SAR", "UAE": "AED", "Nigeria": "NGN",
-  "Tunisia": "TND", "Egypt": "EGP", "Kenya": "KES", "Ethiopia": "ETB",
+  "Tunisia": "TND", "Egypt": "EGP", "Kenya": "KES", "Ethiopia": "ETB", "Ghana": "GHS",
 };
 
 export const CURRENCIES: { code: string; name: string }[] = [
