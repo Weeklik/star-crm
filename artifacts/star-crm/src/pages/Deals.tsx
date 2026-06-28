@@ -11,7 +11,7 @@ import type { Deal } from "@workspace/api-client-react";
 import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Plus, Search, MoreHorizontal, Pencil, Trash2, Loader2,
+  Plus, X, Search, MoreHorizontal, Pencil, Trash2, Loader2,
   Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, XCircle,
   Handshake, Clock4, TrendingUp, CalendarRange, FileDown,
 } from "lucide-react";
@@ -569,6 +569,7 @@ export default function Deals() {
   const [form, setForm] = useState<DealFormState>(emptyForm());
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [extraItems, setExtraItems] = useState<Array<{ product: string; amount: number }>>([]);
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -745,6 +746,7 @@ export default function Deals() {
   function openAdd() {
     setEditingId(null);
     setForm(emptyForm());
+    setExtraItems([]);
     setFormOpen(true);
   }
 
@@ -776,6 +778,7 @@ export default function Deals() {
       lostReason: deal.lostReason ?? "",
       creditTerm: (deal as any).creditTerm ?? "",
     });
+    setExtraItems([]);
     setFormOpen(true);
   }
 
@@ -787,7 +790,15 @@ export default function Deals() {
     if (!form.name || !form.companyName || !form.productItem) return;
     setSaving(true);
     try {
-      const payload = toPayload(form);
+      // Merge extra items into the main form fields before saving
+      const allProducts = [form.productItem, ...extraItems.map((i) => i.product)].filter(Boolean);
+      const extraTotal  = extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      const mergedForm: DealFormState = {
+        ...form,
+        productItem:  allProducts.join("\n"),
+        agreedAmount: (Number(form.agreedAmount) || 0) + extraTotal,
+      };
+      const payload = toPayload(mergedForm);
       if (editingId !== null) {
         await updateDeal.mutateAsync({ id: editingId, data: payload });
       } else {
@@ -1408,13 +1419,43 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("orders.productItem")} *</Label>
+              <div className="flex items-center justify-between">
+                <Label>{t("orders.productItem")} *</Label>
+                <button
+                  type="button"
+                  onClick={() => setExtraItems((prev) => [...prev, { product: "", amount: 0 }])}
+                  className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add item
+                </button>
+              </div>
               <AutocompleteInput
                 value={form.productItem}
                 onChange={(v) => set("productItem", v)}
                 lookupType="product"
                 placeholder="e.g. SaaS Pro Plan"
               />
+              {extraItems.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={item.product}
+                    onChange={(e) => setExtraItems((prev) =>
+                      prev.map((it, i) => i === idx ? { ...it, product: e.target.value } : it)
+                    )}
+                    placeholder={`Item ${idx + 2}`}
+                    className="flex-1 h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setExtraItems((prev) => prev.filter((_, i) => i !== idx))}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.brand")}</Label>
@@ -1589,6 +1630,24 @@ export default function Deals() {
                 value={form.agreedAmount}
                 onChange={(e) => set("agreedAmount", Number(e.target.value))}
               />
+              {extraItems.map((item, idx) => (
+                <input
+                  key={idx}
+                  type="number"
+                  min={0}
+                  value={item.amount || ""}
+                  onChange={(e) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, amount: Number(e.target.value) } : it)
+                  )}
+                  placeholder={`Price for item ${idx + 2}`}
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              ))}
+              {extraItems.length > 0 && (
+                <p className="text-xs text-muted-foreground text-right">
+                  Total: {((Number(form.agreedAmount) || 0) + extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0)).toLocaleString()}
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.receivedAmount")}</Label>
