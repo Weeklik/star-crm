@@ -27,6 +27,7 @@ import {
   CartesianGrid,
   BarChart,
   LabelList,
+  ReferenceLine,
 } from "recharts";
 import {
   Loader2,
@@ -997,6 +998,162 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* ── Average Sales Chart ── */}
+        {(() => {
+          if (isOwner && byPerson.length > 0) {
+            // Owner: per-salesperson total closed sales + avg deal value
+            const spData = byPerson
+              .map((p) => {
+                const totalSales   = Math.round((p.totalAgreedAmount ?? 0) * getRateFor(p.currency ?? ""));
+                const avgDealValue = p.closedDeals > 0 ? Math.round(totalSales / p.closedDeals) : 0;
+                return {
+                  name:        (p.salespersonName ?? p.email ?? `User ${p.salespersonId}`).split(" ")[0],
+                  fullName:    p.salespersonName ?? p.email ?? `User ${p.salespersonId}`,
+                  totalSales,
+                  avgDealValue,
+                  closedDeals: p.closedDeals,
+                };
+              })
+              .filter((d) => d.totalSales > 0 || d.closedDeals > 0)
+              .sort((a, b) => b.totalSales - a.totalSales);
+
+            const grandTotal  = spData.reduce((s, d) => s + d.totalSales, 0);
+            const totalClosed = spData.reduce((s, d) => s + d.closedDeals, 0);
+            const overallAvg  = totalClosed > 0 ? Math.round(grandTotal / totalClosed) : 0;
+
+            return (
+              <Card className="border-border/60">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-semibold">Average Sales per Salesperson</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Total closed sales &amp; average deal value · dashed line = overall avg deal value ({fmtK(overallAvg)} {selectedCurrency})
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {spData.length === 0 ? (
+                    <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">No closed orders for selected period</div>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={Math.max(260, spData.length * 52)}>
+                        <ComposedChart data={spData} layout="vertical" margin={{ top: 8, right: 80, left: 8, bottom: 8 }} barCategoryGap="28%">
+                          <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
+                          <XAxis
+                            type="number"
+                            tickFormatter={fmtK}
+                            tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                            axisLine={false} tickLine={false}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                            axisLine={false} tickLine={false}
+                            width={72}
+                          />
+                          <Tooltip
+                            contentStyle={TOOLTIP_STYLE}
+                            formatter={(value: number, key: string) => [
+                              fmtK(value) + " " + selectedCurrency,
+                              key === "totalSales" ? "Total Closed Sales" : "Avg Deal Value",
+                            ]}
+                            labelFormatter={(label) => {
+                              const row = spData.find((d) => d.name === label);
+                              return row ? `${row.fullName} (${row.closedDeals} closed)` : label;
+                            }}
+                          />
+                          <Legend
+                            iconType="circle" iconSize={8}
+                            wrapperStyle={{ paddingTop: "10px" }}
+                            formatter={(value) => (
+                              <span className="text-xs text-foreground/80">
+                                {value === "totalSales" ? "Total Closed Sales" : "Avg Deal Value"}
+                              </span>
+                            )}
+                          />
+                          <Bar dataKey="totalSales" name="totalSales" fill="#a78bfa" fillOpacity={0.85} radius={[0, 4, 4, 0]} maxBarSize={28}>
+                            <LabelList dataKey="totalSales" position="right" formatter={(v: number) => fmtK(v)} style={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                          </Bar>
+                          <Bar dataKey="avgDealValue" name="avgDealValue" fill="#34d399" fillOpacity={0.75} radius={[0, 4, 4, 0]} maxBarSize={16} />
+                          {overallAvg > 0 && (
+                            <ReferenceLine x={overallAvg} stroke="#fbbf24" strokeDasharray="5 3" strokeWidth={1.5} label={{ value: `Avg ${fmtK(overallAvg)}`, position: "top", fontSize: 10, fill: "#fbbf24" }} />
+                          )}
+                        </ComposedChart>
+                      </ResponsiveContainer>
+
+                      {/* Summary table */}
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border/50">
+                              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Salesperson</th>
+                              <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Closed Deals</th>
+                              <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Total Sales ({selectedCurrency})</th>
+                              <th className="text-right py-2 pl-3 font-semibold text-muted-foreground">Avg Deal Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {spData.map((row) => (
+                              <tr key={row.fullName} className="border-b border-border/20 hover:bg-secondary/30 transition-colors">
+                                <td className="py-2 pr-4 font-medium text-foreground/90">{row.fullName}</td>
+                                <td className="py-2 px-3 text-right tabular-nums font-semibold text-violet-400">{row.closedDeals}</td>
+                                <td className="py-2 px-3 text-right tabular-nums font-semibold text-violet-400">{fmtK(row.totalSales)}</td>
+                                <td className="py-2 pl-3 text-right tabular-nums font-semibold text-emerald-400">{fmtK(row.avgDealValue)}</td>
+                              </tr>
+                            ))}
+                            <tr className="border-t-2 border-border/50 font-semibold bg-muted/30">
+                              <td className="py-2 pr-4 text-sm">Overall Average</td>
+                              <td className="py-2 px-3 text-right tabular-nums">{totalClosed}</td>
+                              <td className="py-2 px-3 text-right tabular-nums">{fmtK(grandTotal)}</td>
+                              <td className="py-2 pl-3 text-right tabular-nums text-amber-400">{fmtK(overallAvg)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          }
+
+          // Salesperson / filtered view: weekly avg closed sales trend
+          const weeklyAmounts = convertedWeeklyData.map((w) => w.orderClosedAmount);
+          const nonZero       = weeklyAmounts.filter((v) => v > 0);
+          const weeklyAvg     = nonZero.length > 0 ? Math.round(nonZero.reduce((s, v) => s + v, 0) / nonZero.length) : 0;
+
+          return (
+            <Card className="border-border/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">Average Sales Trend</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Weekly closed sales · dashed line = average ({fmtK(weeklyAvg)} {selectedCurrency} / week)
+                </p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {convertedWeeklyData.length === 0 || weeklyAmounts.every((v) => v === 0) ? (
+                  <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">{t("dashboard.noData")}</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <ComposedChart data={convertedWeeklyData} margin={{ top: 24, right: 24, left: 0, bottom: 4 }}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                      <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
+                      <Tooltip
+                        contentStyle={TOOLTIP_STYLE}
+                        formatter={(value: number) => [fmtK(value) + " " + selectedCurrency, "Closed Sales"]}
+                      />
+                      <Bar dataKey="orderClosedAmount" name="Closed Sales" fill="#a78bfa" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
+                      {weeklyAvg > 0 && (
+                        <ReferenceLine y={weeklyAvg} stroke="#fbbf24" strokeDasharray="5 3" strokeWidth={2} label={{ value: `Avg ${fmtK(weeklyAvg)}`, position: "right", fontSize: 10, fill: "#fbbf24" }} />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
       </div>
     </div>
