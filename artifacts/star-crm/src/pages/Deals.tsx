@@ -796,13 +796,15 @@ export default function Deals() {
       // Merge extra items into the main form fields before saving
       const allProducts = [form.productItem, ...extraItems.map((i) => i.product)].filter(Boolean);
       const extraTotal  = extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-      // Unit Price × Quantity + Transportation Fee = Total stored in DB
+      // Grand Total = (Unit Price × Quantity + Transportation Fee) × 1.05 (VAT 5%)
       const unitTotal   = (Number(form.agreedAmount) || 0) * (Number(form.quantity) || 1);
       const transport   = Number(form.transportationFee) || 0;
+      const subtotal    = unitTotal + extraTotal + transport;
+      const grandTotal  = Math.round(subtotal * 1.05 * 100) / 100;
       const mergedForm: DealFormState = {
         ...form,
         productItem:  allProducts.join("\n"),
-        agreedAmount: unitTotal + extraTotal + transport,
+        agreedAmount: grandTotal,
       };
       const payload = toPayload(mergedForm);
       if (editingId !== null) {
@@ -1488,19 +1490,30 @@ export default function Deals() {
                 onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
-              <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
-                {((Number(form.agreedAmount) || 0) * (form.quantity || 1) + (Number(form.transportationFee) || 0)).toLocaleString()}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {(Number(form.agreedAmount) || 0).toLocaleString()} × {form.quantity}
-                {(Number(form.transportationFee) || 0) > 0 && <> + {(Number(form.transportationFee) || 0).toLocaleString()} transport</>}
-                {" = "}
-                <span className="font-semibold text-foreground">
-                  {((Number(form.agreedAmount) || 0) * (form.quantity || 1) + (Number(form.transportationFee) || 0)).toLocaleString()}
-                </span>
-              </p>
+            <div className="space-y-2">
+              {(() => {
+                const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1);
+                const transport = Number(form.transportationFee) || 0;
+                const total = subtotal + transport;
+                const vat = Math.round(total * 0.05 * 100) / 100;
+                const grandTotal = total + vat;
+                return (
+                  <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Total <span className="text-xs">(auto)</span></span>
+                      <span className="tabular-nums font-medium text-foreground">{total.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>VAT (5%)</span>
+                      <span className="tabular-nums font-medium text-foreground">+ {vat.toLocaleString()}</span>
+                    </div>
+                    <div className="border-t border-border pt-1.5 flex justify-between font-semibold text-foreground">
+                      <span>Grand Total</span>
+                      <span className="tabular-nums">{grandTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.orderDate")} *</Label>
