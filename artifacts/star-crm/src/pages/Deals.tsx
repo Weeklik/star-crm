@@ -1490,31 +1490,35 @@ export default function Deals() {
                 onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
               />
             </div>
-            <div className="space-y-2">
-              {(() => {
-                const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1);
-                const transport = Number(form.transportationFee) || 0;
-                const total = subtotal + transport;
-                const vat = Math.round(total * 0.05 * 100) / 100;
-                const grandTotal = total + vat;
-                return (
-                  <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1.5 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Total <span className="text-xs">(auto)</span></span>
-                      <span className="tabular-nums font-medium text-foreground">{total.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>VAT (5%)</span>
-                      <span className="tabular-nums font-medium text-foreground">+ {vat.toLocaleString()}</span>
-                    </div>
-                    <div className="border-t border-border pt-1.5 flex justify-between font-semibold text-foreground">
-                      <span>Grand Total</span>
-                      <span className="tabular-nums">{grandTotal.toLocaleString()}</span>
+            {(() => {
+              const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1);
+              const transport = Number(form.transportationFee) || 0;
+              const total = subtotal + transport;
+              const vat = Math.round(total * 0.05 * 100) / 100;
+              const grandTotal = total + vat;
+              return (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
+                    <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
+                      {total.toLocaleString()}
                     </div>
                   </div>
-                );
-              })()}
-            </div>
+                  <div className="space-y-1.5">
+                    <Label>VAT <span className="text-muted-foreground font-normal">(5%)</span></Label>
+                    <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
+                      {vat.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Grand Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
+                    <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
+                      {grandTotal.toLocaleString()}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             <div className="space-y-1.5">
               <Label>{t("orders.orderDate")} *</Label>
               <DatePicker
