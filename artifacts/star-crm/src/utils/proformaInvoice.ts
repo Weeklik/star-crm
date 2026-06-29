@@ -55,6 +55,9 @@ interface RegionConfig {
   // wave header variant (Tunisia / North Africa style)
   headerVariant?: "wave";
   waveCompanyName?: string;    // text shown in the white wave area (e.g. "STAR NORTH AFRICA")
+  // styling overrides
+  companyNameColor?: string;   // CSS color for the company name in the letterhead
+  addressUnderline?: boolean;  // underline the contact/address line
 }
 
 const REGION_CONFIGS: Record<string, RegionConfig> = {
@@ -165,13 +168,54 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     addressLabel:   "Adresse",
     attentionLabel: "À l'attention de",
   },
+  NG: {
+    currency: "NGN",
+    vatRate: 7.5,
+    totalLabel: "Total",
+    companyName: "Star Sewing Machines Limited",
+    companySubTitle: "Industrial Sewing Machines &amp; Garment Equipment",
+    letterheadContact:
+      "270 B, Ajose Adeogun Street, Victoria Island Lagos, Nigeria<br>Tel No. +234-9082069383 &nbsp;|&nbsp; Email: sales1@starwestafrica.com &nbsp;|&nbsp; License No. RC1119984",
+    bank: [
+      { key: "Account Name",    value: "Star Sewing Machines Limited" },
+      { key: "Bank Name",       value: "—" },
+      { key: "Account Number",  value: "—" },
+      { key: "Currency",        value: "NGN" },
+    ],
+    paymentText: "100% Advance",
+    noteText:
+      "Customer must provide local expenses including delivery and off-loading charges.",
+    footerLine1:
+      "270 B, Ajose Adeogun Street, Victoria Island Lagos, Nigeria &nbsp; Tel: +234-9082069383",
+    footerLine2:
+      "Email: sales1@starwestafrica.com &nbsp;&nbsp; License No. RC1119984",
+    companyNameColor: "#8C1515",
+    addressUnderline: true,
+    sigCompanyLabel: "STAR SEWING MACHINES LIMITED",
+  },
+};
+
+// Maps stored salesperson country names → REGION_CONFIGS keys
+const REGION_ALIASES: Record<string, string> = {
+  "NIGERIA":      "NG",
+  "NIGER":        "NG",
+  "TUNISIA":      "TN",
+  "TUNISIE":      "TN",
+  "SAUDI ARABIA": "KSA",
+  "SAUDI":        "KSA",
+  "KSA":          "KSA",
+  "KENYA":        "KE",
+  "KE":           "KE",
+  "UAE":          "UAE",
+  "NG":           "NG",
+  "TN":           "TN",
 };
 
 function getRegionConfig(region?: string | null): RegionConfig {
-  if (region && REGION_CONFIGS[region.toUpperCase()]) {
-    return REGION_CONFIGS[region.toUpperCase()];
-  }
-  return REGION_CONFIGS["UAE"];
+  if (!region) return REGION_CONFIGS["UAE"];
+  const upper = region.toUpperCase().trim();
+  const key = REGION_ALIASES[upper] ?? upper;
+  return REGION_CONFIGS[key] ?? REGION_CONFIGS["UAE"];
 }
 
 function fmt(n: number, curr: string): string {
@@ -517,9 +561,9 @@ ${cfg.headerVariant === "wave" ? `
   ${logoHtml}
   <div class="company-info">
     ${data.companyNameImageUrl ? `<img src="${data.companyNameImageUrl}" alt="" style="width:100%;height:auto;max-height:28px;object-fit:contain;object-position:center;display:block;margin:0 auto 3px;" />` : ""}
-    <div class="co-name">${cfg.companyName}</div>
+    <div class="co-name" ${cfg.companyNameColor ? `style="color:${cfg.companyNameColor}"` : ""}>${cfg.companyName}</div>
     <div class="co-sub">${cfg.companySubTitle}</div>
-    <div class="co-contact">
+    <div class="co-contact" ${cfg.addressUnderline ? `style="text-decoration:underline"` : ""}>
       ${cfg.letterheadContact}
     </div>
   </div>
