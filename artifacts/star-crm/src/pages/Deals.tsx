@@ -1485,7 +1485,7 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Unit Price <span className="text-muted-foreground font-normal">(auto)</span></Label>
+              <Label>Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
               <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
                 {((Number(form.agreedAmount) || 0) * (form.quantity || 1)).toLocaleString()}
               </div>
@@ -1634,7 +1634,7 @@ export default function Deals() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>{t("orders.agreedAmount")}</Label>
+              <Label>Unit Price</Label>
               <Input
                 type="number"
                 min={0}
