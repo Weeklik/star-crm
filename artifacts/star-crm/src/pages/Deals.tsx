@@ -1439,25 +1439,30 @@ export default function Deals() {
               />
             </div>
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label>{t("orders.productItem")} *</Label>
+              <Label>{t("orders.productItem")} *</Label>
+              {/* Main item row: [+] on the left, input on the right */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  title="Add another item"
                   onClick={() => setExtraItems((prev) => [...prev, { product: "", amount: 0 }])}
-                  className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                  className="shrink-0 w-7 h-7 rounded-md border border-border bg-background flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add item
+                  <Plus className="w-4 h-4" />
                 </button>
+                <div className="flex-1">
+                  <AutocompleteInput
+                    value={form.productItem}
+                    onChange={(v) => set("productItem", v)}
+                    lookupType="product"
+                    placeholder="e.g. SaaS Pro Plan"
+                  />
+                </div>
               </div>
-              <AutocompleteInput
-                value={form.productItem}
-                onChange={(v) => set("productItem", v)}
-                lookupType="product"
-                placeholder="e.g. SaaS Pro Plan"
-              />
+              {/* Extra item rows */}
               {extraItems.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
+                  <div className="w-7 shrink-0" />
                   <input
                     type="text"
                     value={item.product}
@@ -1470,7 +1475,7 @@ export default function Deals() {
                   <button
                     type="button"
                     onClick={() => setExtraItems((prev) => prev.filter((_, i) => i !== idx))}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1506,6 +1511,20 @@ export default function Deals() {
                 value={form.agreedAmount}
                 onChange={(e) => set("agreedAmount", Number(e.target.value))}
               />
+              {/* Extra item prices — grows in sync with Product/Item extra rows */}
+              {extraItems.map((item, idx) => (
+                <input
+                  key={idx}
+                  type="number"
+                  min={0}
+                  value={item.amount || ""}
+                  onChange={(e) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, amount: Number(e.target.value) || 0 } : it)
+                  )}
+                  placeholder={`Price for item ${idx + 2}`}
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              ))}
             </div>
             <div className="space-y-1.5">
               <Label>Transportation Fee</Label>
