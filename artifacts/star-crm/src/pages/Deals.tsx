@@ -1408,6 +1408,8 @@ export default function Deals() {
           </DialogHeader>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+
+            {/* Row: Customer Name | Company Name */}
             <div className="space-y-1.5">
               <Label>{t("orders.customerName")} *</Label>
               <AutocompleteInput
@@ -1424,6 +1426,16 @@ export default function Deals() {
                 onChange={(v) => set("companyName", v)}
                 lookupType="company"
                 placeholder="e.g. Acme Corp"
+              />
+            </div>
+
+            {/* Row: Brand | Product / Item */}
+            <div className="space-y-1.5">
+              <Label>{t("orders.brand")}</Label>
+              <Input
+                value={form.brand}
+                onChange={(e) => set("brand", e.target.value)}
+                placeholder="e.g. Juki"
               />
             </div>
             <div className="space-y-1.5">
@@ -1465,12 +1477,15 @@ export default function Deals() {
                 </div>
               ))}
             </div>
+
+            {/* Row: Quantity | Model */}
             <div className="space-y-1.5">
-              <Label>{t("orders.brand")}</Label>
+              <Label>{t("orders.quantity")}</Label>
               <Input
-                value={form.brand}
-                onChange={(e) => set("brand", e.target.value)}
-                placeholder="e.g. Juki"
+                type="number"
+                min={1}
+                value={form.quantity}
+                onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
               />
             </div>
             <div className="space-y-1.5">
@@ -1481,15 +1496,29 @@ export default function Deals() {
                 placeholder="e.g. DDL-9000C"
               />
             </div>
+
+            {/* Row: Unit Price | Transportation Fee */}
             <div className="space-y-1.5">
-              <Label>{t("orders.quantity")}</Label>
+              <Label>Unit Price</Label>
               <Input
                 type="number"
-                min={1}
-                value={form.quantity}
-                onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
+                min={0}
+                value={form.agreedAmount}
+                onChange={(e) => set("agreedAmount", Number(e.target.value))}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label>Transportation Fee</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.transportationFee || ""}
+                placeholder="0"
+                onChange={(e) => set("transportationFee", Number(e.target.value) || 0)}
+              />
+            </div>
+
+            {/* Row: Total (flat) | VAT (flat) | then Grand Total | Received Amount */}
             {(() => {
               const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1);
               const transport = Number(form.transportationFee) || 0;
@@ -1498,27 +1527,82 @@ export default function Deals() {
               const grandTotal = total + vat;
               return (
                 <>
-                  <div className="space-y-1.5">
-                    <Label>Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
-                    <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
-                      {total.toLocaleString()}
-                    </div>
+                  {/* Total — flat label + value, no box */}
+                  <div className="flex items-center justify-between h-9 border-b border-border/40">
+                    <span className="text-sm font-medium">
+                      Total <span className="text-muted-foreground font-normal text-xs">(auto)</span>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">{total.toLocaleString()}</span>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label>VAT <span className="text-muted-foreground font-normal">(5%)</span></Label>
-                    <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
-                      {vat.toLocaleString()}
-                    </div>
+                  {/* VAT — flat label + value, no box */}
+                  <div className="flex items-center justify-between h-9 border-b border-border/40">
+                    <span className="text-sm font-medium">
+                      VAT <span className="text-muted-foreground font-normal text-xs">(5%)</span>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">+ {vat.toLocaleString()}</span>
                   </div>
+                  {/* Grand Total — label+value inline, then display box */}
                   <div className="space-y-1.5">
-                    <Label>Grand Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Grand Total</Label>
+                      <span className="text-sm font-semibold tabular-nums">{grandTotal.toLocaleString()}</span>
+                    </div>
                     <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
                       {grandTotal.toLocaleString()}
                     </div>
                   </div>
+                  {/* Received Amount — paired with Grand Total */}
+                  <div className="space-y-1.5">
+                    <Label>{t("orders.receivedAmount")}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={form.receivedAmount}
+                      onChange={(e) => set("receivedAmount", Number(e.target.value))}
+                    />
+                  </div>
                 </>
               );
             })()}
+
+            {/* Row: Outstanding Amount (left only) */}
+            <div className="space-y-1.5">
+              <Label>{t("orders.outstandingAmount")}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.outstandingAmount}
+                onChange={(e) => set("outstandingAmount", Number(e.target.value))}
+              />
+            </div>
+            <div />
+
+            {/* Notes — full width */}
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>{t("common.notes")}</Label>
+              <Textarea
+                rows={3}
+                value={form.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="Any additional notes..."
+              />
+            </div>
+
+            {/* Credit Term — full width */}
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>
+                {t("orders.creditTerm")}
+                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                type="text"
+                value={form.creditTerm}
+                onChange={(e) => set("creditTerm", e.target.value)}
+                placeholder="e.g. Net 30, 100% Advance, 50% upfront..."
+              />
+            </div>
+
+            {/* Order Date | Stage */}
             <div className="space-y-1.5">
               <Label>{t("orders.orderDate")} *</Label>
               <DatePicker
@@ -1540,18 +1624,70 @@ export default function Deals() {
                   else if (stage === "Order Lost") set("salesStatus", "0%");
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {STAGES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Sales Chances | Region */}
+            <div className="space-y-1.5">
+              <Label>{t("orders.salesChances")}</Label>
+              <Select value={form.salesStatus} onValueChange={(v) => set("salesStatus", v)}>
+                <SelectTrigger><SelectValue placeholder="Select chances" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25%">25%</SelectItem>
+                  <SelectItem value="90%">90%</SelectItem>
+                  <SelectItem value="100%">100%</SelectItem>
+                  <SelectItem value="0%">0%</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                {t("orders.region")}
+                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <Select value={form.region || "__none__"} onValueChange={(v) => set("region", v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Select a country…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— None —</SelectItem>
+                  <SelectItem value="Dubai">Dubai (AED)</SelectItem>
+                  <SelectItem value="Abu Dhabi">Abu Dhabi (AED)</SelectItem>
+                  <SelectItem value="Sharjah">Sharjah (AED)</SelectItem>
+                  <SelectItem value="Ajman">Ajman (AED)</SelectItem>
+                  <SelectItem value="Umm Al Quwain">Umm Al Quwain (AED)</SelectItem>
+                  <SelectItem value="Ras Al Khaimah">Ras Al Khaimah (AED)</SelectItem>
+                  <SelectItem value="Fujairah">Fujairah (AED)</SelectItem>
+                  <SelectItem value="Qatar">Qatar (QAR)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Order Type */}
+            <div className="space-y-1.5">
+              <Label>
+                {t("orders.orderType")}
+                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+              </Label>
+              <Select
+                value={form.dealType}
+                onValueChange={(v) => set("dealType", v as "New Deal" | "Recurring" | "Dealer")}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New Deal">{t("orders.newDeal")}</SelectItem>
+                  <SelectItem value="Recurring">{t("orders.recurring")}</SelectItem>
+                  <SelectItem value="Dealer">{t("orders.dealer")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div />
+
+            {/* Conditional: Closing Date */}
             {(form.stage === "Quotation Sent" || form.stage === "Order Confirmed") && (
               <div className="space-y-1.5">
                 <Label>
@@ -1565,6 +1701,8 @@ export default function Deals() {
                 />
               </div>
             )}
+
+            {/* Conditional: Lost Reason */}
             {form.stage === "Order Lost" && (() => {
               const isOther = form.lostReason === "Other Factors" || form.lostReason.startsWith("Other Factors: ");
               const dropdownVal = form.lostReason === "" ? "__none__" : isOther ? "Other Factors" : form.lostReason;
@@ -1572,7 +1710,7 @@ export default function Deals() {
                 ? form.lostReason.slice("Other Factors: ".length)
                 : "";
               return (
-                <div className="space-y-2">
+                <div className="sm:col-span-2 space-y-2">
                   <Label>{t("orders.lostReason")} *</Label>
                   <Select
                     value={dropdownVal}
@@ -1582,9 +1720,7 @@ export default function Deals() {
                       else set("lostReason", v);
                     }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a reason…" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select a reason…" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">— No reason selected —</SelectItem>
                       {LOST_REASONS.map((r) => (
@@ -1604,137 +1740,7 @@ export default function Deals() {
                 </div>
               );
             })()}
-            <div className="space-y-1.5">
-              <Label>
-                {t("orders.orderType")}
-                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
-              </Label>
-              <Select
-                value={form.dealType}
-                onValueChange={(v) => set("dealType", v as "New Deal" | "Recurring" | "Dealer")}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New Deal">{t("orders.newDeal")}</SelectItem>
-                  <SelectItem value="Recurring">{t("orders.recurring")}</SelectItem>
-                  <SelectItem value="Dealer">{t("orders.dealer")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                {t("orders.region")}
-                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
-              </Label>
-              <Select value={form.region || "__none__"} onValueChange={(v) => set("region", v === "__none__" ? "" : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a country…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— None —</SelectItem>
-                  <SelectItem value="Dubai">Dubai (AED)</SelectItem>
-                  <SelectItem value="Abu Dhabi">Abu Dhabi (AED)</SelectItem>
-                  <SelectItem value="Sharjah">Sharjah (AED)</SelectItem>
-                  <SelectItem value="Ajman">Ajman (AED)</SelectItem>
-                  <SelectItem value="Umm Al Quwain">Umm Al Quwain (AED)</SelectItem>
-                  <SelectItem value="Ras Al Khaimah">Ras Al Khaimah (AED)</SelectItem>
-                  <SelectItem value="Fujairah">Fujairah (AED)</SelectItem>
-                  <SelectItem value="Qatar">Qatar (QAR)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("orders.salesChances")}</Label>
-              <Select value={form.salesStatus} onValueChange={(v) => set("salesStatus", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select chances" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25%">25%</SelectItem>
-                  <SelectItem value="90%">90%</SelectItem>
-                  <SelectItem value="100%">100%</SelectItem>
-                  <SelectItem value="0%">0%</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Unit Price</Label>
-              <Input
-                type="number"
-                min={0}
-                value={form.agreedAmount}
-                onChange={(e) => set("agreedAmount", Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Transportation Fee</Label>
-              <Input
-                type="number"
-                min={0}
-                value={form.transportationFee || ""}
-                placeholder="0"
-                onChange={(e) => set("transportationFee", Number(e.target.value) || 0)}
-              />
-              {extraItems.map((item, idx) => (
-                <input
-                  key={idx}
-                  type="number"
-                  min={0}
-                  value={item.amount || ""}
-                  onChange={(e) => setExtraItems((prev) =>
-                    prev.map((it, i) => i === idx ? { ...it, amount: Number(e.target.value) } : it)
-                  )}
-                  placeholder={`Price for item ${idx + 2}`}
-                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              ))}
-              {extraItems.length > 0 && (
-                <p className="text-xs text-muted-foreground text-right">
-                  Total: {((Number(form.agreedAmount) || 0) + extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0)).toLocaleString()}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("orders.receivedAmount")}</Label>
-              <Input
-                type="number"
-                min={0}
-                value={form.receivedAmount}
-                onChange={(e) => set("receivedAmount", Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("orders.outstandingAmount")}</Label>
-              <Input
-                type="number"
-                min={0}
-                value={form.outstandingAmount}
-                onChange={(e) => set("outstandingAmount", Number(e.target.value))}
-              />
-            </div>
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label>{t("common.notes")}</Label>
-              <Textarea
-                rows={3}
-                value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="Any additional notes..."
-              />
-            </div>
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label>
-                {t("orders.creditTerm")}
-                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                type="text"
-                value={form.creditTerm}
-                onChange={(e) => set("creditTerm", e.target.value)}
-                placeholder="e.g. Net 30, 100% Advance, 50% upfront..."
-              />
-            </div>
+
           </div>
 
           <DialogFooter>
