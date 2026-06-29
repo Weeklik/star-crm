@@ -158,6 +158,7 @@ interface DealFormState {
   notes: string;
   lostReason: string;
   creditTerm: string;
+  transportationFee: number;
 }
 
 interface ImportRow extends DealFormState {
@@ -188,6 +189,7 @@ const emptyForm = (): DealFormState => ({
   notes: "",
   lostReason: "",
   creditTerm: "",
+  transportationFee: 0,
 });
 
 function toPayload(f: DealFormState) {
@@ -777,6 +779,7 @@ export default function Deals() {
       notes: deal.notes ?? "",
       lostReason: deal.lostReason ?? "",
       creditTerm: (deal as any).creditTerm ?? "",
+      transportationFee: 0,
     });
     setExtraItems([]);
     setFormOpen(true);
@@ -793,12 +796,13 @@ export default function Deals() {
       // Merge extra items into the main form fields before saving
       const allProducts = [form.productItem, ...extraItems.map((i) => i.product)].filter(Boolean);
       const extraTotal  = extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-      // Unit Price = Agreed Amount (per unit) × Quantity — store the total in DB
+      // Unit Price × Quantity + Transportation Fee = Total stored in DB
       const unitTotal   = (Number(form.agreedAmount) || 0) * (Number(form.quantity) || 1);
+      const transport   = Number(form.transportationFee) || 0;
       const mergedForm: DealFormState = {
         ...form,
         productItem:  allProducts.join("\n"),
-        agreedAmount: unitTotal + extraTotal,
+        agreedAmount: unitTotal + extraTotal + transport,
       };
       const payload = toPayload(mergedForm);
       if (editingId !== null) {
@@ -1487,10 +1491,15 @@ export default function Deals() {
             <div className="space-y-1.5">
               <Label>Total <span className="text-muted-foreground font-normal">(auto)</span></Label>
               <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
-                {((Number(form.agreedAmount) || 0) * (form.quantity || 1)).toLocaleString()}
+                {((Number(form.agreedAmount) || 0) * (form.quantity || 1) + (Number(form.transportationFee) || 0)).toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground">
-                {(Number(form.agreedAmount) || 0).toLocaleString()} × {form.quantity} = <span className="font-semibold text-foreground">{((Number(form.agreedAmount) || 0) * (form.quantity || 1)).toLocaleString()}</span>
+                {(Number(form.agreedAmount) || 0).toLocaleString()} × {form.quantity}
+                {(Number(form.transportationFee) || 0) > 0 && <> + {(Number(form.transportationFee) || 0).toLocaleString()} transport</>}
+                {" = "}
+                <span className="font-semibold text-foreground">
+                  {((Number(form.agreedAmount) || 0) * (form.quantity || 1) + (Number(form.transportationFee) || 0)).toLocaleString()}
+                </span>
               </p>
             </div>
             <div className="space-y-1.5">
@@ -1640,6 +1649,16 @@ export default function Deals() {
                 min={0}
                 value={form.agreedAmount}
                 onChange={(e) => set("agreedAmount", Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Transportation Fee</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.transportationFee || ""}
+                placeholder="0"
+                onChange={(e) => set("transportationFee", Number(e.target.value) || 0)}
               />
               {extraItems.map((item, idx) => (
                 <input
