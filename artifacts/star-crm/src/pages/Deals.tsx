@@ -180,7 +180,7 @@ const emptyForm = (): DealFormState => ({
   dealType: "New Deal",
   region: "",
   salesStatus: "25%",
-  vatApplicable: false,
+  vatApplicable: true,
   agreedAmount: 0,
   receivedAmount: 0,
   outstandingAmount: 0,
@@ -796,11 +796,13 @@ export default function Deals() {
       // Merge extra items into the main form fields before saving
       const allProducts = [form.productItem, ...extraItems.map((i) => i.product)].filter(Boolean);
       const extraTotal  = extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-      // Grand Total = (Unit Price × Quantity + Transportation Fee) × 1.05 (VAT 5%)
+      // Grand Total = (Unit Price × Quantity + extra items + Transportation Fee) [× 1.05 if VAT]
       const unitTotal   = (Number(form.agreedAmount) || 0) * (Number(form.quantity) || 1);
       const transport   = Number(form.transportationFee) || 0;
       const subtotal    = unitTotal + extraTotal + transport;
-      const grandTotal  = Math.round(subtotal * 1.05 * 100) / 100;
+      const grandTotal  = form.vatApplicable
+        ? Math.round(subtotal * 1.05 * 100) / 100
+        : Math.round(subtotal * 100) / 100;
       const mergedForm: DealFormState = {
         ...form,
         productItem:  allProducts.join("\n"),
@@ -1577,10 +1579,11 @@ export default function Deals() {
 
             {/* Row: Total (flat) | VAT (flat) | then Grand Total | Received Amount */}
             {(() => {
-              const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1);
+              const extraTotal = extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+              const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1) + extraTotal;
               const transport = Number(form.transportationFee) || 0;
               const total = subtotal + transport;
-              const vat = Math.round(total * 0.05 * 100) / 100;
+              const vat = form.vatApplicable ? Math.round(total * 0.05 * 100) / 100 : 0;
               const grandTotal = total + vat;
               return (
                 <>
@@ -1591,12 +1594,22 @@ export default function Deals() {
                     </span>
                     <span className="text-sm font-semibold tabular-nums">{total.toLocaleString()}</span>
                   </div>
-                  {/* VAT — flat label + value, no box */}
+                  {/* VAT — checkbox toggle + conditional value */}
                   <div className="flex items-center justify-between h-9 border-b border-border/40">
-                    <span className="text-sm font-medium">
-                      VAT <span className="text-muted-foreground font-normal text-xs">(5%)</span>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={form.vatApplicable}
+                        onChange={(e) => set("vatApplicable", e.target.checked)}
+                        className="w-4 h-4 rounded border-border accent-primary cursor-pointer"
+                      />
+                      <span className="text-sm font-medium">
+                        VAT <span className="text-muted-foreground font-normal text-xs">(5%)</span>
+                      </span>
+                    </label>
+                    <span className={`text-sm font-semibold tabular-nums ${!form.vatApplicable ? "text-muted-foreground line-through" : ""}`}>
+                      + {vat.toLocaleString()}
                     </span>
-                    <span className="text-sm font-semibold tabular-nums">+ {vat.toLocaleString()}</span>
                   </div>
                   {/* Grand Total — label+value inline, then display box */}
                   <div className="space-y-1.5">
