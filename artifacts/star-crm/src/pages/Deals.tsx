@@ -571,7 +571,7 @@ export default function Deals() {
   const [form, setForm] = useState<DealFormState>(emptyForm());
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const [extraItems, setExtraItems] = useState<Array<{ product: string; amount: number }>>([]);
+  const [extraItems, setExtraItems] = useState<Array<{ brand: string; product: string; quantity: number; model: string; amount: number }>>([]);
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1437,6 +1437,18 @@ export default function Deals() {
                 onChange={(e) => set("brand", e.target.value)}
                 placeholder="e.g. Juki"
               />
+              {extraItems.map((item, idx) => (
+                <input
+                  key={idx}
+                  type="text"
+                  value={item.brand}
+                  onChange={(e) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, brand: e.target.value } : it)
+                  )}
+                  placeholder={`Brand ${idx + 2}`}
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              ))}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.productItem")} *</Label>
@@ -1445,7 +1457,7 @@ export default function Deals() {
                 <button
                   type="button"
                   title="Add another item"
-                  onClick={() => setExtraItems((prev) => [...prev, { product: "", amount: 0 }])}
+                  onClick={() => setExtraItems((prev) => [...prev, { brand: "", product: "", quantity: 1, model: "", amount: 0 }])}
                   className="shrink-0 w-7 h-7 rounded-md border border-border bg-background flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -1459,19 +1471,20 @@ export default function Deals() {
                   />
                 </div>
               </div>
-              {/* Extra item rows */}
+              {/* Extra item rows — with autocomplete like main row */}
               {extraItems.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <div className="w-7 shrink-0" />
-                  <input
-                    type="text"
-                    value={item.product}
-                    onChange={(e) => setExtraItems((prev) =>
-                      prev.map((it, i) => i === idx ? { ...it, product: e.target.value } : it)
-                    )}
-                    placeholder={`Item ${idx + 2}`}
-                    className="flex-1 h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                  <div className="flex-1">
+                    <AutocompleteInput
+                      value={item.product}
+                      onChange={(v) => setExtraItems((prev) =>
+                        prev.map((it, i) => i === idx ? { ...it, product: v } : it)
+                      )}
+                      lookupType="product"
+                      placeholder={`Item ${idx + 2}`}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => setExtraItems((prev) => prev.filter((_, i) => i !== idx))}
@@ -1492,6 +1505,19 @@ export default function Deals() {
                 value={form.quantity}
                 onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))}
               />
+              {extraItems.map((item, idx) => (
+                <input
+                  key={idx}
+                  type="number"
+                  min={1}
+                  value={item.quantity}
+                  onChange={(e) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, quantity: Math.max(1, parseInt(e.target.value) || 1) } : it)
+                  )}
+                  placeholder={`Qty ${idx + 2}`}
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              ))}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.model")}</Label>
@@ -1500,6 +1526,18 @@ export default function Deals() {
                 onChange={(e) => set("model", e.target.value)}
                 placeholder="e.g. DDL-9000C"
               />
+              {extraItems.map((item, idx) => (
+                <input
+                  key={idx}
+                  type="text"
+                  value={item.model}
+                  onChange={(e) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, model: e.target.value } : it)
+                  )}
+                  placeholder={`Model ${idx + 2}`}
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              ))}
             </div>
 
             {/* Row: Unit Price | Transportation Fee */}
