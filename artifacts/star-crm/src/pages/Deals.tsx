@@ -1569,11 +1569,31 @@ export default function Deals() {
                 <Input value={form.model} onChange={(e) => set("model", e.target.value)} placeholder="e.g. DDL-9000C" />
               )}
               {extraItems.map((item, idx) => (
-                <input key={idx} type="text" value={item.model}
-                  onChange={(e) => setExtraItems((prev) => prev.map((it, i) => i === idx ? { ...it, model: e.target.value } : it))}
-                  placeholder={`Model ${idx + 2}`}
-                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+                catalogByBrand.length > 0 ? (
+                  <Select
+                    key={idx}
+                    value={item.model}
+                    onValueChange={(v) => setExtraItems((prev) =>
+                      prev.map((it, i) => i === idx ? { ...it, model: v } : it)
+                    )}
+                  >
+                    <SelectTrigger><SelectValue placeholder={`Model ${idx + 2}`} /></SelectTrigger>
+                    <SelectContent>
+                      {catalogByBrand.map((p, i) => (
+                        <SelectItem key={i} value={p.model || `model-${i}`}>{p.model || "(no model)"}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    key={idx}
+                    value={item.model}
+                    onChange={(e) => setExtraItems((prev) =>
+                      prev.map((it, i) => i === idx ? { ...it, model: e.target.value } : it)
+                    )}
+                    placeholder={`Model ${idx + 2}`}
+                  />
+                )
               ))}
               {form.model && (() => {
                 const desc = catalogByBrand.find((p) => p.model === form.model)?.description;
