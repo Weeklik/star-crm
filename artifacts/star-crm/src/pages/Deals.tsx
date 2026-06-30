@@ -142,6 +142,7 @@ interface DealFormState {
   name: string;
   companyName: string;
   productItem: string;
+  origin: string;
   brand: string;
   model: string;
   quantity: number;
@@ -173,6 +174,7 @@ const emptyForm = (): DealFormState => ({
   name: "",
   companyName: "",
   productItem: "",
+  origin: "",
   brand: "",
   model: "",
   quantity: 1,
@@ -198,6 +200,7 @@ function toPayload(f: DealFormState) {
     name: f.name,
     companyName: f.companyName,
     productItem: f.productItem,
+    origin: f.origin || undefined,
     brand: f.brand || undefined,
     model: f.model || undefined,
     quantity: Number(f.quantity) || 1,
@@ -759,6 +762,7 @@ export default function Deals() {
       name: deal.name,
       companyName: deal.companyName,
       productItem: deal.productItem,
+      origin: (deal as any).origin ?? "",
       brand: (deal as any).brand ?? "",
       model: (deal as any).model ?? "",
       quantity: (deal as any).quantity ?? 1,
@@ -1431,7 +1435,16 @@ export default function Deals() {
               />
             </div>
 
-            {/* Row: Brand | Product / Item */}
+            {/* Row: Origin | Brand */}
+            <div className="space-y-1.5">
+              <Label>Origin</Label>
+              <Input
+                type="text"
+                value={form.origin}
+                onChange={(e) => set("origin", e.target.value)}
+                placeholder="e.g. Japan"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>{t("orders.brand")}</Label>
               <AutocompleteInput
