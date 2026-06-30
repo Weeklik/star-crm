@@ -572,6 +572,8 @@ export default function Deals() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [extraItems, setExtraItems] = useState<Array<{ brand: string; product: string; quantity: number; model: string; amount: number }>>([]);
+  const [catalogByBrand, setCatalogByBrand] = useState<Array<{ model: string; description: string; origin: string; unitPrice: string }>>([]);
+  const [originDisplay, setOriginDisplay] = useState("");
 
   // Import state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -788,6 +790,31 @@ export default function Deals() {
   function set<K extends keyof DealFormState>(key: K, value: DealFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
+
+  async function fetchCatalogForBrand(brand: string) {
+    if (!brand.trim()) {
+      setCatalogByBrand([]);
+      setOriginDisplay("");
+      return;
+    }
+    try {
+      const r = await fetch(`/api/products-catalog/lookup?brand=${encodeURIComponent(brand)}`, { credentials: "include" });
+      if (r.ok) {
+        const data: Array<{ model: string; description: string; origin: string; unitPrice: string }> = await r.json();
+        setCatalogByBrand(data);
+        setOriginDisplay(data[0]?.origin ?? "");
+      }
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => {
+    if (formOpen && form.brand) {
+      void fetchCatalogForBrand(form.brand);
+    } else if (!formOpen) {
+      setCatalogByBrand([]);
+      setOriginDisplay("");
+    }
+  }, [formOpen, form.brand]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSave() {
     if (!form.name || !form.companyName || !form.productItem) return;
@@ -1431,15 +1458,27 @@ export default function Deals() {
               />
             </div>
 
-            {/* Row: Origin label | Brand */}
+            {/* Row: Origin (auto-filled) | Brand */}
             <div className="space-y-1.5">
               <Label>Origin</Label>
+              {originDisplay ? (
+                <p className="h-9 flex items-center px-3 text-sm rounded-md border border-border bg-muted/40 text-foreground">
+                  {originDisplay}
+                </p>
+              ) : (
+                <p className="h-9 flex items-center px-3 text-sm rounded-md border border-dashed border-border text-muted-foreground">
+                  Auto-filled from brand
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.brand")}</Label>
               <AutocompleteInput
                 value={form.brand}
-                onChange={(v) => set("brand", v)}
+                onChange={(v) => {
+                  set("brand", v);
+                  set("model", "");
+                }}
                 lookupType="brand"
                 placeholder="e.g. Juki"
               />
@@ -1526,11 +1565,26 @@ export default function Deals() {
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.model")}</Label>
-              <Input
-                value={form.model}
-                onChange={(e) => set("model", e.target.value)}
-                placeholder="e.g. DDL-9000C"
-              />
+              {catalogByBrand.length > 0 ? (
+                <Select value={form.model} onValueChange={(v) => set("model", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {catalogByBrand.map((p, i) => (
+                      <SelectItem key={i} value={p.model || `model-${i}`}>
+                        {p.model || "(no model)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={form.model}
+                  onChange={(e) => set("model", e.target.value)}
+                  placeholder="e.g. DDL-9000C"
+                />
+              )}
               {extraItems.map((item, idx) => (
                 <input
                   key={idx}
@@ -1543,6 +1597,15 @@ export default function Deals() {
                   className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               ))}
+              {/* Description auto-filled from selected model */}
+              {form.model && (() => {
+                const desc = catalogByBrand.find((p) => p.model === form.model)?.description;
+                return desc ? (
+                  <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2 leading-relaxed col-span-2">
+                    {desc}
+                  </p>
+                ) : null;
+              })()}
             </div>
 
             {/* Row: Unit Price | Transportation Fee */}

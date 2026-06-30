@@ -14,6 +14,16 @@ const ProductBody = z.object({
   unitPrice:   z.string().max(100).optional().default(""),
 });
 
+router.get("/products-catalog/lookup", requireAuth, async (req, res): Promise<void> => {
+  const brand = (req.query.brand as string | undefined)?.trim();
+  if (!brand) { res.json([]); return; }
+  const rows = await db
+    .select()
+    .from(productsCatalogTable)
+    .where(eq(productsCatalogTable.brand, brand));
+  res.json(rows);
+});
+
 router.get("/products-catalog", requireAuth, requireOwner, async (_req, res): Promise<void> => {
   const rows = await db
     .select()
