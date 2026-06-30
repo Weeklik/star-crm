@@ -24,7 +24,6 @@ export const dealsTable = pgTable("deals", {
   notes: text("notes"),
   lostReason: text("lost_reason"),
   creditTerm: text("credit_term"),
-  origin: text("origin"),
   brand: text("brand"),
   model: text("model"),
   quantity: integer("quantity").notNull().default(1),
