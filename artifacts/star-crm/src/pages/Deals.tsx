@@ -1479,7 +1479,7 @@ export default function Deals() {
                   set("brand", v);
                   set("model", "");
                 }}
-                lookupType="brand"
+                lookupType="catalog-brand"
                 placeholder="e.g. Juki"
               />
               {extraItems.map((item, idx) => (

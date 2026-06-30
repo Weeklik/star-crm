@@ -14,6 +14,18 @@ const ProductBody = z.object({
   unitPrice:   z.string().max(100).optional().default(""),
 });
 
+router.get("/products-catalog/brands", requireAuth, async (req, res): Promise<void> => {
+  const q = ((req.query.q as string | undefined) ?? "").trim().toLowerCase();
+  const rows = await db
+    .selectDistinct({ brand: productsCatalogTable.brand })
+    .from(productsCatalogTable)
+    .orderBy(productsCatalogTable.brand);
+  const brands = rows
+    .map((r) => r.brand ?? "")
+    .filter((b) => b && (!q || b.toLowerCase().includes(q)));
+  res.json(brands);
+});
+
 router.get("/products-catalog/lookup", requireAuth, async (req, res): Promise<void> => {
   const brand = (req.query.brand as string | undefined)?.trim();
   if (!brand) { res.json([]); return; }

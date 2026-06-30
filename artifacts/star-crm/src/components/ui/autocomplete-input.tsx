@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface AutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
-  lookupType: "customer" | "company" | "product" | "brand";
+  lookupType: "customer" | "company" | "product" | "brand" | "catalog-brand";
   placeholder?: string;
   className?: string;
 }
@@ -29,10 +29,10 @@ export function AutocompleteInput({
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         try {
-          const res = await fetch(
-            `/api/lookup?type=${lookupType}&q=${encodeURIComponent(q)}`,
-            { credentials: "include" }
-          );
+          const url = lookupType === "catalog-brand"
+            ? `/api/products-catalog/brands?q=${encodeURIComponent(q)}`
+            : `/api/lookup?type=${lookupType}&q=${encodeURIComponent(q)}`;
+          const res = await fetch(url, { credentials: "include" });
           if (res.ok) {
             const data: string[] = await res.json();
             setSuggestions(data);
