@@ -230,6 +230,25 @@ function missingFields(row: ImportRow): Set<keyof DealFormState> {
 
 const DEAL_TYPES = ["New Deal", "Recurring", "Dealer"] as const;
 
+const PRODUCT_ITEMS = [
+  "Industrial Sewing Machines",
+  "Computerized Embroidery Machines",
+  "Home Sewing Machines",
+  "Garment Cutting Equipment",
+  "Fabric Spreading Equipment",
+  "Garment Finishing & Pressing Equipment",
+  "Steam & Boiler Systems",
+  "CAD/CAM Apparel Solutions",
+  "Textile & Knitting Machinery",
+  "Sewing Machine Spare Parts",
+  "Sewing Accessories & Attachments",
+  "Sewing Needles",
+  "Sewing & Embroidery Threads",
+  "Interlining & Garment Consumables",
+  "Laser Cutting Machines",
+  "After-sales Service & Maintenance",
+] as const;
+
 const CATEGORY_LABELS: Record<string, string> = {
   "New Deal":  "New Customer",
   "Recurring": "Existing Customer",
@@ -1496,7 +1515,7 @@ export default function Deals() {
             </div>
             <div className="space-y-1.5">
               <Label>{t("orders.productItem")} *</Label>
-              {/* Main item row: [+] on the left, input on the right */}
+              {/* Main item row: [+] on the left, dropdown on the right */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -1507,27 +1526,38 @@ export default function Deals() {
                   <Plus className="w-4 h-4" />
                 </button>
                 <div className="flex-1">
-                  <AutocompleteInput
-                    value={form.productItem}
-                    onChange={(v) => set("productItem", v)}
-                    lookupType="product"
-                    placeholder="e.g. SaaS Pro Plan"
-                  />
+                  <Select value={form.productItem} onValueChange={(v) => set("productItem", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select product / item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRODUCT_ITEMS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              {/* Extra item rows — with autocomplete like main row */}
+              {/* Extra item rows */}
               {extraItems.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <div className="w-7 shrink-0" />
                   <div className="flex-1">
-                    <AutocompleteInput
+                    <Select
                       value={item.product}
-                      onChange={(v) => setExtraItems((prev) =>
+                      onValueChange={(v) => setExtraItems((prev) =>
                         prev.map((it, i) => i === idx ? { ...it, product: v } : it)
                       )}
-                      lookupType="product"
-                      placeholder={`Item ${idx + 2}`}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Item ${idx + 2}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRODUCT_ITEMS.map((p) => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <button
                     type="button"
