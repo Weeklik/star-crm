@@ -67,6 +67,23 @@ export const ListDealsResponseItem = zod.object({
   brand: zod.string().nullish(),
   model: zod.string().nullish(),
   quantity: zod.number().min(1).optional(),
+  items: zod
+    .array(
+      zod.object({
+        brand: zod.string().optional(),
+        model: zod.string().optional(),
+        description: zod.string().optional(),
+        qty: zod.number().min(1),
+        unitPrice: zod.number(),
+        discountPct: zod.number(),
+        vatPct: zod.number(),
+      }),
+    )
+    .nullish(),
+  transportationFee: zod.number().optional(),
+  paymentTerms: zod.string().nullish(),
+  warranty: zod.string().nullish(),
+  deliveryTerms: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -111,6 +128,23 @@ export const CreateDealBody = zod.object({
   brand: zod.string().nullish(),
   model: zod.string().nullish(),
   quantity: zod.number().min(1).optional(),
+  items: zod
+    .array(
+      zod.object({
+        brand: zod.string().optional(),
+        model: zod.string().optional(),
+        description: zod.string().optional(),
+        qty: zod.number().min(1),
+        unitPrice: zod.number(),
+        discountPct: zod.number(),
+        vatPct: zod.number(),
+      }),
+    )
+    .nullish(),
+  transportationFee: zod.number().optional(),
+  paymentTerms: zod.string().nullish(),
+  warranty: zod.string().nullish(),
+  deliveryTerms: zod.string().nullish(),
 });
 
 /**
@@ -158,6 +192,23 @@ export const GetDealResponse = zod.object({
   brand: zod.string().nullish(),
   model: zod.string().nullish(),
   quantity: zod.number().min(1).optional(),
+  items: zod
+    .array(
+      zod.object({
+        brand: zod.string().optional(),
+        model: zod.string().optional(),
+        description: zod.string().optional(),
+        qty: zod.number().min(1),
+        unitPrice: zod.number(),
+        discountPct: zod.number(),
+        vatPct: zod.number(),
+      }),
+    )
+    .nullish(),
+  transportationFee: zod.number().optional(),
+  paymentTerms: zod.string().nullish(),
+  warranty: zod.string().nullish(),
+  deliveryTerms: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -207,6 +258,23 @@ export const UpdateDealBody = zod.object({
   brand: zod.string().nullish(),
   model: zod.string().nullish(),
   quantity: zod.number().min(1).optional(),
+  items: zod
+    .array(
+      zod.object({
+        brand: zod.string().optional(),
+        model: zod.string().optional(),
+        description: zod.string().optional(),
+        qty: zod.number().min(1),
+        unitPrice: zod.number(),
+        discountPct: zod.number(),
+        vatPct: zod.number(),
+      }),
+    )
+    .nullish(),
+  transportationFee: zod.number().optional(),
+  paymentTerms: zod.string().nullish(),
+  warranty: zod.string().nullish(),
+  deliveryTerms: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
@@ -247,6 +315,23 @@ export const UpdateDealResponse = zod.object({
   brand: zod.string().nullish(),
   model: zod.string().nullish(),
   quantity: zod.number().min(1).optional(),
+  items: zod
+    .array(
+      zod.object({
+        brand: zod.string().optional(),
+        model: zod.string().optional(),
+        description: zod.string().optional(),
+        qty: zod.number().min(1),
+        unitPrice: zod.number(),
+        discountPct: zod.number(),
+        vatPct: zod.number(),
+      }),
+    )
+    .nullish(),
+  transportationFee: zod.number().optional(),
+  paymentTerms: zod.string().nullish(),
+  warranty: zod.string().nullish(),
+  deliveryTerms: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

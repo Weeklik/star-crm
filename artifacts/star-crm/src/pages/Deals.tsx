@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Deal } from "@workspace/api-client-react";
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, X, Search, MoreHorizontal, Pencil, Trash2, Loader2,
@@ -562,6 +563,7 @@ function exportDealsToExcel(deals: Deal[] | undefined) {
 }
 
 export default function Deals() {
+  const [, navigate] = useLocation();
   const { data: me } = useGetMe();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -767,43 +769,11 @@ export default function Deals() {
   ];
 
   function openAdd() {
-    setEditingId(null);
-    setForm(emptyForm());
-    setExtraItems([]);
-    setFormOpen(true);
+    navigate("/orders/new");
   }
 
   function openEdit(deal: NonNullable<typeof deals>[number]) {
-    setEditingId(deal.id);
-    setForm({
-      dealStartDate: String(deal.dealStartDate).split("T")[0],
-      name: deal.name,
-      companyName: deal.companyName,
-      productItem: deal.productItem,
-      brand: (deal as any).brand ?? "",
-      model: (deal as any).model ?? "",
-      quantity: (deal as any).quantity ?? 1,
-      stage: deal.stage as Stage,
-      dealType: (deal.dealType as "New Deal" | "Recurring" | "Dealer") ?? "New Deal",
-      region: deal.region ?? "",
-      salesStatus: deal.salesStatus,
-      vatApplicable: deal.vatApplicable,
-      agreedAmount: deal.agreedAmount,
-      receivedAmount: deal.receivedAmount,
-      outstandingAmount: deal.outstandingAmount,
-      earliestClosingDate: deal.earliestClosingDate
-          ? String(deal.earliestClosingDate).split("T")[0]
-          : "",
-      latestClosingDate: deal.latestClosingDate
-          ? String(deal.latestClosingDate).split("T")[0]
-          : "",
-      notes: deal.notes ?? "",
-      lostReason: deal.lostReason ?? "",
-      creditTerm: (deal as any).creditTerm ?? "",
-      transportationFee: 0,
-    });
-    setExtraItems([]);
-    setFormOpen(true);
+    navigate(`/orders/${deal.id}/edit`);
   }
 
   function set<K extends keyof DealFormState>(key: K, value: DealFormState[K]) {

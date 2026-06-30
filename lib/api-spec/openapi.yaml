@@ -422,6 +422,18 @@ components:
         quantity:
           type: integer
           minimum: 1
+        items:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/OrderLineItem"
+        transportationFee:
+          type: number
+        paymentTerms:
+          type: ["string", "null"]
+        warranty:
+          type: ["string", "null"]
+        deliveryTerms:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -446,6 +458,30 @@ components:
         - currency
         - createdAt
         - updatedAt
+
+    OrderLineItem:
+      type: object
+      properties:
+        brand:
+          type: string
+        model:
+          type: string
+        description:
+          type: string
+        qty:
+          type: integer
+          minimum: 1
+        unitPrice:
+          type: number
+        discountPct:
+          type: number
+        vatPct:
+          type: number
+      required:
+        - qty
+        - unitPrice
+        - discountPct
+        - vatPct
 
     CreateDealBody:
       type: object
@@ -501,6 +537,18 @@ components:
         quantity:
           type: integer
           minimum: 1
+        items:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/OrderLineItem"
+        transportationFee:
+          type: number
+        paymentTerms:
+          type: ["string", "null"]
+        warranty:
+          type: ["string", "null"]
+        deliveryTerms:
+          type: ["string", "null"]
       required:
         - dealStartDate
         - name
@@ -567,6 +615,18 @@ components:
         quantity:
           type: integer
           minimum: 1
+        items:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/OrderLineItem"
+        transportationFee:
+          type: number
+        paymentTerms:
+          type: ["string", "null"]
+        warranty:
+          type: ["string", "null"]
+        deliveryTerms:
+          type: ["string", "null"]
 
     User:
       type: object

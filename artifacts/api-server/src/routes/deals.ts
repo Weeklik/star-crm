@@ -35,8 +35,13 @@ function formatDeal(deal: any) {
     agreedAmount: parseFloat(deal.agreedAmount ?? "0"),
     receivedAmount: parseFloat(deal.receivedAmount ?? "0"),
     outstandingAmount: parseFloat(deal.outstandingAmount ?? "0"),
+    transportationFee: parseFloat(deal.transportationFee ?? "0"),
     progress: deal.progress ?? 0,
     vatApplicable: deal.vatApplicable ?? false,
+    paymentTerms: deal.paymentTerms ?? null,
+    warranty: deal.warranty ?? null,
+    deliveryTerms: deal.deliveryTerms ?? null,
+    items: deal.items ?? null,
     dealStartDate:
       deal.dealStartDate instanceof Date
         ? deal.dealStartDate.toISOString().split("T")[0]
@@ -136,6 +141,11 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       brand: (data as any).brand ?? null,
       model: (data as any).model ?? null,
       quantity: (data as any).quantity ?? 1,
+      items: (data as any).items ?? null,
+      transportationFee: String((data as any).transportationFee ?? 0),
+      paymentTerms: (data as any).paymentTerms ?? null,
+      warranty: (data as any).warranty ?? null,
+      deliveryTerms: (data as any).deliveryTerms ?? null,
     })
     .returning();
 
@@ -231,6 +241,11 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if ((d as any).brand !== undefined) updateData.brand = (d as any).brand;
   if ((d as any).model !== undefined) updateData.model = (d as any).model;
   if ((d as any).quantity !== undefined) updateData.quantity = (d as any).quantity;
+  if ((d as any).items !== undefined) updateData.items = (d as any).items;
+  if ((d as any).transportationFee !== undefined) updateData.transportationFee = String((d as any).transportationFee);
+  if ((d as any).paymentTerms !== undefined) updateData.paymentTerms = (d as any).paymentTerms;
+  if ((d as any).warranty !== undefined) updateData.warranty = (d as any).warranty;
+  if ((d as any).deliveryTerms !== undefined) updateData.deliveryTerms = (d as any).deliveryTerms;
 
   const [updated] = await db
     .update(dealsTable)

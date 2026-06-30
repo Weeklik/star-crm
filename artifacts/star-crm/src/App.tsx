@@ -13,6 +13,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Deals from "./pages/Deals";
 import Profile from "./pages/Profile";
+import AddOrder from "./pages/AddOrder";
 
 import SummarySalesReport from "./pages/SummarySalesReport";
 import SalesBreakdown from "./pages/SalesBreakdown";
@@ -73,6 +74,12 @@ function AppRoutes() {
         </Route>
         <Route path="/deals">
           <ProtectedRoute component={Deals} />
+        </Route>
+        <Route path="/orders/new">
+          <ProtectedRoute component={AddOrder} />
+        </Route>
+        <Route path="/orders/:id/edit">
+          <ProtectedRoute component={AddOrder} />
         </Route>
         <Route path="/reports/summary-sales">
           <ProtectedRoute component={SummarySalesReport} />

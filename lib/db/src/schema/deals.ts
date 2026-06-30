@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, numeric, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, numeric, date, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -27,6 +27,12 @@ export const dealsTable = pgTable("deals", {
   brand: text("brand"),
   model: text("model"),
   quantity: integer("quantity").notNull().default(1),
+  // New fields for the full-page order form
+  items: jsonb("items"),
+  transportationFee: numeric("transportation_fee", { precision: 15, scale: 2 }).notNull().default("0"),
+  paymentTerms: text("payment_terms"),
+  warranty: text("warranty"),
+  deliveryTerms: text("delivery_terms"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -19,6 +19,17 @@ export const DealStage = {
   Sales_Return: "Sales Return",
 } as const;
 
+export interface OrderLineItem {
+  brand?: string;
+  model?: string;
+  description?: string;
+  /** @minimum 1 */
+  qty: number;
+  unitPrice: number;
+  discountPct: number;
+  vatPct: number;
+}
+
 export interface Deal {
   id: number;
   salespersonId: number;
@@ -59,6 +70,15 @@ export interface Deal {
   model?: string | null;
   /** @minimum 1 */
   quantity?: number;
+  /** @nullable */
+  items?: OrderLineItem[] | null;
+  transportationFee?: number;
+  /** @nullable */
+  paymentTerms?: string | null;
+  /** @nullable */
+  warranty?: string | null;
+  /** @nullable */
+  deliveryTerms?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -110,6 +130,15 @@ export interface CreateDealBody {
   model?: string | null;
   /** @minimum 1 */
   quantity?: number;
+  /** @nullable */
+  items?: OrderLineItem[] | null;
+  transportationFee?: number;
+  /** @nullable */
+  paymentTerms?: string | null;
+  /** @nullable */
+  warranty?: string | null;
+  /** @nullable */
+  deliveryTerms?: string | null;
 }
 
 export type UpdateDealBodyStage =
@@ -159,6 +188,15 @@ export interface UpdateDealBody {
   model?: string | null;
   /** @minimum 1 */
   quantity?: number;
+  /** @nullable */
+  items?: OrderLineItem[] | null;
+  transportationFee?: number;
+  /** @nullable */
+  paymentTerms?: string | null;
+  /** @nullable */
+  warranty?: string | null;
+  /** @nullable */
+  deliveryTerms?: string | null;
 }
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
