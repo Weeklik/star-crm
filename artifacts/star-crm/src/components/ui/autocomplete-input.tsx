@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface AutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
-  lookupType: "customer" | "company" | "product";
+  lookupType: "customer" | "company" | "product" | "brand";
   placeholder?: string;
   className?: string;
 }

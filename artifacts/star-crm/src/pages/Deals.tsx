@@ -1434,21 +1434,21 @@ export default function Deals() {
             {/* Row: Brand | Product / Item */}
             <div className="space-y-1.5">
               <Label>{t("orders.brand")}</Label>
-              <Input
+              <AutocompleteInput
                 value={form.brand}
-                onChange={(e) => set("brand", e.target.value)}
+                onChange={(v) => set("brand", v)}
+                lookupType="brand"
                 placeholder="e.g. Juki"
               />
               {extraItems.map((item, idx) => (
-                <input
+                <AutocompleteInput
                   key={idx}
-                  type="text"
                   value={item.brand}
-                  onChange={(e) => setExtraItems((prev) =>
-                    prev.map((it, i) => i === idx ? { ...it, brand: e.target.value } : it)
+                  onChange={(v) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, brand: v } : it)
                   )}
+                  lookupType="brand"
                   placeholder={`Brand ${idx + 2}`}
-                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               ))}
             </div>

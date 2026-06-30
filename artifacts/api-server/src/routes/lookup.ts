@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq, ilike, isNotNull } from "drizzle-orm";
-import { db, customersTable, companiesTable, productsTable, usersTable } from "@workspace/db";
+import { db, customersTable, companiesTable, productsTable, brandsTable, usersTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { z } from "zod";
 
@@ -10,6 +10,7 @@ const TABLE_MAP = {
   customer: customersTable,
   company:  companiesTable,
   product:  productsTable,
+  brand:    brandsTable,
 } as const;
 
 type LookupType = keyof typeof TABLE_MAP;

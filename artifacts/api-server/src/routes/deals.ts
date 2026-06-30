@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, lte, type SQL } from "drizzle-orm";
-import { db, dealsTable, customersTable, companiesTable, productsTable } from "@workspace/db";
+import { db, dealsTable, customersTable, companiesTable, productsTable, brandsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
   ListDealsQueryParams,
@@ -16,12 +16,13 @@ import {
 
 const router: IRouter = Router();
 
-async function upsertLookupNames(name: string, companyName: string, productItem: string) {
+async function upsertLookupNames(name: string, companyName: string, productItem: string, brand?: string | null) {
   try {
     await Promise.all([
       db.insert(customersTable).values({ name: name.trim() }).onConflictDoNothing(),
       db.insert(companiesTable).values({ name: companyName.trim() }).onConflictDoNothing(),
       db.insert(productsTable).values({ name: productItem.trim() }).onConflictDoNothing(),
+      ...(brand?.trim() ? [db.insert(brandsTable).values({ name: brand.trim() }).onConflictDoNothing()] : []),
     ]);
   } catch {
     // Non-critical — don't fail the main request
@@ -141,7 +142,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(GetDealResponse.parse(formatDeal(deal)));
 
   // Auto-save new names to lookup tables (fire-and-forget)
-  void upsertLookupNames(data.name, data.companyName, data.productItem);
+  void upsertLookupNames(data.name, data.companyName, data.productItem, (data as any).brand);
 });
 
 router.get("/deals/:id", requireAuth, async (req, res): Promise<void> => {
@@ -244,6 +245,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
     d.name ?? existing.name,
     d.companyName ?? existing.companyName,
     d.productItem ?? existing.productItem,
+    (d as any).brand ?? (existing as any).brand,
   );
 });
 
