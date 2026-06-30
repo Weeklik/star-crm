@@ -1431,7 +1431,10 @@ export default function Deals() {
               />
             </div>
 
-            {/* Row: Brand | Product / Item */}
+            {/* Row: Origin label | Brand */}
+            <div className="space-y-1.5">
+              <Label>Origin</Label>
+            </div>
             <div className="space-y-1.5">
               <Label>{t("orders.brand")}</Label>
               <AutocompleteInput
