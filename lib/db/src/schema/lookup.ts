@@ -23,3 +23,13 @@ export const brandsTable = pgTable("brands", {
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const productsCatalogTable = pgTable("products_catalog", {
+  id: serial("id").primaryKey(),
+  origin: text("origin"),
+  brand: text("brand"),
+  model: text("model"),
+  description: text("description"),
+  unitPrice: text("unit_price"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

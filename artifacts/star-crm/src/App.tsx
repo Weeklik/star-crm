@@ -20,6 +20,7 @@ import Users from "./pages/Users";
 import Login from "./pages/Login";
 import NotFound from "./pages/not-found";
 import Planner from "./pages/Planner";
+import Products from "./pages/Products";
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -81,6 +82,9 @@ function AppRoutes() {
         </Route>
         <Route path="/users">
           <ProtectedRoute component={Users} ownerOnly />
+        </Route>
+        <Route path="/products">
+          <ProtectedRoute component={Products} ownerOnly />
         </Route>
         <Route path="/planner">
           <ProtectedRoute component={Planner} />

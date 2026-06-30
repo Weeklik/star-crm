@@ -6,6 +6,7 @@ import dealsRouter from "./deals";
 import reportsRouter from "./reports";
 import lookupRouter from "./lookup";
 import plannerRouter from "./planner";
+import productsRouter from "./products";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(dealsRouter);
 router.use(reportsRouter);
 router.use(lookupRouter);
 router.use(plannerRouter);
+router.use(productsRouter);
 
 export default router;

@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
-  ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays,
+  ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays, Package,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -105,6 +105,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 <Users className="w-5 h-5" />
                 {t("nav.users")}
+              </Link>
+            )}
+            {user?.role === "owner" && (
+              <Link
+                href="/products"
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location === "/products" ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                data-testid="nav-products"
+              >
+                <Package className="w-5 h-5" />
+                Products
               </Link>
             )}
           </nav>
