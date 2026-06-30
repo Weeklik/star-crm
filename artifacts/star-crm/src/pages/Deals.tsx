@@ -1633,7 +1633,7 @@ export default function Deals() {
               ))}
             </div>
             <div className="space-y-1.5">
-              <Label>Transportation Fee</Label>
+              <Label>Delivery Charges</Label>
               <Input
                 type="number"
                 min={0}
