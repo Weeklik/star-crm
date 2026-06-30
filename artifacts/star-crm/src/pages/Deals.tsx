@@ -1457,7 +1457,7 @@ export default function Deals() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
 
-            {/* Row: Customer Name | Company Name */}
+            {/* Row 1: Customer Name | Company Name */}
             <div className="space-y-1.5">
               <Label>{t("orders.customerName")} *</Label>
               <AutocompleteInput
@@ -1477,45 +1477,9 @@ export default function Deals() {
               />
             </div>
 
-            {/* Row: Origin (auto-filled) | Brand */}
-            <div className="space-y-1.5">
-              <Label>Origin</Label>
-              {originDisplay ? (
-                <p className="h-9 flex items-center px-3 text-sm rounded-md border border-border bg-muted/40 text-foreground">
-                  {originDisplay}
-                </p>
-              ) : (
-                <p className="h-9 flex items-center px-3 text-sm rounded-md border border-dashed border-border text-muted-foreground">
-                  Auto-filled from brand
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t("orders.brand")}</Label>
-              <AutocompleteInput
-                value={form.brand}
-                onChange={(v) => {
-                  set("brand", v);
-                  set("model", "");
-                }}
-                lookupType="catalog-brand"
-                placeholder="e.g. Juki"
-              />
-              {extraItems.map((item, idx) => (
-                <AutocompleteInput
-                  key={idx}
-                  value={item.brand}
-                  onChange={(v) => setExtraItems((prev) =>
-                    prev.map((it, i) => i === idx ? { ...it, brand: v } : it)
-                  )}
-                  lookupType="brand"
-                  placeholder={`Brand ${idx + 2}`}
-                />
-              ))}
-            </div>
-            <div className="space-y-1.5">
+            {/* Row 2: Product / Item — full width */}
+            <div className="sm:col-span-2 space-y-1.5">
               <Label>{t("orders.productItem")} *</Label>
-              {/* Main item row: [+] on the left, dropdown on the right */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -1538,7 +1502,6 @@ export default function Deals() {
                   </Select>
                 </div>
               </div>
-              {/* Extra item rows */}
               {extraItems.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <div className="w-7 shrink-0" />
@@ -1570,7 +1533,64 @@ export default function Deals() {
               ))}
             </div>
 
-            {/* Row: Quantity | Model */}
+            {/* Row 3: Brand | Model */}
+            <div className="space-y-1.5">
+              <Label>{t("orders.brand")}</Label>
+              <AutocompleteInput
+                value={form.brand}
+                onChange={(v) => { set("brand", v); set("model", ""); }}
+                lookupType="catalog-brand"
+                placeholder="e.g. Juki"
+              />
+              {extraItems.map((item, idx) => (
+                <AutocompleteInput
+                  key={idx}
+                  value={item.brand}
+                  onChange={(v) => setExtraItems((prev) =>
+                    prev.map((it, i) => i === idx ? { ...it, brand: v } : it)
+                  )}
+                  lookupType="catalog-brand"
+                  placeholder={`Brand ${idx + 2}`}
+                />
+              ))}
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("orders.model")}</Label>
+              {catalogByBrand.length > 0 ? (
+                <Select value={form.model} onValueChange={(v) => set("model", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+                  <SelectContent>
+                    {catalogByBrand.map((p, i) => (
+                      <SelectItem key={i} value={p.model || `model-${i}`}>{p.model || "(no model)"}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={form.model} onChange={(e) => set("model", e.target.value)} placeholder="e.g. DDL-9000C" />
+              )}
+              {extraItems.map((item, idx) => (
+                <input key={idx} type="text" value={item.model}
+                  onChange={(e) => setExtraItems((prev) => prev.map((it, i) => i === idx ? { ...it, model: e.target.value } : it))}
+                  placeholder={`Model ${idx + 2}`}
+                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              ))}
+              {form.model && (() => {
+                const desc = catalogByBrand.find((p) => p.model === form.model)?.description;
+                return desc ? <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2 leading-relaxed">{desc}</p> : null;
+              })()}
+            </div>
+
+            {/* Row 4: Origin | Quantity */}
+            <div className="space-y-1.5">
+              <Label>Origin</Label>
+              {originDisplay ? (
+                <p className="h-9 flex items-center px-3 text-sm rounded-md border border-border bg-muted/40 text-foreground">{originDisplay}</p>
+              ) : (
+                <p className="h-9 flex items-center px-3 text-sm rounded-md border border-dashed border-border text-muted-foreground">Auto-filled from brand</p>
+              )}
+            </div>
+            {/* Quantity — completes Row 4 with Origin */}
             <div className="space-y-1.5">
               <Label>{t("orders.quantity")}</Label>
               <Input
@@ -1593,52 +1613,8 @@ export default function Deals() {
                 />
               ))}
             </div>
-            <div className="space-y-1.5">
-              <Label>{t("orders.model")}</Label>
-              {catalogByBrand.length > 0 ? (
-                <Select value={form.model} onValueChange={(v) => set("model", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {catalogByBrand.map((p, i) => (
-                      <SelectItem key={i} value={p.model || `model-${i}`}>
-                        {p.model || "(no model)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  value={form.model}
-                  onChange={(e) => set("model", e.target.value)}
-                  placeholder="e.g. DDL-9000C"
-                />
-              )}
-              {extraItems.map((item, idx) => (
-                <input
-                  key={idx}
-                  type="text"
-                  value={item.model}
-                  onChange={(e) => setExtraItems((prev) =>
-                    prev.map((it, i) => i === idx ? { ...it, model: e.target.value } : it)
-                  )}
-                  placeholder={`Model ${idx + 2}`}
-                  className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              ))}
-              {/* Description auto-filled from selected model */}
-              {form.model && (() => {
-                const desc = catalogByBrand.find((p) => p.model === form.model)?.description;
-                return desc ? (
-                  <p className="text-sm text-muted-foreground rounded-md border border-border bg-muted/30 px-3 py-2 leading-relaxed col-span-2">
-                    {desc}
-                  </p>
-                ) : null;
-              })()}
-            </div>
 
-            {/* Row: Unit Price | Transportation Fee */}
+            {/* Row 5: Unit Price | Delivery Charges */}
             <div className="space-y-1.5">
               <Label>Unit Price</Label>
               <Input
@@ -1647,7 +1623,6 @@ export default function Deals() {
                 value={form.agreedAmount}
                 onChange={(e) => set("agreedAmount", Number(e.target.value))}
               />
-              {/* Extra item prices — grows in sync with Product/Item extra rows */}
               {extraItems.map((item, idx) => (
                 <input
                   key={idx}
@@ -1673,7 +1648,7 @@ export default function Deals() {
               />
             </div>
 
-            {/* Row: Total (flat) | VAT (flat) | then Grand Total | Received Amount */}
+            {/* Row 6: Total | VAT | Grand Total — full-width 3-column */}
             {(() => {
               const extraTotal = extraItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
               const subtotal = (Number(form.agreedAmount) || 0) * (form.quantity || 1) + extraTotal;
@@ -1682,16 +1657,16 @@ export default function Deals() {
               const vat = form.vatApplicable ? Math.round(total * 0.05 * 100) / 100 : 0;
               const grandTotal = total + vat;
               return (
-                <>
-                  {/* Total — flat label + value, no box */}
-                  <div className="flex items-center justify-between h-9 border-b border-border/40">
-                    <span className="text-sm font-medium">
-                      Total <span className="text-muted-foreground font-normal text-xs">(auto)</span>
-                    </span>
-                    <span className="text-sm font-semibold tabular-nums">{total.toLocaleString()}</span>
+                <div className="sm:col-span-2 grid grid-cols-3 gap-6 py-2 border-y border-border/40">
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium">Total <span className="text-xs text-muted-foreground font-normal">(auto)</span></span>
+                    <div className="text-sm font-semibold tabular-nums">{total.toLocaleString()}</div>
                   </div>
-                  {/* VAT — checkbox toggle + conditional value */}
-                  <div className="flex items-center justify-between h-9 border-b border-border/40">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">VAT <span className="text-xs text-muted-foreground font-normal">(5%)</span></span>
+                      <span className={`text-sm font-semibold tabular-nums ${!form.vatApplicable ? "text-muted-foreground line-through" : ""}`}>+{vat.toLocaleString()}</span>
+                    </div>
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -1699,39 +1674,27 @@ export default function Deals() {
                         onChange={(e) => set("vatApplicable", e.target.checked)}
                         className="w-4 h-4 rounded border-border accent-primary cursor-pointer"
                       />
-                      <span className="text-sm font-medium">
-                        VAT <span className="text-muted-foreground font-normal text-xs">(5%)</span>
-                      </span>
+                      <span className="text-xs text-muted-foreground">Apply VAT</span>
                     </label>
-                    <span className={`text-sm font-semibold tabular-nums ${!form.vatApplicable ? "text-muted-foreground line-through" : ""}`}>
-                      + {vat.toLocaleString()}
-                    </span>
                   </div>
-                  {/* Grand Total — label+value inline, then display box */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label>Grand Total</Label>
-                      <span className="text-sm font-semibold tabular-nums">{grandTotal.toLocaleString()}</span>
-                    </div>
-                    <div className="h-9 rounded-md border border-border bg-muted/40 px-3 flex items-center text-sm font-semibold tabular-nums">
-                      {grandTotal.toLocaleString()}
-                    </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium">Grand Total</span>
+                    <div className="text-sm font-semibold tabular-nums">{grandTotal.toLocaleString()}</div>
                   </div>
-                  {/* Received Amount — paired with Grand Total */}
-                  <div className="space-y-1.5">
-                    <Label>{t("orders.receivedAmount")}</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={form.receivedAmount}
-                      onChange={(e) => set("receivedAmount", Number(e.target.value))}
-                    />
-                  </div>
-                </>
+                </div>
               );
             })()}
 
-            {/* Row: Outstanding Amount (left only) */}
+            {/* Row 7: Advance Amount | Outstanding Amount */}
+            <div className="space-y-1.5">
+              <Label>Advance Amount</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.receivedAmount}
+                onChange={(e) => set("receivedAmount", Number(e.target.value))}
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>{t("orders.outstandingAmount")}</Label>
               <Input
@@ -1741,20 +1704,8 @@ export default function Deals() {
                 onChange={(e) => set("outstandingAmount", Number(e.target.value))}
               />
             </div>
-            <div />
 
-            {/* Notes — full width */}
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label>{t("common.notes")}</Label>
-              <Textarea
-                rows={3}
-                value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="Any additional notes..."
-              />
-            </div>
-
-            {/* Credit Term — full width */}
+            {/* Row 8: Credit Term — full width */}
             <div className="sm:col-span-2 space-y-1.5">
               <Label>
                 {t("orders.creditTerm")}
@@ -1768,14 +1719,7 @@ export default function Deals() {
               />
             </div>
 
-            {/* Order Date | Stage */}
-            <div className="space-y-1.5">
-              <Label>{t("orders.orderDate")} *</Label>
-              <DatePicker
-                value={form.dealStartDate}
-                onChange={(v) => set("dealStartDate", v)}
-              />
-            </div>
+            {/* Row 9: Stage | Order Date */}
             <div className="space-y-1.5">
               <Label>{t("orders.orderStage")}</Label>
               <Select
@@ -1798,27 +1742,22 @@ export default function Deals() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Sales Chances | Region */}
             <div className="space-y-1.5">
-              <Label>{t("orders.salesChances")}</Label>
-              <Select value={form.salesStatus} onValueChange={(v) => set("salesStatus", v)}>
-                <SelectTrigger><SelectValue placeholder="Select chances" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="25%">25%</SelectItem>
-                  <SelectItem value="90%">90%</SelectItem>
-                  <SelectItem value="100%">100%</SelectItem>
-                  <SelectItem value="0%">0%</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>{t("orders.orderDate")} *</Label>
+              <DatePicker
+                value={form.dealStartDate}
+                onChange={(v) => set("dealStartDate", v)}
+              />
             </div>
+
+            {/* Row 10: Region | Sales Chances */}
             <div className="space-y-1.5">
               <Label>
                 {t("orders.region")}
                 <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
               </Label>
               <Select value={form.region || "__none__"} onValueChange={(v) => set("region", v === "__none__" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder="Select a country…" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select a region…" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— None —</SelectItem>
                   <SelectItem value="Dubai">Dubai (AED)</SelectItem>
@@ -1832,9 +1771,21 @@ export default function Deals() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Order Type */}
             <div className="space-y-1.5">
+              <Label>{t("orders.salesChances")}</Label>
+              <Select value={form.salesStatus} onValueChange={(v) => set("salesStatus", v)}>
+                <SelectTrigger><SelectValue placeholder="Select chances" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25%">25%</SelectItem>
+                  <SelectItem value="90%">90%</SelectItem>
+                  <SelectItem value="100%">100%</SelectItem>
+                  <SelectItem value="0%">0%</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Row 11: Order Type — full width */}
+            <div className="sm:col-span-2 space-y-1.5">
               <Label>
                 {t("orders.orderType")}
                 <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
@@ -1851,11 +1802,10 @@ export default function Deals() {
                 </SelectContent>
               </Select>
             </div>
-            <div />
 
-            {/* Conditional: Closing Date */}
+            {/* Row 12: Earliest Closing Date — full width (conditional) */}
             {(form.stage === "Quotation Sent" || form.stage === "Order Confirmed") && (
-              <div className="space-y-1.5">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label>
                   {t("orders.earliestClosingDate")}
                   <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
@@ -1868,7 +1818,18 @@ export default function Deals() {
               </div>
             )}
 
-            {/* Conditional: Lost Reason */}
+            {/* Row 13: Notes — full width */}
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label>{t("common.notes")}</Label>
+              <Textarea
+                rows={3}
+                value={form.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="Any additional notes..."
+              />
+            </div>
+
+            {/* Row 14: Lost Reason — conditional, full width */}
             {form.stage === "Order Lost" && (() => {
               const isOther = form.lostReason === "Other Factors" || form.lostReason.startsWith("Other Factors: ");
               const dropdownVal = form.lostReason === "" ? "__none__" : isOther ? "Other Factors" : form.lostReason;
