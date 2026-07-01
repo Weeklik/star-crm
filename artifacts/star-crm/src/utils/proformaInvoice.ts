@@ -698,13 +698,23 @@ ${cfg.validityText ? `<div class="section" style="font-style:italic;color:#555;"
 
 <!-- ── PAYMENT ── -->
 <div class="section">
-  <span class="section-title">${paymentLabel} :</span> ${cfg.paymentText}
+  <span class="section-title">${paymentLabel} :</span> ${escHtml(data.paymentTerms) || cfg.paymentText}
 </div>
 
 <!-- ── CREDIT TERM ── -->
 <div class="section">
   <span class="section-title">${creditTermLabel} :</span> ${escHtml(data.creditTerm) || "&mdash;"}
 </div>
+
+${data.warranty ? `<!-- ── WARRANTY ── -->
+<div class="section">
+  <span class="section-title">Warranty :</span> ${escHtml(data.warranty)}
+</div>` : ""}
+
+${data.deliveryTerms ? `<!-- ── DELIVERY TERMS ── -->
+<div class="section">
+  <span class="section-title">Delivery Terms :</span> ${escHtml(data.deliveryTerms)}
+</div>` : ""}
 
 <!-- ── BANK DETAILS ── -->
 <div class="section">
