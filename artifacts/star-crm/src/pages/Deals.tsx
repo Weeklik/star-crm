@@ -1284,13 +1284,25 @@ export default function Deals() {
                   </TableCell>
                   <TableCell className="text-right">
                     {(() => {
-                      const pct = parseInt((deal.salesStatus ?? "0").replace("%", ""), 10) || 0;
+                      const stagePctMap: Record<string, number> = {
+                        "Quotation Sent": 25,
+                        "Order Confirmed": 90,
+                        "Order Closed": 100,
+                        "Order Lost": 0,
+                        "Sales Return": 25,
+                      };
+                      const pct = stagePctMap[deal.stage] ?? 25;
+                      const barColor =
+                        deal.stage === "Order Closed" ? "bg-green-500" :
+                        deal.stage === "Order Lost" ? "bg-red-500" :
+                        deal.stage === "Order Confirmed" ? "bg-yellow-500" :
+                        "bg-primary";
                       return (
                         <div className="flex items-center justify-end gap-2">
                           <span className="text-xs text-muted-foreground">{pct}%</span>
                           <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
                             <div
-                              className="bg-primary h-full"
+                              className={`${barColor} h-full`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
