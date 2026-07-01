@@ -322,7 +322,7 @@ export default function AddOrder() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       {/* ── Header ── */}
       <div
         className="flex items-center justify-between px-6 py-4"
@@ -348,13 +348,13 @@ export default function AddOrder() {
         <div className="grid grid-cols-3 gap-4">
 
           {/* Customer Details */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-blue-700 font-bold text-xs mb-4 uppercase tracking-wide">
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-4 uppercase tracking-wide">
               Customer Details
             </h2>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-32 shrink-0">Customer Name</label>
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Customer Name</label>
                 <AutocompleteInput
                   value={customerName}
                   onChange={setCustomerName}
@@ -364,7 +364,7 @@ export default function AddOrder() {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-32 shrink-0">Company Name</label>
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Company Name</label>
                 <AutocompleteInput
                   value={companyName}
                   onChange={setCompanyName}
@@ -374,7 +374,7 @@ export default function AddOrder() {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-32 shrink-0">Region / Country</label>
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Region / Country</label>
                 <Select value={region} onValueChange={setRegion}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select region" />
@@ -392,13 +392,13 @@ export default function AddOrder() {
           </div>
 
           {/* Order Details */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-blue-700 font-bold text-xs mb-4 uppercase tracking-wide">
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-4 uppercase tracking-wide">
               Order Details
             </h2>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-44 shrink-0">Order Date</label>
+                <label className="text-sm text-muted-foreground w-44 shrink-0">Order Date</label>
                 <DatePicker
                   value={orderDate}
                   onChange={(v) => setOrderDate(v ?? "")}
@@ -406,7 +406,7 @@ export default function AddOrder() {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-44 shrink-0">Expected Closing Date</label>
+                <label className="text-sm text-muted-foreground w-44 shrink-0">Expected Closing Date</label>
                 <DatePicker
                   value={closingDate}
                   onChange={(v) => setClosingDate(v ?? "")}
@@ -414,7 +414,7 @@ export default function AddOrder() {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-44 shrink-0">Order Status</label>
+                <label className="text-sm text-muted-foreground w-44 shrink-0">Order Status</label>
                 <Select
                   value={stage}
                   onValueChange={(v) => {
@@ -437,7 +437,7 @@ export default function AddOrder() {
                 </Select>
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-600 w-44 shrink-0">Sales Chance (%)</label>
+                <label className="text-sm text-muted-foreground w-44 shrink-0">Sales Chance (%)</label>
                 <Select
                   value={String(salesChancePct)}
                   onValueChange={(v) => setSalesChancePct(Number(v))}
@@ -458,25 +458,25 @@ export default function AddOrder() {
           </div>
 
           {/* Amount Summary */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-blue-700 font-bold text-xs mb-4 uppercase tracking-wide">
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-4 uppercase tracking-wide">
               Amount Summary
             </h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Sub Total</span>
+                <span className="text-muted-foreground">Sub Total</span>
                 <span className="font-medium tabular-nums">{fmt(subTotal)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Discount</span>
+                <span className="text-muted-foreground">Discount</span>
                 <span className="font-medium tabular-nums">{fmt(totalDiscount)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">VAT (5%)</span>
+                <span className="text-muted-foreground">VAT (5%)</span>
                 <span className="font-medium tabular-nums">{fmt(totalVat)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Delivery Charges</span>
+                <span className="text-muted-foreground">Delivery Charges</span>
                 <Input
                   type="number"
                   min={0}
@@ -488,9 +488,9 @@ export default function AddOrder() {
                   className="w-28 text-right h-8 text-sm"
                 />
               </div>
-              <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-                <span className="text-blue-700 font-bold text-sm uppercase">Grand Total</span>
-                <span className="text-blue-700 font-bold text-xl tabular-nums">
+              <div className="border-t border-border pt-3 flex justify-between items-center">
+                <span className="text-blue-600 dark:text-blue-400 font-bold text-sm uppercase">Grand Total</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold text-xl tabular-nums">
                   {fmt(grandTotal)}
                 </span>
               </div>
@@ -499,8 +499,8 @@ export default function AddOrder() {
         </div>
 
         {/* ── Product / Items ── */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h2 className="text-blue-700 font-bold text-xs mb-4 uppercase tracking-wide">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-4 uppercase tracking-wide">
             Product / Items
           </h2>
           <div className="overflow-x-auto">
@@ -526,9 +526,9 @@ export default function AddOrder() {
                   return (
                     <tr
                       key={item.id}
-                      className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      className={idx % 2 === 0 ? "bg-card" : "bg-muted/30"}
                     >
-                      <td className="px-3 py-1.5 text-center text-gray-500 text-xs">
+                      <td className="px-3 py-1.5 text-center text-muted-foreground text-xs">
                         {idx + 1}
                       </td>
                       <td className="px-2 py-1">
@@ -667,7 +667,7 @@ export default function AddOrder() {
           <button
             type="button"
             onClick={addItem}
-            className="mt-3 flex items-center gap-2 text-blue-700 border border-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded text-sm font-medium transition-colors"
+            className="mt-3 flex items-center gap-2 text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 hover:bg-blue-500/10 px-3 py-1.5 rounded text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Item
@@ -675,13 +675,13 @@ export default function AddOrder() {
         </div>
 
         {/* ── Commercial Details ── */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h2 className="text-blue-700 font-bold text-xs mb-4 uppercase tracking-wide">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-4 uppercase tracking-wide">
             Commercial Details
           </h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-4">
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 w-32 shrink-0">Payment Terms</label>
+              <label className="text-sm text-muted-foreground w-32 shrink-0">Payment Terms</label>
               <Select
                 value={paymentTerms || "__none__"}
                 onValueChange={(v) =>
@@ -702,7 +702,7 @@ export default function AddOrder() {
               </Select>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 w-32 shrink-0">Warranty</label>
+              <label className="text-sm text-muted-foreground w-32 shrink-0">Warranty</label>
               <Select
                 value={warranty || "__none__"}
                 onValueChange={(v) => setWarranty(v === "__none__" ? "" : v)}
@@ -721,7 +721,7 @@ export default function AddOrder() {
               </Select>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 w-32 shrink-0">Delivery Terms</label>
+              <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Terms</label>
               <Select
                 value={deliveryTerms || "__none__"}
                 onValueChange={(v) =>
@@ -742,7 +742,7 @@ export default function AddOrder() {
               </Select>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-600 w-32 shrink-0">Credit Terms</label>
+              <label className="text-sm text-muted-foreground w-32 shrink-0">Credit Terms</label>
               <Select
                 value={creditTerm || "__none__"}
                 onValueChange={(v) =>
@@ -766,8 +766,8 @@ export default function AddOrder() {
         </div>
 
         {/* ── Notes ── */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h2 className="text-blue-700 font-bold text-xs mb-3 uppercase tracking-wide">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-3 uppercase tracking-wide">
             Notes
           </h2>
           <Textarea
