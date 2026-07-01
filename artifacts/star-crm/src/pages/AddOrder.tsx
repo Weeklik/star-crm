@@ -49,6 +49,15 @@ const STAGES = [
   "Sales Return",
 ] as const;
 
+const SALES_CHANCE_OPTIONS = [100, 90, 25, 0];
+
+const STAGE_TO_SALES_CHANCE: Record<string, number> = {
+  "Quotation Sent": 25,
+  "Order Confirmed": 90,
+  "Order Closed": 100,
+  "Order Lost": 0,
+};
+
 const PAYMENT_TERMS = [
   "30 Days",
   "60 Days",
@@ -389,7 +398,15 @@ export default function AddOrder() {
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-600 w-44 shrink-0">Order Status</label>
-                <Select value={stage} onValueChange={setStage}>
+                <Select
+                  value={stage}
+                  onValueChange={(v) => {
+                    setStage(v);
+                    if (STAGE_TO_SALES_CHANCE[v] !== undefined) {
+                      setSalesChancePct(STAGE_TO_SALES_CHANCE[v]);
+                    }
+                  }}
+                >
                   <SelectTrigger className="flex-1">
                     <SelectValue />
                   </SelectTrigger>
@@ -404,21 +421,21 @@ export default function AddOrder() {
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-600 w-44 shrink-0">Sales Chance (%)</label>
-                <div className="flex-1 flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={salesChancePct}
-                    onChange={(e) =>
-                      setSalesChancePct(
-                        Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                      )
-                    }
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-gray-500 font-medium">%</span>
-                </div>
+                <Select
+                  value={String(salesChancePct)}
+                  onValueChange={(v) => setSalesChancePct(Number(v))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SALES_CHANCE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={String(opt)}>
+                        {opt}%
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
