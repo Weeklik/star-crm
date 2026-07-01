@@ -1337,6 +1337,11 @@ export default function Deals() {
                             logoUrl: (spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country) === "KSA"
                               ? starLogoKSA
                               : starLogo,
+                            items: (deal as any).items ?? undefined,
+                            transportationFee: (deal as any).transportationFee ?? undefined,
+                            paymentTerms: (deal as any).paymentTerms ?? undefined,
+                            warranty: (deal as any).warranty ?? undefined,
+                            deliveryTerms: (deal as any).deliveryTerms ?? undefined,
                           })
                         }
                       >

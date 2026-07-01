@@ -1,6 +1,16 @@
 import tnHeaderBanner from "@assets/image_1782552446892.png";
 import tnFooterBanner from "@assets/image_1782553154223.png";
 
+export interface ProformaInvoiceItem {
+  brand: string;
+  model: string;
+  description: string;
+  qty: number;
+  unitPrice: number;
+  discountPct: number;
+  vatPct: number;
+}
+
 export interface ProformaInvoiceData {
   id: number;
   companyName: string;
@@ -19,6 +29,12 @@ export interface ProformaInvoiceData {
   creditTerm?: string | null;
   region?: string | null;
   companyNameImageUrl?: string;
+  // Multi-item fields from AddOrder
+  items?: ProformaInvoiceItem[] | null;
+  transportationFee?: number | null;
+  paymentTerms?: string | null;
+  warranty?: string | null;
+  deliveryTerms?: string | null;
 }
 
 interface RegionConfig {
@@ -261,8 +277,70 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
     .join("\n    ");
 
-  const qty = data.quantity ?? 1;
-  const unitAmt = qty > 0 ? baseAmt / qty : baseAmt;
+  // Determine whether to use multi-item mode or legacy single-row mode
+  const useItems = Array.isArray(data.items) && data.items.length > 0;
+
+  // Multi-item calculations
+  const itemRows: ProformaInvoiceItem[] = useItems
+    ? (data.items as ProformaInvoiceItem[])
+    : [{
+        brand: data.brand ?? "",
+        model: data.model ?? "",
+        description: data.productItem ?? "",
+        qty: data.quantity ?? 1,
+        unitPrice: data.agreedAmount ?? 0,
+        discountPct: 0,
+        vatPct: data.vatApplicable ? cfg.vatRate : 0,
+      }];
+
+  const subTotal = itemRows.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  const totalDiscount = itemRows.reduce((s, it) => s + it.qty * it.unitPrice * (it.discountPct / 100), 0);
+  const totalVat = itemRows.reduce((s, it) => {
+    const base = it.qty * it.unitPrice * (1 - it.discountPct / 100);
+    return s + base * (it.vatPct / 100);
+  }, 0);
+  const transportFee = useItems ? (data.transportationFee ?? 0) : 0;
+  const grandTotal = subTotal - totalDiscount + totalVat + transportFee;
+
+  const itemRowsHtml = itemRows.map((it, idx) => {
+    const lineBase = it.qty * it.unitPrice;
+    const lineDiscount = lineBase * (it.discountPct / 100);
+    const lineVat = (lineBase - lineDiscount) * (it.vatPct / 100);
+    const lineTotal = lineBase - lineDiscount + lineVat;
+    return `<tr>
+      <td class="center" style="font-size:10px;color:#888">${idx + 1}</td>
+      <td class="center">${escHtml(it.brand)}</td>
+      <td class="center">${escHtml(it.model)}</td>
+      <td>${escHtml(it.description)}</td>
+      <td class="center">${it.qty}</td>
+      <td class="right">${fmt(it.unitPrice, curr)}</td>
+      <td class="center">${it.discountPct > 0 ? it.discountPct + "%" : "—"}</td>
+      <td class="center">${it.vatPct > 0 ? it.vatPct + "%" : "—"}</td>
+      <td class="right">${fmt(lineTotal, curr)}</td>
+    </tr>`;
+  }).join("\n");
+
+  const totalsHtml = `
+  <tr>
+    <td class="label">Sub Total (${curr})</td>
+    <td class="value">${fmt(subTotal, curr)} ${curr}</td>
+  </tr>
+  ${totalDiscount > 0 ? `<tr>
+    <td class="label">Discount (${curr})</td>
+    <td class="value">- ${fmt(totalDiscount, curr)} ${curr}</td>
+  </tr>` : ""}
+  ${totalVat > 0 ? `<tr>
+    <td class="label">${vatLabel} (${curr})</td>
+    <td class="value">${fmt(totalVat, curr)} ${curr}</td>
+  </tr>` : ""}
+  ${transportFee > 0 ? `<tr>
+    <td class="label">Delivery / Transportation (${curr})</td>
+    <td class="value">${fmt(transportFee, curr)} ${curr}</td>
+  </tr>` : ""}
+  <tr class="grand">
+    <td class="label">Grand Total (${curr})</td>
+    <td class="value">${fmt(grandTotal, curr)} ${curr}</td>
+  </tr>`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -595,44 +673,25 @@ ${cfg.headerVariant === "wave" ? `
 <table class="invoice-table">
   <thead>
     <tr>
-      <th class="left" style="width:14%">${colBrand}</th>
-      <th class="left" style="width:16%">${colModel}</th>
-      <th class="left" style="width:36%">${colDesc}</th>
-      <th style="width:6%">${colQty}</th>
-      <th style="width:14%">${colUnitPrice}</th>
-      <th style="width:14%">${colTotal}</th>
+      <th style="width:4%">#</th>
+      <th class="left" style="width:12%">${colBrand}</th>
+      <th class="left" style="width:14%">${colModel}</th>
+      <th class="left" style="width:30%">${colDesc}</th>
+      <th style="width:5%">${colQty}</th>
+      <th style="width:12%">${colUnitPrice}</th>
+      <th style="width:8%">Disc%</th>
+      <th style="width:7%">VAT%</th>
+      <th style="width:12%">${colTotal}</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <td class="center">${escHtml(data.brand)}</td>
-      <td class="center">${escHtml(data.model)}</td>
-      <td>${escHtml(data.productItem)}</td>
-      <td class="center">${qty}</td>
-      <td class="right">${fmt(unitAmt, curr)} ${curr}</td>
-      <td class="right">${fmt(baseAmt, curr)} ${curr}</td>
-    </tr>
+    ${itemRowsHtml}
   </tbody>
 </table>
 
 <!-- ── TOTALS ── -->
 <table class="totals-table">
-  <tr>
-    <td class="label">${cfg.totalLabel} (${curr})</td>
-    <td class="value">${fmt(baseAmt, curr)} ${curr}</td>
-  </tr>
-  ${
-    data.vatApplicable
-      ? `<tr>
-    <td class="label">${vatLabel} (${curr})</td>
-    <td class="value">${fmt(vatAmt, curr)} ${curr}</td>
-  </tr>`
-      : ""
-  }
-  <tr class="grand">
-    <td class="label">Grand Total (${curr})</td>
-    <td class="value">${fmt(totalAmt, curr)} ${curr}</td>
-  </tr>
+  ${totalsHtml}
 </table>
 
 ${cfg.validityText ? `<div class="section" style="font-style:italic;color:#555;">${cfg.validityText}</div>` : ""}
