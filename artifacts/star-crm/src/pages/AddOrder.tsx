@@ -135,7 +135,6 @@ export default function AddOrder() {
   const [paymentTerms, setPaymentTerms] = useState("");
   const [warranty, setWarranty] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
-  const [creditTerm, setCreditTerm] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem()]);
   const [saving, setSaving] = useState(false);
@@ -166,7 +165,6 @@ export default function AddOrder() {
     setPaymentTerms(deal.paymentTerms ?? "");
     setWarranty(deal.warranty ?? "");
     setDeliveryTerms(deal.deliveryTerms ?? "");
-    setCreditTerm(deal.creditTerm ?? "");
     setNotes(deal.notes ?? "");
 
     const dealItems = deal.items;
@@ -292,7 +290,6 @@ export default function AddOrder() {
         earliestClosingDate: closingDate || null,
         region: region || null,
         notes: notes || null,
-        creditTerm: creditTerm || null,
         brand: firstItem.brand || null,
         model: firstItem.model || null,
         quantity: firstItem.qty,
@@ -739,27 +736,6 @@ export default function AddOrder() {
                 <SelectContent>
                   <SelectItem value="__none__">— Select —</SelectItem>
                   {DELIVERY_TERMS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground w-32 shrink-0">Credit Terms</label>
-              <Select
-                value={creditTerm || "__none__"}
-                onValueChange={(v) =>
-                  setCreditTerm(v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Select —</SelectItem>
-                  {CREDIT_TERMS.map((t) => (
                     <SelectItem key={t} value={t}>
                       {t}
                     </SelectItem>
