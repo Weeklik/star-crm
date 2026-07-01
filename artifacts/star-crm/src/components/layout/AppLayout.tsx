@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
-  ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays, Package,
+  ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays, Package, MapPin,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -23,9 +23,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
 
   const topItems = [
-    { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
-    { href: "/deals",     label: t("nav.orders"),    icon: Briefcase },
-    { href: "/planner",   label: t("nav.planner"),   icon: CalendarDays },
+    { href: "/dashboard",  label: t("nav.dashboard"),   icon: LayoutDashboard },
+    { href: "/deals",      label: t("nav.orders"),      icon: Briefcase },
+    { href: "/planner",    label: t("nav.planner"),     icon: CalendarDays },
+    { href: "/activities", label: "My Activities",      icon: MapPin },
   ];
 
   const reportsChildren = [

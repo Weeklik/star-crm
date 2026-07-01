@@ -22,6 +22,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/not-found";
 import Planner from "./pages/Planner";
 import Products from "./pages/Products";
+import MyActivities from "./pages/MyActivities";
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -95,6 +96,9 @@ function AppRoutes() {
         </Route>
         <Route path="/planner">
           <ProtectedRoute component={Planner} />
+        </Route>
+        <Route path="/activities">
+          <ProtectedRoute component={MyActivities} />
         </Route>
         <Route path="/profile">
           <ProtectedRoute component={Profile} />
