@@ -727,6 +727,7 @@ router.get(
       let orderClosedCount = 0, orderClosedAmount = 0, downPayment = 0;
       let quotationSentCount = 0, quotationSentAmount = 0;
       let orderConfirmedCount = 0, orderConfirmedAmount = 0;
+      let newCustomerCount = 0, existingCustomerCount = 0, dealerCustomerCount = 0;
 
       for (const d of weekDeals) {
         const amt = parseFloat(d.agreedAmount ?? "0");
@@ -741,6 +742,11 @@ router.get(
           orderConfirmedCount++;
           orderConfirmedAmount += amt;
         }
+        // Customer type breakdown (all stages)
+        if (d.dealType === "New Deal") newCustomerCount++;
+        else if (d.dealType === "Recurring") existingCustomerCount++;
+        else if (d.dealType === "Dealer") dealerCustomerCount++;
+        else newCustomerCount++; // default fallback
       }
 
       return {
@@ -758,6 +764,9 @@ router.get(
         orderConfirmedCount,
         orderConfirmedAmount,
         totalSalesInProcess: quotationSentAmount + orderConfirmedAmount,
+        newCustomerCount,
+        existingCustomerCount,
+        dealerCustomerCount,
       };
     });
 

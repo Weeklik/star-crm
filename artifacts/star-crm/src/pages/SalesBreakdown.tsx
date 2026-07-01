@@ -1,3 +1,4 @@
+import React from "react";
 import { useGetMe } from "@workspace/api-client-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useOwnerControls } from "@/contexts/OwnerControlsContext";
@@ -45,6 +46,9 @@ interface WeekRow {
   orderConfirmedCount: number;
   orderConfirmedAmount: number;
   totalSalesInProcess: number;
+  newCustomerCount: number;
+  existingCustomerCount: number;
+  dealerCustomerCount: number;
 }
 
 interface UserOption {
@@ -560,7 +564,8 @@ export default function SalesBreakdown() {
 
                           {/* Week rows */}
                           {rows.map((w, wi) => (
-                            <tr key={w.weekStart} className={wi % 2 === 0 ? "" : "bg-muted/5"}>
+                            <React.Fragment key={w.weekStart}>
+                            <tr className={wi % 2 === 0 ? "" : "bg-muted/5"}>
                               <td className={`${tdBase} text-left font-medium`}>
                                 {w.monthName} {w.weekOrdinal} Week
                               </td>
@@ -611,6 +616,35 @@ export default function SalesBreakdown() {
                                 {fmtM(w.totalSalesInProcess)}
                               </td>
                             </tr>
+                            {/* Customer type sub-row */}
+                            {(w.newCustomerCount > 0 || w.existingCustomerCount > 0 || w.dealerCustomerCount > 0) && (
+                              <tr className={wi % 2 === 0 ? "bg-muted/0" : "bg-muted/5"}>
+                                <td colSpan={11} className="border border-border px-3 py-1">
+                                  <div className="flex items-center gap-3 flex-wrap">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mr-1">Customer Type:</span>
+                                    {w.newCustomerCount > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                                        New Customer: <strong>{w.newCustomerCount}</strong>
+                                      </span>
+                                    )}
+                                    {w.existingCustomerCount > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                                        Existing Customer: <strong>{w.existingCustomerCount}</strong>
+                                      </span>
+                                    )}
+                                    {w.dealerCustomerCount > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                                        Dealer Customer: <strong>{w.dealerCustomerCount}</strong>
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            </React.Fragment>
                           ))}
 
                           {/* Monthly total row */}
