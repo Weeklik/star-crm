@@ -1775,6 +1775,9 @@ export default function Deals() {
                   <SelectItem value="Ras Al Khaimah">Ras Al Khaimah (AED)</SelectItem>
                   <SelectItem value="Fujairah">Fujairah (AED)</SelectItem>
                   <SelectItem value="Qatar">Qatar (QAR)</SelectItem>
+                  <SelectItem value="Egypt">Egypt (EGP)</SelectItem>
+                  <SelectItem value="Ghana">Ghana (GHS)</SelectItem>
+                  <SelectItem value="Ethiopia">Ethiopia (ETB)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
