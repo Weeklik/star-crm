@@ -120,6 +120,9 @@ export default function AddOrder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id); }, []);
+
   // Form state
   const [customerName, setCustomerName] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -322,7 +325,9 @@ export default function AddOrder() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={`min-h-screen bg-background transition-all duration-500 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+    >
       {/* ── Header ── */}
       <div
         className="flex items-center justify-between px-6 py-4"
