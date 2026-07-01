@@ -562,6 +562,8 @@ function exportDealsToExcel(deals: Deal[] | undefined) {
   XLSX.writeFile(wb, `orders-${today}.xlsx`);
 }
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function Deals() {
   const [, navigate] = useLocation();
   const { data: me } = useGetMe();
@@ -574,6 +576,8 @@ export default function Deals() {
   const salespersons = users?.filter((u) => u.role === "salesperson") ?? [];
   const spNameById    = Object.fromEntries((users ?? []).map((u) => [u.id, u.name || u.email]));
   const spCountryById = Object.fromEntries((users ?? []).map((u) => [u.id, u.country]));
+
+  const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
 
   const [filterSpId, setFilterSpId] = useState<string>(() => {
     const p = new URLSearchParams(window.location.search);
@@ -774,6 +778,42 @@ export default function Deals() {
 
   function openEdit(deal: NonNullable<typeof deals>[number]) {
     navigate(`/orders/${deal.id}/edit`);
+  }
+
+  async function handleDownloadProforma(deal: NonNullable<typeof deals>[number]) {
+    setPdfLoadingId(deal.id);
+    try {
+      const res = await fetch(`${BASE}/api/deals/${deal.id}`, { credentials: "include" });
+      const fresh = await res.json();
+      const spCountry = spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country ?? undefined;
+      openProformaInvoice({
+        id: fresh.id,
+        companyName: fresh.companyName ?? "",
+        contactName: fresh.name ?? "",
+        dealStartDate: fresh.dealStartDate,
+        productItem: fresh.productItem ?? "",
+        brand: fresh.brand ?? undefined,
+        model: fresh.model ?? undefined,
+        quantity: fresh.quantity ?? 1,
+        agreedAmount: fresh.agreedAmount ?? 0,
+        currency: fresh.currency,
+        vatApplicable: fresh.vatApplicable ?? false,
+        notes: fresh.notes ?? undefined,
+        salespersonName: spNameById[deal.salespersonId ?? 0] ?? me?.name ?? "",
+        creditTerm: fresh.creditTerm ?? undefined,
+        region: spCountry,
+        logoUrl: spCountry === "KSA" ? starLogoKSA : starLogo,
+        items: fresh.items ?? undefined,
+        transportationFee: fresh.transportationFee ?? undefined,
+        paymentTerms: fresh.paymentTerms ?? undefined,
+        warranty: fresh.warranty ?? undefined,
+        deliveryTerms: fresh.deliveryTerms ?? undefined,
+      });
+    } catch {
+      toast({ title: "Failed to load invoice data", variant: "destructive" });
+    } finally {
+      setPdfLoadingId(null);
+    }
   }
 
   function set<K extends keyof DealFormState>(key: K, value: DealFormState[K]) {
@@ -1317,35 +1357,12 @@ export default function Deals() {
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         title="Download Proforma Invoice"
-                        onClick={() =>
-                          openProformaInvoice({
-                            id: deal.id,
-                            companyName: deal.companyName ?? "",
-                            contactName: deal.name ?? "",
-                            dealStartDate: deal.dealStartDate as string | undefined,
-                            productItem: deal.productItem ?? "",
-                            brand: (deal as any).brand ?? undefined,
-                            model: (deal as any).model ?? undefined,
-                            quantity: (deal as any).quantity ?? 1,
-                            agreedAmount: deal.agreedAmount ?? 0,
-                            currency: (deal as any).currency,
-                            vatApplicable: deal.vatApplicable ?? false,
-                            notes: deal.notes as string | undefined,
-                            salespersonName: spNameById[deal.salespersonId ?? 0] ?? me?.name ?? "",
-                            creditTerm: (deal as any).creditTerm ?? undefined,
-                            region: spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country ?? undefined,
-                            logoUrl: (spCountryById[deal.salespersonId ?? 0] ?? (me as any)?.country) === "KSA"
-                              ? starLogoKSA
-                              : starLogo,
-                            items: (deal as any).items ?? undefined,
-                            transportationFee: (deal as any).transportationFee ?? undefined,
-                            paymentTerms: (deal as any).paymentTerms ?? undefined,
-                            warranty: (deal as any).warranty ?? undefined,
-                            deliveryTerms: (deal as any).deliveryTerms ?? undefined,
-                          })
-                        }
+                        disabled={pdfLoadingId === deal.id}
+                        onClick={() => handleDownloadProforma(deal)}
                       >
-                        <FileDown className="w-4 h-4" />
+                        {pdfLoadingId === deal.id
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <FileDown className="w-4 h-4" />}
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
