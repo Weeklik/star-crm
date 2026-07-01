@@ -76,6 +76,17 @@ const WARRANTY_OPTIONS = [
   "No Warranty",
 ];
 const DELIVERY_TERMS = ["FOB Dubai", "CIF", "EXW", "DDP", "DAP", "CFR"];
+const REGIONS = [
+  "Abu Dhabi",
+  "Dubai",
+  "Sharjah",
+  "Ajman",
+  "Umm Al Quwain",
+  "Ras Al Khaimah",
+  "Fujairah",
+  "Qatar",
+];
+
 const CREDIT_TERMS = [
   "30 Days",
   "60 Days",
@@ -364,12 +375,18 @@ export default function AddOrder() {
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-600 w-32 shrink-0">Region / Country</label>
-                <Input
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder="e.g. UAE"
-                  className="flex-1"
-                />
+                <Select value={region} onValueChange={setRegion}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REGIONS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
