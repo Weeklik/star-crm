@@ -1020,56 +1020,76 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* ── Average Monthly Sales Chart (from Monthly Reports) ── */}
+        {/* ── Monthly Sales Performance Chart ── */}
         {(() => {
           const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
           const currentMonth = new Date().getFullYear() === selectedYear ? new Date().getMonth() + 1 : 12;
+          const SP_COLORS = ["#a78bfa","#34d399","#60a5fa","#fbbf24","#f472b6","#fb923c","#22d3ee","#e879f9"];
 
-          // Build month-by-month team totals with currency conversion
+          const activeSps = [...monthlySalesData]
+            .map((r) => ({ ...r, totalConverted: Math.round(r.totalSales * getRateFor(r.currency ?? "")) }))
+            .filter((r) => r.totalConverted > 0)
+            .sort((a, b) => b.totalConverted - a.totalConverted);
+
           const monthlyChartData = MONTH_LABELS.map((label, i) => {
             const m = i + 1;
-            const total = monthlySalesData.reduce(
-              (s, r) => s + (r.monthly[m] ?? 0) * getRateFor(r.currency ?? ""),
-              0,
-            );
-            return { month: label, total: Math.round(total), isFuture: m > currentMonth };
+            const entry: Record<string, any> = { month: label, isFuture: m > currentMonth };
+            let teamTotal = 0;
+            activeSps.forEach((r) => {
+              const val = Math.round((r.monthly[m] ?? 0) * getRateFor(r.currency ?? ""));
+              entry[r.name] = val;
+              teamTotal += val;
+            });
+            entry.teamTotal = teamTotal;
+            return entry;
           });
 
-          const nonZeroMonths  = monthlyChartData.filter((d) => d.total > 0);
-          const monthlyAvg     = nonZeroMonths.length > 0
-            ? Math.round(nonZeroMonths.reduce((s, d) => s + d.total, 0) / nonZeroMonths.length)
+          const nonZeroMonths = monthlyChartData.filter((d) => d.teamTotal > 0);
+          const monthlyAvg = nonZeroMonths.length > 0
+            ? Math.round(nonZeroMonths.reduce((s, d) => s + d.teamTotal, 0) / nonZeroMonths.length)
             : 0;
-
-          // Per-SP table rows sorted by total desc
-          const spTableRows = [...monthlySalesData]
-            .map((r) => ({
-              name:    r.name,
-              avgMonthlySales: Math.round(r.avgMonthlySales * getRateFor(r.currency ?? "")),
-              totalSales:      Math.round(r.totalSales      * getRateFor(r.currency ?? "")),
-            }))
-            .filter((r) => r.totalSales > 0)
-            .sort((a, b) => b.totalSales - a.totalSales);
-
+          const bestMonth = monthlyChartData.reduce(
+            (best, d) => d.teamTotal > best.total ? { label: d.month, total: d.teamTotal } : best,
+            { label: "", total: 0 },
+          );
+          const yearTotal = nonZeroMonths.reduce((s, d) => s + d.teamTotal, 0);
           const hasData = nonZeroMonths.length > 0;
 
           return (
-            <Card className="border-border/60">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Average Monthly Sales — {selectedYear}</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Monthly closed sales from Monthly Reports · dashed line = avg {fmtK(monthlyAvg)} {selectedCurrency}/month
-                </p>
+            <Card className="border-border/60 overflow-hidden">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Monthly Sales Performance — {selectedYear}</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Closed orders by month · stacked by salesperson</p>
+                {hasData && (
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div className="bg-muted/40 rounded-xl p-3 border border-border/30">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Year Total</p>
+                      <p className="text-xl font-bold text-foreground mt-1 tabular-nums">{fmtK(yearTotal)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{selectedCurrency}</p>
+                    </div>
+                    <div className="bg-amber-500/10 rounded-xl p-3 border border-amber-500/20">
+                      <p className="text-[10px] text-amber-400/80 uppercase tracking-wider font-medium">Avg / Month</p>
+                      <p className="text-xl font-bold text-amber-400 mt-1 tabular-nums">{fmtK(monthlyAvg)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{nonZeroMonths.length} active months</p>
+                    </div>
+                    <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20">
+                      <p className="text-[10px] text-emerald-400/80 uppercase tracking-wider font-medium">Best Month</p>
+                      <p className="text-xl font-bold text-emerald-400 mt-1 tabular-nums">{fmtK(bestMonth.total)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{bestMonth.label} · {selectedCurrency}</p>
+                    </div>
+                  </div>
+                )}
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-3">
                 {!hasData ? (
                   <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
                     No closed orders for {selectedYear}
                   </div>
                 ) : (
                   <>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <ComposedChart data={monthlyChartData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="28%">
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                    <ResponsiveContainer width="100%" height={260}>
+                      <ComposedChart data={monthlyChartData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }} barCategoryGap="32%">
+                        <CartesianGrid vertical={false} strokeDasharray="3 4" stroke="hsl(var(--border))" strokeOpacity={0.35} />
                         <XAxis
                           dataKey="month"
                           tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
@@ -1079,72 +1099,90 @@ export default function Dashboard() {
                           tickFormatter={fmtK}
                           tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                           axisLine={false} tickLine={false}
-                          width={48}
+                          width={44}
                         />
                         <Tooltip
-                          contentStyle={TOOLTIP_STYLE}
-                          formatter={(value: number) => [fmtK(value) + " " + selectedCurrency, "Closed Sales"]}
+                          cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.35, radius: 6 }}
+                          content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const isFuture = payload[0]?.payload?.isFuture;
+                            const total = payload.reduce((s, p) => s + (Number(p.value) || 0), 0);
+                            const rows = payload.filter((p) => Number(p.value) > 0).reverse();
+                            return (
+                              <div style={TOOLTIP_STYLE} className="p-3 shadow-xl min-w-44">
+                                <p className="font-semibold text-sm mb-2 text-foreground">{label} {selectedYear}</p>
+                                {isFuture && <p className="text-xs text-muted-foreground italic mb-1.5">No data yet</p>}
+                                {rows.map((p, idx) => (
+                                  <div key={idx} className="flex items-center justify-between gap-4 text-xs mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color as string }} />
+                                      <span className="text-muted-foreground truncate max-w-24">{p.name}</span>
+                                    </div>
+                                    <span className="font-semibold tabular-nums">{fmtK(Number(p.value))}</span>
+                                  </div>
+                                ))}
+                                {rows.length > 1 && (
+                                  <div className="flex justify-between text-xs border-t border-border/50 pt-1.5 mt-1.5 font-bold text-foreground">
+                                    <span>Total</span>
+                                    <span className="tabular-nums">{fmtK(total)} {selectedCurrency}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }}
                         />
-                        <Bar
-                          dataKey="total"
-                          name="Closed Sales"
-                          radius={[4, 4, 0, 0]}
-                          maxBarSize={36}
-                        >
-                          {monthlyChartData.map((entry, i) => (
-                            <Cell
-                              key={i}
-                              fill={entry.isFuture ? "hsl(var(--muted))" : "#a78bfa"}
-                              fillOpacity={entry.isFuture ? 0.3 : 0.85}
-                            />
-                          ))}
-                          <LabelList
-                            dataKey="total"
-                            position="top"
-                            formatter={(v: number) => v > 0 ? fmtK(v) : ""}
-                            style={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                          />
-                        </Bar>
+                        {activeSps.map((r, i) => (
+                          <Bar
+                            key={r.name}
+                            dataKey={r.name}
+                            stackId="stack"
+                            name={r.name}
+                            fill={SP_COLORS[i % SP_COLORS.length]}
+                            radius={i === activeSps.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                            maxBarSize={48}
+                          >
+                            {monthlyChartData.map((entry, ci) => (
+                              <Cell
+                                key={ci}
+                                fill={entry.isFuture ? "hsl(var(--muted))" : SP_COLORS[i % SP_COLORS.length]}
+                                fillOpacity={entry.isFuture ? 0.18 : 0.88}
+                              />
+                            ))}
+                          </Bar>
+                        ))}
                         {monthlyAvg > 0 && (
                           <ReferenceLine
                             y={monthlyAvg}
                             stroke="#fbbf24"
                             strokeDasharray="5 3"
-                            strokeWidth={2}
-                            label={{ value: `Avg ${fmtK(monthlyAvg)}`, position: "right", fontSize: 10, fill: "#fbbf24" }}
+                            strokeWidth={1.5}
+                            label={{ value: `avg ${fmtK(monthlyAvg)}`, position: "insideTopRight", fontSize: 10, fill: "#fbbf24", dy: -14 }}
                           />
                         )}
                       </ComposedChart>
                     </ResponsiveContainer>
 
-                    {/* Per-salesperson breakdown table */}
-                    {spTableRows.length > 0 && (
-                      <div className="mt-5 overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b border-border/50">
-                              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Salesperson</th>
-                              <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Avg / Month ({selectedCurrency})</th>
-                              <th className="text-right py-2 pl-3 font-semibold text-muted-foreground">Total {selectedYear} ({selectedCurrency})</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {spTableRows.map((row) => (
-                              <tr key={row.name} className="border-b border-border/20 hover:bg-secondary/30 transition-colors">
-                                <td className="py-2 pr-4 font-medium text-foreground/90">{row.name}</td>
-                                <td className="py-2 px-3 text-right tabular-nums font-semibold text-amber-400">{fmtK(row.avgMonthlySales)}</td>
-                                <td className="py-2 pl-3 text-right tabular-nums font-semibold text-violet-400">{fmtK(row.totalSales)}</td>
-                              </tr>
-                            ))}
-                            {spTableRows.length > 1 && (
-                              <tr className="border-t-2 border-border/50 font-semibold bg-muted/30">
-                                <td className="py-2 pr-4 text-sm">Team Total</td>
-                                <td className="py-2 px-3 text-right tabular-nums">{fmtK(monthlyAvg)}</td>
-                                <td className="py-2 pl-3 text-right tabular-nums">{fmtK(spTableRows.reduce((s, r) => s + r.totalSales, 0))}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                    {/* Salesperson legend */}
+                    {activeSps.length > 0 && (
+                      <div className="flex flex-wrap gap-x-5 gap-y-2 mt-4 pt-3 border-t border-border/30">
+                        {activeSps.map((r, i) => (
+                          <div key={r.name} className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
+                              style={{ background: SP_COLORS[i % SP_COLORS.length], opacity: 0.88 }}
+                            />
+                            <span className="text-xs text-muted-foreground truncate">{r.name}</span>
+                            <span className="text-xs font-semibold tabular-nums text-foreground/80">
+                              {fmtK(r.totalConverted)}
+                            </span>
+                          </div>
+                        ))}
+                        {activeSps.length > 1 && (
+                          <div className="flex items-center gap-2 ml-auto">
+                            <span className="text-xs text-muted-foreground">Total</span>
+                            <span className="text-xs font-bold tabular-nums text-foreground">{fmtK(yearTotal)} {selectedCurrency}</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
