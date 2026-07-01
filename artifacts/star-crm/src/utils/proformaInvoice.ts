@@ -209,66 +209,6 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     addressUnderline: true,
     sigCompanyLabel: "STAR SEWING MACHINES LIMITED",
   },
-  EG: {
-    currency: "EGP",
-    vatRate: 14,
-    totalLabel: "Total",
-    companyName: "Star Sewing Machines — Egypt",
-    companySubTitle: "Industrial Sewing Machines &amp; Garment Equipment",
-    letterheadContact:
-      "Egypt<br>Email: star@starsew.com",
-    bank: [
-      { key: "Account Name",    value: "Star Sewing Machines" },
-      { key: "Bank Name",       value: "—" },
-      { key: "Account Number",  value: "—" },
-      { key: "Currency",        value: "EGP" },
-    ],
-    paymentText: "100% Advance",
-    noteText:
-      "Customer must provide local expenses including delivery and off-loading charges.",
-    footerLine1: "Star Sewing Machines — Egypt",
-    footerLine2: "Email: star@starsew.com &nbsp;&nbsp; Website: www.starsew.com",
-  },
-  GH: {
-    currency: "GHS",
-    vatRate: 15,
-    totalLabel: "Total",
-    companyName: "Star Sewing Machines — Ghana",
-    companySubTitle: "Industrial Sewing Machines &amp; Garment Equipment",
-    letterheadContact:
-      "Ghana<br>Email: star@starsew.com",
-    bank: [
-      { key: "Account Name",    value: "Star Sewing Machines" },
-      { key: "Bank Name",       value: "—" },
-      { key: "Account Number",  value: "—" },
-      { key: "Currency",        value: "GHS" },
-    ],
-    paymentText: "100% Advance",
-    noteText:
-      "Customer must provide local expenses including delivery and off-loading charges.",
-    footerLine1: "Star Sewing Machines — Ghana",
-    footerLine2: "Email: star@starsew.com &nbsp;&nbsp; Website: www.starsew.com",
-  },
-  ET: {
-    currency: "ETB",
-    vatRate: 15,
-    totalLabel: "Total",
-    companyName: "Star Sewing Machines — Ethiopia",
-    companySubTitle: "Industrial Sewing Machines &amp; Garment Equipment",
-    letterheadContact:
-      "Ethiopia<br>Email: star@starsew.com",
-    bank: [
-      { key: "Account Name",    value: "Star Sewing Machines" },
-      { key: "Bank Name",       value: "—" },
-      { key: "Account Number",  value: "—" },
-      { key: "Currency",        value: "ETB" },
-    ],
-    paymentText: "100% Advance",
-    noteText:
-      "Customer must provide local expenses including delivery and off-loading charges.",
-    footerLine1: "Star Sewing Machines — Ethiopia",
-    footerLine2: "Email: star@starsew.com &nbsp;&nbsp; Website: www.starsew.com",
-  },
 };
 
 // Maps stored salesperson country names → REGION_CONFIGS keys
@@ -285,12 +225,6 @@ const REGION_ALIASES: Record<string, string> = {
   "UAE":          "UAE",
   "NG":           "NG",
   "TN":           "TN",
-  "EGYPT":        "EG",
-  "EG":           "EG",
-  "GHANA":        "GH",
-  "GH":           "GH",
-  "ETHIOPIA":     "ET",
-  "ET":           "ET",
 };
 
 function getRegionConfig(region?: string | null): RegionConfig {
