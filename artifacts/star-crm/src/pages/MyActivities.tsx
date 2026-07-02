@@ -579,8 +579,10 @@ export default function MyActivities() {
   const [viewActivity, setViewActivity] = useState<Activity | null>(null);
 
   // List tab filters
-  const [filterDate, setFilterDate] = useState("");
-  const [filterTime, setFilterTime] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterTimeFrom, setFilterTimeFrom] = useState("");
+  const [filterTimeTo, setFilterTimeTo] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
 
   // Map tab filters
@@ -625,12 +627,10 @@ export default function MyActivities() {
 
   // List tab filtered
   const listFiltered = activities.filter((a) => {
-    if (filterDate && a.date !== filterDate) return false;
-    if (filterTime) {
-      const t = filterTime.replace(":", "");
-      const at = a.time.replace(":", "");
-      if (!at.startsWith(t.slice(0, at.length))) return false;
-    }
+    if (filterDateFrom && a.date < filterDateFrom) return false;
+    if (filterDateTo && a.date > filterDateTo) return false;
+    if (filterTimeFrom && a.time < filterTimeFrom) return false;
+    if (filterTimeTo && a.time > filterTimeTo) return false;
     if (filterLocation) {
       const loc = (a.locationName ?? `${a.latitude}, ${a.longitude}`).toLowerCase();
       if (!loc.includes(filterLocation.toLowerCase())) return false;
@@ -648,10 +648,10 @@ export default function MyActivities() {
     return true;
   });
 
-  const hasListFilters = filterDate || filterTime || filterLocation;
+  const hasListFilters = filterDateFrom || filterDateTo || filterTimeFrom || filterTimeTo || filterLocation;
   const hasMapFilters = mapSalespeople.length > 0 || mapDateFrom || mapDateTo || mapTimeFrom || mapTimeTo;
 
-  function clearListFilters() { setFilterDate(""); setFilterTime(""); setFilterLocation(""); }
+  function clearListFilters() { setFilterDateFrom(""); setFilterDateTo(""); setFilterTimeFrom(""); setFilterTimeTo(""); setFilterLocation(""); }
   function clearMapFilters() { setMapSalespeople([]); setMapDateFrom(""); setMapDateTo(""); setMapTimeFrom(""); setMapTimeTo(""); }
 
   return (
@@ -719,12 +719,20 @@ export default function MyActivities() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Date</Label>
-                <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="h-9 text-sm" />
+                <Label className="text-xs text-muted-foreground">Date From → To</Label>
+                <div className="flex gap-1.5 items-center">
+                  <Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="h-9 text-sm flex-1" />
+                  <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
+                  <Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="h-9 text-sm flex-1" />
+                </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Time</Label>
-                <Input type="time" value={filterTime} onChange={(e) => setFilterTime(e.target.value)} className="h-9 text-sm" />
+                <Label className="text-xs text-muted-foreground">Time From → To</Label>
+                <div className="flex gap-1.5 items-center">
+                  <Input type="time" value={filterTimeFrom} onChange={(e) => setFilterTimeFrom(e.target.value)} className="h-9 text-sm flex-1" />
+                  <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
+                  <Input type="time" value={filterTimeTo} onChange={(e) => setFilterTimeTo(e.target.value)} className="h-9 text-sm flex-1" />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Location</Label>
