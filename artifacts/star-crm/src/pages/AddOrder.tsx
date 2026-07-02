@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useLocation, useRoute } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ChevronLeft, ClipboardList } from "lucide-react";
@@ -101,7 +102,7 @@ const CREDIT_TERMS = [
 
 function newItem(): OrderItem {
   return {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     brand: "",
     model: "",
     description: "",
@@ -179,12 +180,12 @@ export default function AddOrder() {
     const dealItems = deal.items;
     if (Array.isArray(dealItems) && dealItems.length > 0) {
       setItems(
-        dealItems.map((it: any) => ({ ...it, id: crypto.randomUUID() }))
+        dealItems.map((it: any) => ({ ...it, id: uuidv4() }))
       );
     } else {
       setItems([
         {
-          id: crypto.randomUUID(),
+          id: uuidv4(),
           brand: deal.brand ?? "",
           model: deal.model ?? "",
           description: deal.productItem ?? "",
