@@ -19,6 +19,7 @@ import {
   useUpdateDeal,
   useListDeals,
   getListDealsQueryKey,
+  useGetMe,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -100,7 +101,23 @@ const CREDIT_TERMS = [
   "Net 30",
 ];
 
-function newItem(): OrderItem {
+const VAT_BY_COUNTRY: Record<string, number> = {
+  UAE:      5,
+  KSA:      15,
+  Kenya:    16,
+  Nigeria:  7.5,
+  Tunisia:  19,
+  Ethiopia: 15,
+  Egypt:    14,
+  Ghana:    15,
+};
+
+function getCountryVat(country: string | null | undefined): number {
+  if (!country) return 0;
+  return VAT_BY_COUNTRY[country] ?? 0;
+}
+
+function newItem(vatPct = 0): OrderItem {
   return {
     id: uuidv4(),
     brand: "",
@@ -109,7 +126,7 @@ function newItem(): OrderItem {
     qty: 1,
     unitPrice: 0,
     discountPct: 0,
-    vatPct: 5,
+    vatPct,
   };
 }
 
@@ -123,6 +140,9 @@ export default function AddOrder() {
   const editId = matchEdit && paramsEdit?.id ? parseInt(paramsEdit.id) : null;
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const { data: me } = useGetMe();
+  const defaultVat = getCountryVat(me?.country);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id); }, []);
@@ -143,9 +163,16 @@ export default function AddOrder() {
   const [pdc, setPdc] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<OrderItem[]>([newItem()]);
+  const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  // Enforce country VAT on all items whenever the user's country is known or edit finishes loading
+  useEffect(() => {
+    if (!me?.country) return;
+    const vat = getCountryVat(me.country);
+    setItems((prev) => prev.map((it) => ({ ...it, vatPct: vat })));
+  }, [me?.country, loaded]);
 
   // Catalog state: brand → products
   const [catalogByBrand, setCatalogByBrand] = useState<
@@ -239,7 +266,7 @@ export default function AddOrder() {
   }
 
   // Item mutations
-  const addItem = () => setItems((prev) => [...prev, newItem()]);
+  const addItem = () => setItems((prev) => [...prev, newItem(defaultVat)]);
   const removeItem = (id: string) =>
     setItems((prev) => prev.filter((it) => it.id !== id));
 
@@ -503,7 +530,7 @@ export default function AddOrder() {
                 <span className="font-medium tabular-nums">{fmt(totalDiscount)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">VAT (5%)</span>
+                <span className="text-muted-foreground">VAT ({defaultVat}%)</span>
                 <span className="font-medium tabular-nums">{fmt(totalVat)}</span>
               </div>
               <div className="flex justify-between items-center">
@@ -660,20 +687,9 @@ export default function AddOrder() {
                         />
                       </td>
                       <td className="px-2 py-1">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={item.vatPct}
-                          onChange={(e) =>
-                            updateItem(
-                              item.id,
-                              "vatPct",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="w-full text-center"
-                        />
+                        <div className="w-full h-9 flex items-center justify-center rounded-md border border-input bg-muted/40 text-sm font-medium tabular-nums select-none">
+                          {item.vatPct}%
+                        </div>
                       </td>
                       <td className="px-3 py-1.5 text-right font-medium tabular-nums">
                         {fmt(total)}
