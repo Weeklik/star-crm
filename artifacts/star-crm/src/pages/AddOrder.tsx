@@ -748,9 +748,22 @@ export default function AddOrder() {
                   </SelectContent>
                 </Select>
                 {paymentTerms === "PDC" && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                    Please write the amount inside Notes.
-                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-muted-foreground whitespace-nowrap">Number of PDC's</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={pdc || ""}
+                        placeholder="e.g. 3"
+                        onChange={(e) => setPdc(e.target.value)}
+                        className="w-24 h-7 text-sm text-center"
+                      />
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                      Please write the amount inside Notes.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
