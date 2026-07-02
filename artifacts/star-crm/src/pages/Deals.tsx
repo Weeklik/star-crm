@@ -67,7 +67,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useOwnerControls, getDateBounds, DateRange } from "@/contexts/OwnerControlsContext";
+import { useOwnerControls, getDateBounds, DateRange, MONTHS } from "@/contexts/OwnerControlsContext";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { useTranslation } from "@/i18n/LanguageContext";
 
@@ -586,6 +586,8 @@ export default function Deals() {
   const [search, setSearch] = useState("");
   const [orderDateRange, setOrderDateRange] = useState<DateRange>("fullyear");
   const [orderYear, setOrderYear] = useState(new Date().getFullYear());
+  const [orderFromMonth, setOrderFromMonth] = useState(0);
+  const [orderToMonth, setOrderToMonth] = useState(0);
   const [stageFilter, setStageFilter] = useState<Stage | "">(() => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("stage") as Stage) ?? "";
@@ -617,7 +619,16 @@ export default function Deals() {
 
   const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions, getActiveDateBounds } = useOwnerControls();
 
-  const { startDate: orderStart, endDate: orderEnd } = getDateBounds(orderDateRange, orderYear);
+  const { startDate: orderStart, endDate: orderEnd } = (() => {
+    if (orderFromMonth > 0 || orderToMonth > 0) {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const f = orderFromMonth > 0 ? orderFromMonth : 1;
+      const t = orderToMonth > 0 ? orderToMonth : (orderFromMonth > 0 ? orderFromMonth : 12);
+      const lastDay = new Date(orderYear, t, 0).getDate();
+      return { startDate: `${orderYear}-${pad(f)}-01`, endDate: `${orderYear}-${pad(t)}-${lastDay}` };
+    }
+    return getDateBounds(orderDateRange, orderYear);
+  })();
   const dealQueryParams = me?.role === "salesperson"
     ? { salespersonId: me.id }
     : { startDate: orderStart, endDate: orderEnd };
@@ -700,7 +711,7 @@ export default function Deals() {
         }
       })
       .catch(() => {});
-  }, [me, isOwner, filterSpId, selectedRegion, orderStart, orderEnd, dealTypeFilter]);
+  }, [me, isOwner, filterSpId, selectedRegion, orderStart, orderEnd, dealTypeFilter, orderFromMonth, orderToMonth]);
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
@@ -1108,7 +1119,7 @@ export default function Deals() {
           <CalendarRange className="w-4 h-4 text-muted-foreground" />
           <select
             value={orderYear}
-            onChange={(e) => { setOrderYear(Number(e.target.value)); setOrderDateRange("fullyear"); resetPage(); }}
+            onChange={(e) => { setOrderYear(Number(e.target.value)); setOrderDateRange("fullyear"); setOrderFromMonth(0); setOrderToMonth(0); resetPage(); }}
             className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             {yearOptions.map((y) => (
@@ -1118,9 +1129,9 @@ export default function Deals() {
           {datePresets.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => { setOrderDateRange(key); resetPage(); }}
+              onClick={() => { setOrderDateRange(key); setOrderFromMonth(0); setOrderToMonth(0); resetPage(); }}
               className={`h-9 px-3 rounded-md text-sm font-medium transition-all border ${
-                orderDateRange === key
+                orderDateRange === key && orderFromMonth === 0 && orderToMonth === 0
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
                   : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
               }`}
@@ -1128,6 +1139,37 @@ export default function Deals() {
               {label}
             </button>
           ))}
+          {/* From → To month filter (identical to Dashboard) */}
+          <div className="flex items-center gap-1.5 border border-border rounded-md px-2 py-1 bg-background">
+            <select
+              value={orderFromMonth}
+              onChange={(e) => { setOrderFromMonth(Number(e.target.value)); resetPage(); }}
+              className="bg-transparent text-sm text-foreground focus:outline-none cursor-pointer pr-1"
+            >
+              <option value={0}>From</option>
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <span className="text-muted-foreground text-xs">→</span>
+            <select
+              value={orderToMonth}
+              onChange={(e) => { setOrderToMonth(Number(e.target.value)); resetPage(); }}
+              className="bg-transparent text-sm text-foreground focus:outline-none cursor-pointer pr-1"
+            >
+              <option value={0}>To</option>
+              {MONTHS.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            {(orderFromMonth > 0 || orderToMonth > 0) && (
+              <button
+                onClick={() => { setOrderFromMonth(0); setOrderToMonth(0); resetPage(); }}
+                className="text-muted-foreground hover:text-foreground text-xs ml-0.5"
+                title="Clear month filter"
+              >✕</button>
+            )}
+          </div>
         </div>
 
         {/* Stage filter */}
