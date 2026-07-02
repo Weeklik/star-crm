@@ -1117,34 +1117,62 @@ export default function Dashboard() {
                       </ComposedChart>
                     </ResponsiveContainer>
 
-                    {/* Per-salesperson breakdown table */}
+                    {/* Per-salesperson bar chart */}
                     {spTableRows.length > 0 && (
-                      <div className="mt-5 overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b border-border/50">
-                              <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Salesperson</th>
-                              <th className="text-right py-2 px-3 font-semibold text-muted-foreground">Avg / Month ({selectedCurrency})</th>
-                              <th className="text-right py-2 pl-3 font-semibold text-muted-foreground">Total {selectedYear} ({selectedCurrency})</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {spTableRows.map((row) => (
-                              <tr key={row.name} className="border-b border-border/20 hover:bg-secondary/30 transition-colors">
-                                <td className="py-2 pr-4 font-medium text-foreground/90">{row.name}</td>
-                                <td className="py-2 px-3 text-right tabular-nums font-semibold text-amber-400">{fmtK(row.avgMonthlySales)}</td>
-                                <td className="py-2 pl-3 text-right tabular-nums font-semibold text-violet-400">{fmtK(row.totalSales)}</td>
-                              </tr>
-                            ))}
-                            {spTableRows.length > 1 && (
-                              <tr className="border-t-2 border-border/50 font-semibold bg-muted/30">
-                                <td className="py-2 pr-4 text-sm">Team Total</td>
-                                <td className="py-2 px-3 text-right tabular-nums">{fmtK(monthlyAvg)}</td>
-                                <td className="py-2 pl-3 text-right tabular-nums">{fmtK(spTableRows.reduce((s, r) => s + r.totalSales, 0))}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                      <div className="mt-6">
+                        <p className="text-xs text-muted-foreground mb-3 font-medium">Per Salesperson — Total vs Avg / Month</p>
+                        <ResponsiveContainer width="100%" height={Math.max(200, spTableRows.length * 52 + 60)}>
+                          <BarChart
+                            data={spTableRows}
+                            layout="vertical"
+                            margin={{ top: 4, right: 64, left: 8, bottom: 4 }}
+                            barCategoryGap="28%"
+                            barGap={4}
+                          >
+                            <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                            <XAxis
+                              type="number"
+                              tickFormatter={fmtK}
+                              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                              axisLine={false} tickLine={false}
+                            />
+                            <YAxis
+                              type="category"
+                              dataKey="name"
+                              width={96}
+                              tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
+                              axisLine={false} tickLine={false}
+                            />
+                            <Tooltip
+                              contentStyle={TOOLTIP_STYLE}
+                              formatter={(value: number, name: string) => [
+                                fmtK(value) + " " + selectedCurrency,
+                                name,
+                              ]}
+                            />
+                            <Legend
+                              iconType="circle"
+                              iconSize={8}
+                              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                            />
+                            <Bar dataKey="totalSales" name="Total Amount" fill="#a78bfa" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                              <LabelList
+                                dataKey="totalSales"
+                                position="right"
+                                formatter={(v: number) => fmtK(v)}
+                                style={{ fontSize: 10, fill: "#a78bfa" }}
+                              />
+                            </Bar>
+                            <Bar dataKey="avgMonthlySales" name="Avg Month Amount" fill="#fbbf24" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                              <LabelList
+                                dataKey="avgMonthlySales"
+                                position="right"
+                                formatter={(v: number) => fmtK(v)}
+                                style={{ fontSize: 10, fill: "#fbbf24" }}
+                              />
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
                     )}
                   </>
