@@ -800,7 +800,7 @@ export default function Deals() {
         vatApplicable: fresh.vatApplicable ?? false,
         notes: fresh.notes ?? undefined,
         salespersonName: spNameById[deal.salespersonId ?? 0] ?? me?.name ?? "",
-        creditTerm: fresh.creditTerm ?? undefined,
+        pdc: (fresh as any).pdc ?? undefined,
         region: spCountry,
         logoUrl: spCountry === "KSA" ? starLogoKSA : starLogo,
         items: fresh.items ?? undefined,

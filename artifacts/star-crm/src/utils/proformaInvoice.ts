@@ -26,7 +26,7 @@ export interface ProformaInvoiceData {
   notes?: string | null;
   salespersonName: string;
   logoUrl?: string;
-  creditTerm?: string | null;
+  pdc?: string | null;
   region?: string | null;
   companyNameImageUrl?: string;
   // Multi-item fields from AddOrder
@@ -258,7 +258,6 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     ? `<img src="${data.logoUrl}" alt="Star Logo" class="logo-img" />`
     : `<div class="logo-placeholder">★</div>`;
 
-  const creditTermValue = data.creditTerm ? escHtml(data.creditTerm) : "&mdash;";
   const docTitle       = cfg.docTitle       ?? "Proforma Invoice";
   const colBrand       = cfg.colBrand       ?? "Brand";
   const colModel       = cfg.colModel       ?? "Model";
@@ -267,7 +266,6 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const colUnitPrice   = cfg.colUnitPrice   ?? `Unit Price<br>(${curr})`;
   const colTotal       = cfg.colTotal       ?? `Total<br>(${curr})`;
   const paymentLabel   = cfg.paymentLabel   ?? "Payment";
-  const creditTermLabel= cfg.creditTermLabel?? "Credit Term";
   const bankLabel      = cfg.bankLabel      ?? "Our Bank Details";
   const noteLabel      = cfg.noteLabel      ?? "Note";
   const vatLabel       = cfg.vatLabel       ?? `VAT @ ${cfg.vatRate}%`;
@@ -701,14 +699,14 @@ ${cfg.validityText ? `<div class="section" style="font-style:italic;color:#555;"
   <span class="section-title">${paymentLabel} :</span> ${escHtml(data.paymentTerms) || cfg.paymentText}
 </div>
 
-<!-- ── CREDIT TERM ── -->
-<div class="section">
-  <span class="section-title">${creditTermLabel} :</span> ${escHtml(data.creditTerm) || "&mdash;"}
-</div>
-
 ${data.warranty ? `<!-- ── WARRANTY ── -->
 <div class="section">
   <span class="section-title">Warranty :</span> ${escHtml(data.warranty)}
+</div>` : ""}
+
+${data.pdc ? `<!-- ── PDC ── -->
+<div class="section">
+  <span class="section-title">PDC :</span> ${escHtml(data.pdc)}
 </div>` : ""}
 
 ${data.deliveryTerms ? `<!-- ── DELIVERY TERMS ── -->
