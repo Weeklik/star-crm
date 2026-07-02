@@ -32,6 +32,7 @@ export const dealsTable = pgTable("deals", {
   transportationFee: numeric("transportation_fee", { precision: 15, scale: 2 }).notNull().default("0"),
   paymentTerms: text("payment_terms"),
   warranty: text("warranty"),
+  pdc: text("pdc"),
   deliveryTerms: text("delivery_terms"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

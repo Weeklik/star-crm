@@ -134,6 +134,7 @@ export default function AddOrder() {
   const [transportationFee, setTransportationFee] = useState(0);
   const [paymentTerms, setPaymentTerms] = useState("");
   const [warranty, setWarranty] = useState("");
+  const [pdc, setPdc] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem()]);
@@ -164,6 +165,7 @@ export default function AddOrder() {
     setTransportationFee(deal.transportationFee ?? 0);
     setPaymentTerms(deal.paymentTerms ?? "");
     setWarranty(deal.warranty ?? "");
+    setPdc((deal as any).pdc ?? "");
     setDeliveryTerms(deal.deliveryTerms ?? "");
     setNotes(deal.notes ?? "");
 
@@ -298,6 +300,7 @@ export default function AddOrder() {
         transportationFee,
         paymentTerms: paymentTerms || null,
         warranty: warranty || null,
+        pdc: pdc || null,
         deliveryTerms: deliveryTerms || null,
       } as any;
 
@@ -721,6 +724,30 @@ export default function AddOrder() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-start gap-3">
+              <label className="text-sm text-muted-foreground w-32 shrink-0 pt-2">PDC</label>
+              <div className="flex-1 flex flex-col gap-1">
+                <Select
+                  value={pdc || "__none__"}
+                  onValueChange={(v) => setPdc(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Select —</SelectItem>
+                    {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {pdc && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    Please write the amount inside Notes.
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Terms</label>

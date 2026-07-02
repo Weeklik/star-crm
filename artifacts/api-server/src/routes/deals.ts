@@ -40,6 +40,7 @@ function formatDeal(deal: any) {
     vatApplicable: deal.vatApplicable ?? false,
     paymentTerms: deal.paymentTerms ?? null,
     warranty: deal.warranty ?? null,
+    pdc: deal.pdc ?? null,
     deliveryTerms: deal.deliveryTerms ?? null,
     items: deal.items ?? null,
     dealStartDate:
@@ -145,6 +146,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       transportationFee: String((data as any).transportationFee ?? 0),
       paymentTerms: (data as any).paymentTerms ?? null,
       warranty: (data as any).warranty ?? null,
+      pdc: (data as any).pdc ?? null,
       deliveryTerms: (data as any).deliveryTerms ?? null,
     })
     .returning();
@@ -245,6 +247,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if ((d as any).transportationFee !== undefined) updateData.transportationFee = String((d as any).transportationFee);
   if ((d as any).paymentTerms !== undefined) updateData.paymentTerms = (d as any).paymentTerms;
   if ((d as any).warranty !== undefined) updateData.warranty = (d as any).warranty;
+  if ((d as any).pdc !== undefined) updateData.pdc = (d as any).pdc;
   if ((d as any).deliveryTerms !== undefined) updateData.deliveryTerms = (d as any).deliveryTerms;
 
   const [updated] = await db
