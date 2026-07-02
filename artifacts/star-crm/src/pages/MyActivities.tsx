@@ -754,6 +754,7 @@ export default function MyActivities() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/30">
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap w-10">#</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Date</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Time</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Location</th>
@@ -797,6 +798,7 @@ export default function MyActivities() {
                         key={act.id}
                         className={`border-b border-border/30 transition-colors hover:bg-muted/20 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
                       >
+                        <td className="px-4 py-3 text-muted-foreground text-sm w-10">{i + 1}</td>
                         <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDate(act.date)}</td>
                         <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatTime(act.time)}</td>
                         <td className="px-4 py-3 max-w-52">

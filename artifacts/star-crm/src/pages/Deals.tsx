@@ -1287,6 +1287,7 @@ export default function Deals() {
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary/50">
+              <TableHead className="w-10 text-muted-foreground">#</TableHead>
               <TableHead>{t("orders.date")}</TableHead>
               <TableHead>{t("orders.company")}</TableHead>
               <TableHead>{t("common.salesperson")}</TableHead>
@@ -1301,13 +1302,14 @@ export default function Deals() {
           <TableBody>
             {pagedDeals?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   {t("orders.noOrders")}
                 </TableCell>
               </TableRow>
             ) : (
-              pagedDeals?.map((deal) => (
+              pagedDeals?.map((deal, index) => (
                 <TableRow key={deal.id} data-testid={`row-deal-${deal.id}`}>
+                  <TableCell className="text-muted-foreground text-sm w-10">{(safePage - 1) * pageSize + index + 1}</TableCell>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                     {deal.dealStartDate
                       ? new Date(
