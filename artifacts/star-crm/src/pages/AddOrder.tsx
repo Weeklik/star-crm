@@ -154,7 +154,8 @@ export default function AddOrder() {
   const { data: me } = useGetMe();
   const defaultVat = getCountryVat(me?.country);
 
-  const mounted = true;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id); }, []);
 
   // Form state
   const [customerName, setCustomerName] = useState("");
