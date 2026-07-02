@@ -196,15 +196,31 @@ function MultiSelectSalesperson({
   onChange: (ids: number[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        buttonRef.current && !buttonRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
+
+  function handleOpen() {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDropdownStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setOpen((o) => !o);
+  }
 
   function toggle(id: number) {
     onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
@@ -220,10 +236,11 @@ function MultiSelectSalesperson({
       : `${selected.length} selected`;
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={handleOpen}
         className="flex items-center gap-2 w-full h-9 px-3 rounded-md border border-input bg-background text-sm hover:bg-muted/30 transition-colors"
       >
         <Users className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
@@ -231,7 +248,11 @@ function MultiSelectSalesperson({
         <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-lg max-h-56 overflow-y-auto">
+        <div
+          ref={dropdownRef}
+          style={{ position: "fixed", top: dropdownStyle.top, left: dropdownStyle.left, width: dropdownStyle.width, zIndex: 99999 }}
+          className="bg-popover border border-border rounded-md shadow-lg max-h-56 overflow-y-auto"
+        >
           <button
             type="button"
             onClick={selectAll}
