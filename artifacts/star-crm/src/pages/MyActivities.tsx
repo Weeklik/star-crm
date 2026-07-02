@@ -294,20 +294,24 @@ function AddActivityModal({
 
                 {geoErrorCode === 1 ? (
                   <div className="text-xs text-muted-foreground space-y-2 leading-relaxed">
-                    <p>Your browser blocked location access. Follow these steps to allow it:</p>
-                    <div className="space-y-1">
-                      <p className="font-semibold text-foreground">Safari (iPhone / iPad):</p>
-                      <p>Settings → Safari → Location → Allow</p>
+                    <p>This website's location was previously blocked. Safari remembers this per website — follow the steps for your device:</p>
+                    <div className="space-y-1 bg-background/60 rounded p-2">
+                      <p className="font-semibold text-foreground">Safari (iPhone / iPad) — per-site reset:</p>
+                      <p>1. Open the iPhone <span className="font-medium text-foreground">Settings</span> app</p>
+                      <p>2. Scroll down and tap <span className="font-medium text-foreground">Safari</span></p>
+                      <p>3. Tap <span className="font-medium text-foreground">Settings for Websites</span> → <span className="font-medium text-foreground">Location</span></p>
+                      <p>4. Find this website and change it to <span className="font-medium text-foreground">Allow</span></p>
+                      <p className="text-amber-600 dark:text-amber-400 mt-1">Or tap <span className="font-medium">Clear History and Website Data</span> in Safari settings to reset all site permissions.</p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 bg-background/60 rounded p-2">
                       <p className="font-semibold text-foreground">Chrome (Android):</p>
-                      <p>Tap the lock 🔒 icon in the address bar → Site settings → Location → Allow</p>
+                      <p>Tap the lock 🔒 in the address bar → <span className="font-medium text-foreground">Site settings</span> → <span className="font-medium text-foreground">Location</span> → <span className="font-medium text-foreground">Allow</span></p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 bg-background/60 rounded p-2">
                       <p className="font-semibold text-foreground">Chrome (iPhone / iPad):</p>
-                      <p>Settings → Chrome → Location → Allow While Using App</p>
+                      <p>iPhone Settings → <span className="font-medium text-foreground">Privacy & Security</span> → <span className="font-medium text-foreground">Location Services</span> → <span className="font-medium text-foreground">Chrome</span> → <span className="font-medium text-foreground">While Using</span></p>
                     </div>
-                    <p className="text-amber-600 dark:text-amber-400">After allowing, tap "Try Again" below.</p>
+                    <p className="text-amber-600 dark:text-amber-400">After updating the permission, tap "Try Again" below.</p>
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground leading-relaxed">
