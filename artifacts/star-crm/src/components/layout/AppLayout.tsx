@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
   ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays, Package, MapPin,
+  PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -21,6 +22,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     location === "/reports" || location.startsWith("/reports/");
 
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const topItems = [
     { href: "/dashboard",  label: t("nav.dashboard"),   icon: LayoutDashboard },
@@ -36,7 +38,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <aside className="w-64 border-r border-border bg-card flex flex-col justify-between">
+      <aside className={`flex-shrink-0 border-r border-border bg-card flex flex-col justify-between overflow-hidden transition-all duration-200 ${sidebarOpen ? "w-64" : "w-0 border-r-0"}`}>
         <div>
           {/* Logo */}
           <div className="h-20 flex items-center px-4 border-b border-border">
@@ -206,7 +208,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden bg-background">
+      <main className="flex-1 flex flex-col overflow-hidden bg-background min-w-0">
+        {/* Sidebar toggle strip */}
+        <div className="flex items-center px-3 py-2 border-b border-border/40 flex-shrink-0">
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {sidebarOpen
+              ? <PanelLeftClose className="w-5 h-5" />
+              : <PanelLeftOpen className="w-5 h-5" />
+            }
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>
