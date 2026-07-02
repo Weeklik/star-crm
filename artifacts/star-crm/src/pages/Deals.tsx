@@ -739,9 +739,25 @@ export default function Deals() {
     }
   };
 
-  // Format an amount using the deal's own stored currency (for table rows)
-  function fmtDealAmt(dealCurrency: string | null | undefined, amount: number): string {
-    const cur = dealCurrency ?? userCurrency;
+  // Country → native currency (used to fix deals stored with USD default)
+  const COUNTRY_CURRENCY: Record<string, string> = {
+    "UAE": "AED",
+    "KSA": "SAR",
+    "KE":  "KES",
+    "NG":  "NGN",
+    "TN":  "TND",
+  };
+
+  // Format an amount using the deal's own stored currency for table rows.
+  // If the stored currency is USD (the legacy default), derive the correct
+  // native currency from the salesperson's country instead.
+  function fmtDealAmt(dealCurrency: string | null | undefined, amount: number, salespersonId?: number | null): string {
+    let cur = dealCurrency ?? userCurrency;
+    if ((cur === "USD" || !cur) && salespersonId != null) {
+      const spCountry = spCountryById[salespersonId];
+      const native    = spCountry ? COUNTRY_CURRENCY[spCountry] : undefined;
+      if (native) cur = native;
+    }
     try {
       return new Intl.NumberFormat("en-US", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(amount);
     } catch {
@@ -1321,7 +1337,7 @@ export default function Deals() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {fmtDealAmt((deal as any).currency, deal.agreedAmount)}
+                    {fmtDealAmt((deal as any).currency, deal.agreedAmount, deal.salespersonId)}
                   </TableCell>
                   <TableCell className="text-right">
                     {(() => {
