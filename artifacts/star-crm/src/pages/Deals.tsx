@@ -682,6 +682,7 @@ export default function Deals() {
     const p = new URLSearchParams({ startDate: orderStart, endDate: orderEnd });
     if (isOwner && filterSpId !== "all") p.set("salespersonId", filterSpId);
     if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
+    if (dealTypeFilter) p.set("dealType", dealTypeFilter);
     fetch(`/api/reports/summary?${p.toString()}`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
@@ -699,7 +700,7 @@ export default function Deals() {
         }
       })
       .catch(() => {});
-  }, [me, isOwner, filterSpId, selectedRegion, orderStart, orderEnd]);
+  }, [me, isOwner, filterSpId, selectedRegion, orderStart, orderEnd, dealTypeFilter]);
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));

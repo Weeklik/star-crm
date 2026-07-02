@@ -73,6 +73,7 @@ router.get(
     }
 
     const { salespersonId, startDate, endDate, region } = parsed.data;
+    const dealType = (req.query.dealType as string) || undefined;
     const regionSpIds = region ? await resolveRegionSpIds(region) : undefined;
     const conditions = buildDateConditions(
       startDate,
@@ -83,13 +84,16 @@ router.get(
       regionSpIds,
     );
 
-    const deals =
+    const rawDeals =
       conditions.length > 0
         ? await db
             .select()
             .from(dealsTable)
             .where(and(...conditions))
         : await db.select().from(dealsTable);
+
+    // Apply optional deal-type (category) filter in memory
+    const deals = dealType ? rawDeals.filter((d) => d.dealType === dealType) : rawDeals;
 
     const totalDeals = deals.length;
     const totalAgreedAmount = deals.reduce(
