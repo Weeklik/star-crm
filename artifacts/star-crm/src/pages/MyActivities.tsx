@@ -584,6 +584,7 @@ export default function MyActivities() {
   const [filterTimeFrom, setFilterTimeFrom] = useState("");
   const [filterTimeTo, setFilterTimeTo] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
+  const [filterSalesperson, setFilterSalesperson] = useState<number[]>([]);
 
   // Map tab filters
   const [mapSalespeople, setMapSalespeople] = useState<number[]>([]);
@@ -635,6 +636,7 @@ export default function MyActivities() {
       const loc = (a.locationName ?? `${a.latitude}, ${a.longitude}`).toLowerCase();
       if (!loc.includes(filterLocation.toLowerCase())) return false;
     }
+    if (filterSalesperson.length > 0 && !filterSalesperson.includes(a.salespersonId)) return false;
     return true;
   });
 
@@ -648,10 +650,10 @@ export default function MyActivities() {
     return true;
   });
 
-  const hasListFilters = filterDateFrom || filterDateTo || filterTimeFrom || filterTimeTo || filterLocation;
+  const hasListFilters = filterDateFrom || filterDateTo || filterTimeFrom || filterTimeTo || filterLocation || filterSalesperson.length > 0;
   const hasMapFilters = mapSalespeople.length > 0 || mapDateFrom || mapDateTo || mapTimeFrom || mapTimeTo;
 
-  function clearListFilters() { setFilterDateFrom(""); setFilterDateTo(""); setFilterTimeFrom(""); setFilterTimeTo(""); setFilterLocation(""); }
+  function clearListFilters() { setFilterDateFrom(""); setFilterDateTo(""); setFilterTimeFrom(""); setFilterTimeTo(""); setFilterLocation(""); setFilterSalesperson([]); }
   function clearMapFilters() { setMapSalespeople([]); setMapDateFrom(""); setMapDateTo(""); setMapTimeFrom(""); setMapTimeTo(""); }
 
   return (
@@ -717,7 +719,7 @@ export default function MyActivities() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Date From → To</Label>
                 <div className="flex gap-1.5 items-center">
@@ -746,6 +748,16 @@ export default function MyActivities() {
                   />
                 </div>
               </div>
+              {isOwner && users.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Salesperson</Label>
+                  <MultiSelectSalesperson
+                    users={users}
+                    selected={filterSalesperson}
+                    onChange={setFilterSalesperson}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -761,13 +773,14 @@ export default function MyActivities() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Product</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Meeting Person</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Company</th>
+                    {isOwner && <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Salesperson</th>}
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">View</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="py-16 text-center">
+                      <td colSpan={isOwner ? 9 : 8} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin" />
                           <span className="text-sm">Loading activities…</span>
@@ -776,7 +789,7 @@ export default function MyActivities() {
                     </tr>
                   ) : listFiltered.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-16 text-center">
+                      <td colSpan={isOwner ? 9 : 8} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
                             <MapPin className="w-6 h-6 opacity-40" />
@@ -822,6 +835,11 @@ export default function MyActivities() {
                             ? <span className="font-medium text-foreground/80">{act.company}</span>
                             : <span className="text-muted-foreground/40 text-xs">—</span>}
                         </td>
+                        {isOwner && (
+                          <td className="px-4 py-3 whitespace-nowrap font-medium text-sm">
+                            {usersMap[act.salespersonId] ?? <span className="text-muted-foreground/40 text-xs">—</span>}
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <Button
                             variant="ghost"
