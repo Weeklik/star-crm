@@ -171,6 +171,7 @@ function AddActivityModal({
 }) {
   const { toast } = useToast();
   const [geoState, setGeoState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [geoErrorCode, setGeoErrorCode] = useState<number | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locationName, setLocationName] = useState("");
   const [company, setCompany] = useState("");
@@ -179,18 +180,20 @@ function AddActivityModal({
   const [saving, setSaving] = useState(false);
 
   function reset() {
-    setGeoState("idle"); setCoords(null); setLocationName("");
+    setGeoState("idle"); setGeoErrorCode(null); setCoords(null); setLocationName("");
     setCompany(""); setProduct(""); setMeetingPerson(""); setSaving(false);
   }
 
   function handleClose() { reset(); onClose(); }
 
-  async function handleGetLocation() {
+  function handleGetLocation() {
     if (!navigator.geolocation) {
-      toast({ title: "Geolocation not supported by your browser", variant: "destructive" });
+      setGeoState("error");
+      setGeoErrorCode(2);
       return;
     }
     setGeoState("loading");
+    setGeoErrorCode(null);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
@@ -208,15 +211,11 @@ function AddActivityModal({
         }
         setGeoState("done");
       },
-      () => {
+      (err) => {
         setGeoState("error");
-        toast({
-          title: "Location access denied",
-          description: "Please allow location access in your browser settings.",
-          variant: "destructive",
-        });
+        setGeoErrorCode(err.code);
       },
-      { enableHighAccuracy: true, timeout: 15000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   }
 
@@ -267,18 +266,69 @@ function AddActivityModal({
 
         <div className="space-y-4 pt-1">
           <div className="space-y-3">
-            <Button
-              type="button"
-              onClick={handleGetLocation}
-              disabled={geoState === "loading" || geoState === "done"}
-              className="w-full gap-2"
-              variant={geoState === "done" ? "outline" : "default"}
-            >
-              {geoState === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
-              {geoState === "done" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-              {(geoState === "idle" || geoState === "error") && <Navigation className="w-4 h-4" />}
-              {geoState === "loading" ? "Getting location…" : geoState === "done" ? "Location captured" : "Get Location"}
-            </Button>
+            {geoState !== "error" && (
+              <Button
+                type="button"
+                onClick={handleGetLocation}
+                disabled={geoState === "loading" || geoState === "done"}
+                className="w-full gap-2"
+                variant={geoState === "done" ? "outline" : "default"}
+              >
+                {geoState === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
+                {geoState === "done" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                {geoState === "idle" && <Navigation className="w-4 h-4" />}
+                {geoState === "loading" ? "Getting location…" : geoState === "done" ? "Location captured" : "Get My Location"}
+              </Button>
+            )}
+
+            {geoState === "error" && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold text-sm">
+                  <Navigation className="w-4 h-4 flex-shrink-0" />
+                  {geoErrorCode === 1
+                    ? "Location access was blocked"
+                    : geoErrorCode === 3
+                    ? "Location timed out"
+                    : "Location unavailable"}
+                </div>
+
+                {geoErrorCode === 1 ? (
+                  <div className="text-xs text-muted-foreground space-y-2 leading-relaxed">
+                    <p>Your browser blocked location access. Follow these steps to allow it:</p>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">Safari (iPhone / iPad):</p>
+                      <p>Settings → Safari → Location → Allow</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">Chrome (Android):</p>
+                      <p>Tap the lock 🔒 icon in the address bar → Site settings → Location → Allow</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">Chrome (iPhone / iPad):</p>
+                      <p>Settings → Chrome → Location → Allow While Using App</p>
+                    </div>
+                    <p className="text-amber-600 dark:text-amber-400">After allowing, tap "Try Again" below.</p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {geoErrorCode === 3
+                      ? "Location took too long. Make sure GPS / Location Services is on, then try again."
+                      : "Could not determine your location. Make sure Location Services is enabled on your device."}
+                  </p>
+                )}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full gap-2 mt-1"
+                  onClick={handleGetLocation}
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  Try Again
+                </Button>
+              </div>
+            )}
 
             {geoState === "done" && coords && (
               <div className="space-y-2">
