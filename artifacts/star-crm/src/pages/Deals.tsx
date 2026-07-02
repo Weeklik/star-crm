@@ -670,7 +670,9 @@ export default function Deals() {
       const matchesDealType = !dealTypeFilter || (d as any).dealType === dealTypeFilter;
       const matchesSp       = !isOwner || filterSpId === "all" || d.salespersonId === Number(filterSpId);
       const matchesRegion   = !isOwner || !regionSpIds || regionSpIds.has(d.salespersonId ?? 0);
-      return matchesSearch && matchesStage && matchesDealType && matchesSp && matchesRegion;
+      const ds = d.dealStartDate ? String(d.dealStartDate).slice(0, 10) : null;
+      const matchesDate     = !ds || (ds >= orderStart && ds <= orderEnd);
+      return matchesSearch && matchesStage && matchesDealType && matchesSp && matchesRegion && matchesDate;
     })
     .slice()
     .sort((a, b) => {
