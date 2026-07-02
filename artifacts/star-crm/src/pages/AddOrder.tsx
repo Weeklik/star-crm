@@ -777,9 +777,17 @@ export default function AddOrder() {
                         className="w-24 h-7 text-sm text-center"
                       />
                     </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                      Please write the amount inside Notes.
-                    </p>
+                    {(() => {
+                      const count = parseInt(pdc);
+                      if (count > 0 && grandTotal > 0) {
+                        return (
+                          <p className="text-xs font-semibold text-violet-500 dark:text-violet-400">
+                            Amount per cheque: {fmt(grandTotal / count)}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 )}
               </div>
