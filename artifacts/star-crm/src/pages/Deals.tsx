@@ -8,7 +8,7 @@ import {
   getListDealsQueryKey,
 } from "@workspace/api-client-react";
 import type { Deal } from "@workspace/api-client-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -680,38 +680,24 @@ export default function Deals() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  // ── Server-side KPI summary (same endpoint + params as Dashboard) ──────────
-  const [ordersKpi, setOrdersKpi] = useState<{
-    quotationSentCount: number; quotationSentAmount: number;
-    confirmedDeals: number; confirmedAmount: number;
-    closedDeals: number; closedAmount: number;
-    lostDeals: number; lostAmount: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!me) return;
-    const p = new URLSearchParams({ startDate: orderStart, endDate: orderEnd });
-    if (isOwner && filterSpId !== "all") p.set("salespersonId", filterSpId);
-    if (isOwner && selectedRegion !== "all") p.set("region", selectedRegion);
-    if (dealTypeFilter) p.set("dealType", dealTypeFilter);
-    fetch(`/api/reports/summary?${p.toString()}`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.quotationSentCount === "number") {
-          setOrdersKpi({
-            quotationSentCount:  data.quotationSentCount,
-            quotationSentAmount: data.quotationSentAmount ?? 0,
-            confirmedDeals:      data.confirmedDeals,
-            confirmedAmount:     data.confirmedAmount ?? 0,
-            closedDeals:         data.closedDeals,
-            closedAmount:        data.closedAmount ?? 0,
-            lostDeals:           data.lostDeals,
-            lostAmount:          data.lostAmount ?? 0,
-          });
-        }
-      })
-      .catch(() => {});
-  }, [me, isOwner, filterSpId, selectedRegion, orderStart, orderEnd, dealTypeFilter, orderFromMonth, orderToMonth]);
+  // ── KPI summary derived from filteredDeals (always in sync with the table) ──
+  const ordersKpi = useMemo(() => {
+    if (!filteredDeals) return null;
+    const quotationSentList = filteredDeals.filter((d) => d.stage === "Quotation Sent");
+    const confirmedList     = filteredDeals.filter((d) => d.stage === "Order Confirmed");
+    const closedList        = filteredDeals.filter((d) => d.stage === "Order Closed");
+    const lostList          = filteredDeals.filter((d) => d.stage === "Order Lost");
+    return {
+      quotationSentCount:  quotationSentList.length,
+      quotationSentAmount: quotationSentList.reduce((s, d) => s + ((d as any).agreedAmount ?? 0), 0),
+      confirmedDeals:      confirmedList.length,
+      confirmedAmount:     confirmedList.reduce((s, d) => s + ((d as any).agreedAmount ?? 0), 0),
+      closedDeals:         closedList.length,
+      closedAmount:        closedList.reduce((s, d) => s + ((d as any).agreedAmount ?? 0), 0),
+      lostDeals:           lostList.length,
+      lostAmount:          lostList.reduce((s, d) => s + ((d as any).agreedAmount ?? 0), 0),
+    };
+  }, [filteredDeals]);
 
   const totalDeals = filteredDeals?.length ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
