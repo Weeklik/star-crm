@@ -135,6 +135,7 @@ export default function AddOrder() {
   const [stage, setStage] = useState<string>("Quotation Sent");
   const [salesChancePct, setSalesChancePct] = useState(25);
   const [transportationFee, setTransportationFee] = useState(0);
+  const [receivedAmount, setReceivedAmount] = useState(0);
   const [orderType, setOrderType] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [warranty, setWarranty] = useState("");
@@ -167,6 +168,7 @@ export default function AddOrder() {
     const pct = parseInt(String(deal.salesStatus).replace("%", "")) || 25;
     setSalesChancePct(pct);
     setTransportationFee(deal.transportationFee ?? 0);
+    setReceivedAmount(deal.receivedAmount ?? 0);
     setOrderType((deal as any).orderType ?? "");
     setPaymentTerms(deal.paymentTerms ?? "");
     setWarranty(deal.warranty ?? "");
@@ -292,8 +294,8 @@ export default function AddOrder() {
         salesStatus: `${salesChancePct}%`,
         vatApplicable: items.some((it) => it.vatPct > 0),
         agreedAmount: grandTotal,
-        receivedAmount: 0,
-        outstandingAmount: grandTotal,
+        receivedAmount: receivedAmount,
+        outstandingAmount: Math.max(0, grandTotal - receivedAmount),
         earliestClosingDate: closingDate || null,
         region: region || null,
         notes: notes || null,
@@ -700,6 +702,26 @@ export default function AddOrder() {
             <Plus className="w-4 h-4" />
             Add Item
           </button>
+
+          <div className="mt-4 pt-4 border-t border-border flex items-center justify-end gap-4">
+            <label className="text-sm font-medium text-muted-foreground">Amount Received</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                value={receivedAmount || ""}
+                placeholder="0.00"
+                onChange={(e) => setReceivedAmount(parseFloat(e.target.value) || 0)}
+                className="w-40 text-right h-9 text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2 min-w-[180px] justify-between">
+              <span className="text-sm text-muted-foreground">Outstanding</span>
+              <span className={`font-semibold text-sm tabular-nums ${Math.max(0, grandTotal - receivedAmount) > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
+                {fmt(Math.max(0, grandTotal - receivedAmount))}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* ── Commercial Details ── */}
