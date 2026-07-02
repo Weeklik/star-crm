@@ -58,6 +58,8 @@ const STAGE_TO_SALES_CHANCE: Record<string, number> = {
   "Order Lost": 0,
 };
 
+const ORDER_TYPES = ["New Customer", "Dealer Customer", "Existing Customer"];
+
 const PAYMENT_TERMS = [
   "30 Days",
   "60 Days",
@@ -66,6 +68,7 @@ const PAYMENT_TERMS = [
   "50% Advance",
   "Net 30",
   "Net 60",
+  "PDC",
 ];
 const WARRANTY_OPTIONS = [
   "6 Months",
@@ -132,6 +135,7 @@ export default function AddOrder() {
   const [stage, setStage] = useState<string>("Quotation Sent");
   const [salesChancePct, setSalesChancePct] = useState(25);
   const [transportationFee, setTransportationFee] = useState(0);
+  const [orderType, setOrderType] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [warranty, setWarranty] = useState("");
   const [pdc, setPdc] = useState("");
@@ -163,6 +167,7 @@ export default function AddOrder() {
     const pct = parseInt(String(deal.salesStatus).replace("%", "")) || 25;
     setSalesChancePct(pct);
     setTransportationFee(deal.transportationFee ?? 0);
+    setOrderType((deal as any).orderType ?? "");
     setPaymentTerms(deal.paymentTerms ?? "");
     setWarranty(deal.warranty ?? "");
     setPdc((deal as any).pdc ?? "");
@@ -298,6 +303,7 @@ export default function AddOrder() {
         // new fields
         items,
         transportationFee,
+        orderType: orderType || null,
         paymentTerms: paymentTerms || null,
         warranty: warranty || null,
         pdc: pdc || null,
@@ -389,6 +395,23 @@ export default function AddOrder() {
                       <SelectItem key={r} value={r}>
                         {r}
                       </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Order Type</label>
+                <Select
+                  value={orderType || "__none__"}
+                  onValueChange={(v) => setOrderType(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Select —</SelectItem>
+                    {ORDER_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -685,26 +708,29 @@ export default function AddOrder() {
             Commercial Details
           </h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground w-32 shrink-0">Payment Terms</label>
-              <Select
-                value={paymentTerms || "__none__"}
-                onValueChange={(v) =>
-                  setPaymentTerms(v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Select —</SelectItem>
-                  {PAYMENT_TERMS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-start gap-3">
+              <label className="text-sm text-muted-foreground w-32 shrink-0 pt-2">Payment Terms</label>
+              <div className="flex-1 flex flex-col gap-1">
+                <Select
+                  value={paymentTerms || "__none__"}
+                  onValueChange={(v) => setPaymentTerms(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Select —</SelectItem>
+                    {PAYMENT_TERMS.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {paymentTerms === "PDC" && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    Please write the amount inside Notes.
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground w-32 shrink-0">Warranty</label>
@@ -724,30 +750,6 @@ export default function AddOrder() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex items-start gap-3">
-              <label className="text-sm text-muted-foreground w-32 shrink-0 pt-2">PDC</label>
-              <div className="flex-1 flex flex-col gap-1">
-                <Select
-                  value={pdc || "__none__"}
-                  onValueChange={(v) => setPdc(v === "__none__" ? "" : v)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Select —</SelectItem>
-                    {[1,2,3,4,5,6,7,8,9,10].map((n) => (
-                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {pdc && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                    Please write the amount inside Notes.
-                  </p>
-                )}
-              </div>
             </div>
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Terms</label>

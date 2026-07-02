@@ -30,6 +30,7 @@ export const dealsTable = pgTable("deals", {
   // New fields for the full-page order form
   items: jsonb("items"),
   transportationFee: numeric("transportation_fee", { precision: 15, scale: 2 }).notNull().default("0"),
+  orderType: text("order_type"),
   paymentTerms: text("payment_terms"),
   warranty: text("warranty"),
   pdc: text("pdc"),

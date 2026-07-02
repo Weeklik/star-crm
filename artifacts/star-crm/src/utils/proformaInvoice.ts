@@ -26,6 +26,7 @@ export interface ProformaInvoiceData {
   notes?: string | null;
   salespersonName: string;
   logoUrl?: string;
+  orderType?: string | null;
   pdc?: string | null;
   region?: string | null;
   companyNameImageUrl?: string;
@@ -663,6 +664,7 @@ ${cfg.headerVariant === "wave" ? `
         ? `<div>${cfg.attentionLabel} : ${escHtml(data.contactName)}</div>`
         : `<div>MR : ${escHtml(data.contactName)}</div>`
       : ""}
+    ${data.orderType ? `<div style="margin-top:4px;font-size:11px"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.3px">Order Type :</span> ${escHtml(data.orderType)}</div>` : ""}
   </div>
   <div class="date-block">${dateStr}</div>
 </div>

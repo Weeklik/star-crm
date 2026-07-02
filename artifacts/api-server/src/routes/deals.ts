@@ -38,6 +38,7 @@ function formatDeal(deal: any) {
     transportationFee: parseFloat(deal.transportationFee ?? "0"),
     progress: deal.progress ?? 0,
     vatApplicable: deal.vatApplicable ?? false,
+    orderType: deal.orderType ?? null,
     paymentTerms: deal.paymentTerms ?? null,
     warranty: deal.warranty ?? null,
     pdc: deal.pdc ?? null,
@@ -145,6 +146,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       items: (data as any).items ?? null,
       transportationFee: String((data as any).transportationFee ?? 0),
       paymentTerms: (data as any).paymentTerms ?? null,
+      orderType: (data as any).orderType ?? null,
       warranty: (data as any).warranty ?? null,
       pdc: (data as any).pdc ?? null,
       deliveryTerms: (data as any).deliveryTerms ?? null,
@@ -246,6 +248,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if ((d as any).items !== undefined) updateData.items = (d as any).items;
   if ((d as any).transportationFee !== undefined) updateData.transportationFee = String((d as any).transportationFee);
   if ((d as any).paymentTerms !== undefined) updateData.paymentTerms = (d as any).paymentTerms;
+  if ((d as any).orderType !== undefined) updateData.orderType = (d as any).orderType;
   if ((d as any).warranty !== undefined) updateData.warranty = (d as any).warranty;
   if ((d as any).pdc !== undefined) updateData.pdc = (d as any).pdc;
   if ((d as any).deliveryTerms !== undefined) updateData.deliveryTerms = (d as any).deliveryTerms;
