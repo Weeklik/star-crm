@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  MapPin, Plus, Loader2, Navigation, CheckCircle2, Eye, X, Search, Filter,
+  MapPin, Plus, Loader2, Navigation, CheckCircle2, Eye, X, Search,
+  Filter, Map, List, ChevronDown, Check, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,12 @@ interface Activity {
   createdAt: string;
 }
 
+interface User {
+  id: number;
+  name: string;
+  role: string;
+}
+
 function formatTime(t: string) {
   const [h, m] = t.split(":");
   const hour = Number(h);
@@ -45,7 +52,14 @@ function formatDate(d: string) {
   return dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-// ── Leaflet map ───────────────────────────────────────────────────────────────
+// Distinct colors for up to 14 salespersons
+const SP_COLORS = [
+  "#a78bfa", "#f472b6", "#34d399", "#60a5fa", "#fb923c",
+  "#a3e635", "#e879f9", "#2dd4bf", "#fbbf24", "#f87171",
+  "#818cf8", "#4ade80", "#f97316", "#38bdf8",
+];
+
+// ── Single-pin location map (used in modals) ───────────────────────────────────
 function LocationMap({ lat, lng, height = "h-52" }: { lat: number; lng: number; height?: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -61,74 +75,250 @@ function LocationMap({ lat, lng, height = "h-52" }: { lat: number; lng: number; 
       className: "",
     });
 
-    const map = L.map(mapRef.current, {
-      center: [lat, lng], zoom: 15,
-      zoomControl: true, dragging: false,
-      scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false,
-    });
-
+    const map = L.map(mapRef.current, { zoomControl: true, dragging: true, scrollWheelZoom: false });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
     }).addTo(map);
-
     L.marker([lat, lng], { icon }).addTo(map);
+    map.setView([lat, lng], 15);
     mapInstanceRef.current = map;
 
     return () => { map.remove(); mapInstanceRef.current = null; };
   }, [lat, lng]);
 
-  return <div ref={mapRef} className={`w-full ${height} rounded-xl overflow-hidden border border-border/50`} />;
+  return <div ref={mapRef} className={`w-full ${height} rounded-lg overflow-hidden`} />;
 }
 
-// ── View Activity Modal ───────────────────────────────────────────────────────
+// ── Multi-pin map for Map View (owner) ────────────────────────────────────────
+function AllActivitiesMap({
+  activities,
+  usersMap,
+}: {
+  activities: Activity[];
+  usersMap: Record<number, string>;
+}) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
+  // Init map once
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+    const map = L.map(mapRef.current, { zoomControl: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+    map.setView([25, 45], 5);
+    mapInstanceRef.current = map;
+    return () => { map.remove(); mapInstanceRef.current = null; };
+  }, []);
+
+  // Update markers when activities change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    if (activities.length === 0) return;
+
+    const spIds = [...new Set(activities.map((a) => a.salespersonId))];
+    const spColorMap: Record<number, string> = {};
+    spIds.forEach((id, i) => { spColorMap[id] = SP_COLORS[i % SP_COLORS.length]; });
+
+    const bounds: [number, number][] = [];
+
+    activities.forEach((act) => {
+      const lat = parseFloat(act.latitude);
+      const lng = parseFloat(act.longitude);
+      if (isNaN(lat) || isNaN(lng)) return;
+
+      const color = spColorMap[act.salespersonId] ?? "#a78bfa";
+      const spName = usersMap[act.salespersonId] ?? "Unknown";
+      const initials = spName
+        .split(" ")
+        .map((w) => w[0] ?? "")
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      const icon = L.divIcon({
+        html: `<div style="position:relative;width:36px;height:36px">
+          <div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 10px rgba(0,0,0,0.25)"></div>
+          <div style="position:absolute;top:5px;left:5px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white;letter-spacing:0.5px">${initials}</div>
+        </div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        className: "",
+      });
+
+      const locLine = act.locationName
+        ? `<div style="margin-top:4px;font-size:11px;color:#666;max-width:200px;word-wrap:break-word">${act.locationName.slice(0, 100)}${act.locationName.length > 100 ? "…" : ""}</div>`
+        : "";
+      const companyLine = act.company ? `<div><b>Company:</b> ${act.company}</div>` : "";
+      const productLine = act.product ? `<div><b>Product:</b> ${act.product}</div>` : "";
+      const customerLine = act.meetingPerson ? `<div><b>Customer:</b> ${act.meetingPerson}</div>` : "";
+
+      const popup = `<div style="font-family:Arial,sans-serif;font-size:12px;min-width:170px;line-height:1.6">
+        <div style="font-weight:800;font-size:13px;color:${color};margin-bottom:5px;border-bottom:2px solid ${color}22;padding-bottom:4px">${spName}</div>
+        <div><b>Date:</b> ${formatDate(act.date)}</div>
+        <div><b>Time:</b> ${formatTime(act.time)}</div>
+        ${companyLine}${productLine}${customerLine}${locLine}
+      </div>`;
+
+      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      marker.bindPopup(popup, { maxWidth: 240 });
+      markersRef.current.push(marker);
+      bounds.push([lat, lng]);
+    });
+
+    if (bounds.length === 1) {
+      map.setView(bounds[0], 14);
+    } else if (bounds.length > 1) {
+      map.fitBounds(bounds as L.LatLngBoundsExpression, { padding: [50, 50] });
+    }
+  }, [activities, usersMap]);
+
+  return (
+    <div ref={mapRef} className="w-full rounded-xl overflow-hidden" style={{ height: "calc(100vh - 340px)", minHeight: "460px" }} />
+  );
+}
+
+// ── Multi-select salesperson dropdown ─────────────────────────────────────────
+function MultiSelectSalesperson({
+  users,
+  selected,
+  onChange,
+}: {
+  users: User[];
+  selected: number[];
+  onChange: (ids: number[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  function toggle(id: number) {
+    onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
+  }
+
+  function selectAll() { onChange([]); }
+
+  const label =
+    selected.length === 0
+      ? "All salespersons"
+      : selected.length === 1
+      ? (users.find((u) => u.id === selected[0])?.name ?? "1 selected")
+      : `${selected.length} selected`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full h-9 px-3 rounded-md border border-input bg-background text-sm hover:bg-muted/30 transition-colors"
+      >
+        <Users className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="flex-1 text-left truncate text-foreground">{label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-lg max-h-56 overflow-y-auto">
+          <button
+            type="button"
+            onClick={selectAll}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 text-left border-b border-border/40"
+          >
+            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.length === 0 ? "bg-violet-500 border-violet-500" : "border-muted-foreground/40"}`}>
+              {selected.length === 0 && <Check className="w-3 h-3 text-white" />}
+            </div>
+            <span className="font-medium">All salespersons</span>
+          </button>
+          {users.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => toggle(u.id)}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 text-left"
+            >
+              <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.includes(u.id) ? "bg-violet-500 border-violet-500" : "border-muted-foreground/40"}`}>
+                {selected.includes(u.id) && <Check className="w-3 h-3 text-white" />}
+              </div>
+              {u.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── View Activity Modal ────────────────────────────────────────────────────────
 function ViewActivityModal({
   activity,
   onClose,
+  salespersonName,
 }: {
   activity: Activity | null;
   onClose: () => void;
+  salespersonName?: string;
 }) {
   if (!activity) return null;
   const lat = parseFloat(activity.latitude);
   const lng = parseFloat(activity.longitude);
+  const hasCoords = !isNaN(lat) && !isNaN(lng);
 
   return (
     <Dialog open={!!activity} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg w-full">
+      <DialogContent className="max-w-md w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-violet-400" />
+            <MapPin className="w-5 h-5 text-violet-400" />
             Activity Details
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-1">
-          {/* Date & Time strip */}
+          {salespersonName && (
+            <div className="flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-2">
+              <Users className="w-4 h-4 text-violet-400 flex-shrink-0" />
+              <span className="text-sm font-semibold text-violet-300">{salespersonName}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted/40 rounded-xl p-3 border border-border/30 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">Date</p>
-              <p className="text-sm font-bold text-foreground">{formatDate(activity.date)}</p>
+            <div className="bg-muted/40 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium mb-1">Date</p>
+              <p className="font-semibold text-sm">{formatDate(activity.date)}</p>
             </div>
-            <div className="bg-muted/40 rounded-xl p-3 border border-border/30 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">Time</p>
-              <p className="text-sm font-bold text-foreground">{formatTime(activity.time)}</p>
+            <div className="bg-muted/40 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium mb-1">Time</p>
+              <p className="font-semibold text-sm">{formatTime(activity.time)}</p>
             </div>
           </div>
 
-          {/* Map */}
-          <LocationMap lat={lat} lng={lng} height="h-56" />
+          {hasCoords && (
+            <div className="space-y-2">
+              <LocationMap lat={lat} lng={lng} />
+              <div className="flex items-start gap-2 bg-muted/40 rounded-lg px-3 py-2">
+                <MapPin className="w-3.5 h-3.5 text-violet-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {activity.locationName ?? `${activity.latitude}, ${activity.longitude}`}
+                </p>
+              </div>
+            </div>
+          )}
 
-          {/* Location address */}
-          <div className="flex items-start gap-2 bg-muted/30 rounded-lg px-3 py-2.5 border border-border/30">
-            <MapPin className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {activity.locationName ?? `${activity.latitude}, ${activity.longitude}`}
-            </p>
-          </div>
-
-          {/* Other details */}
           {(activity.company || activity.product || activity.meetingPerson) && (
-            <div className="grid grid-cols-1 gap-2 border-t border-border/30 pt-3">
+            <div className="bg-muted/20 rounded-lg p-3 space-y-2">
               {activity.meetingPerson && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Customer</span>
@@ -379,15 +569,26 @@ function AddActivityModal({
 export default function MyActivities() {
   const { data: me } = useGetMe();
   const { toast } = useToast();
+  const isOwner = me?.role === "owner";
+
+  const [activeTab, setActiveTab] = useState<"list" | "map">("list");
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewActivity, setViewActivity] = useState<Activity | null>(null);
 
-  // Filters
+  // List tab filters
   const [filterDate, setFilterDate] = useState("");
   const [filterTime, setFilterTime] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
+
+  // Map tab filters
+  const [mapSalespeople, setMapSalespeople] = useState<number[]>([]);
+  const [mapDateFrom, setMapDateFrom] = useState("");
+  const [mapDateTo, setMapDateTo] = useState("");
+  const [mapTimeFrom, setMapTimeFrom] = useState("");
+  const [mapTimeTo, setMapTimeTo] = useState("");
 
   async function fetchActivities() {
     setLoading(true);
@@ -402,9 +603,28 @@ export default function MyActivities() {
     }
   }
 
-  useEffect(() => { if (me) fetchActivities(); }, [me]);
+  async function fetchUsers() {
+    try {
+      const res = await fetch(`${BASE}/api/users`, { credentials: "include" });
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch {
+      // non-critical
+    }
+  }
 
-  const filtered = activities.filter((a) => {
+  useEffect(() => {
+    if (me) {
+      fetchActivities();
+      if (me.role === "owner") fetchUsers();
+    }
+  }, [me]);
+
+  const usersMap: Record<number, string> = {};
+  users.forEach((u) => { usersMap[u.id] = u.name; });
+
+  // List tab filtered
+  const listFiltered = activities.filter((a) => {
     if (filterDate && a.date !== filterDate) return false;
     if (filterTime) {
       const t = filterTime.replace(":", "");
@@ -418,12 +638,24 @@ export default function MyActivities() {
     return true;
   });
 
-  const hasFilters = filterDate || filterTime || filterLocation;
+  // Map tab filtered
+  const mapFiltered = activities.filter((a) => {
+    if (mapSalespeople.length > 0 && !mapSalespeople.includes(a.salespersonId)) return false;
+    if (mapDateFrom && a.date < mapDateFrom) return false;
+    if (mapDateTo && a.date > mapDateTo) return false;
+    if (mapTimeFrom && a.time < mapTimeFrom) return false;
+    if (mapTimeTo && a.time > mapTimeTo) return false;
+    return true;
+  });
 
-  function clearFilters() { setFilterDate(""); setFilterTime(""); setFilterLocation(""); }
+  const hasListFilters = filterDate || filterTime || filterLocation;
+  const hasMapFilters = mapSalespeople.length > 0 || mapDateFrom || mapDateTo || mapTimeFrom || mapTimeTo;
+
+  function clearListFilters() { setFilterDate(""); setFilterTime(""); setFilterLocation(""); }
+  function clearMapFilters() { setMapSalespeople([]); setMapDateFrom(""); setMapDateTo(""); setMapTimeFrom(""); setMapTimeTo(""); }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
@@ -439,156 +671,273 @@ export default function MyActivities() {
         </Button>
       </div>
 
-      {/* ── Filters ── */}
-      <div className="bg-card border border-border/50 rounded-xl p-4 mb-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">Filters</span>
-          {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-3 h-3" /> Clear all
-            </button>
-          )}
+      {/* Tabs — Map View only visible to owner */}
+      {isOwner && (
+        <div className="flex gap-1 bg-muted/40 rounded-lg p-1 mb-5 w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveTab("list")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === "list"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <List className="w-4 h-4" />
+            List View
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("map")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === "map"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Map className="w-4 h-4" />
+            Map View
+          </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Date */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Date</Label>
-            <Input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="h-9 text-sm"
-            />
-          </div>
-          {/* Time */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Time</Label>
-            <Input
-              type="time"
-              value={filterTime}
-              onChange={(e) => setFilterTime(e.target.value)}
-              className="h-9 text-sm"
-            />
-          </div>
-          {/* Location */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Location</Label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Search location…"
-                value={filterLocation}
-                onChange={(e) => setFilterLocation(e.target.value)}
-                className="h-9 pl-8 text-sm"
-              />
+      )}
+
+      {/* ── LIST VIEW ── */}
+      {activeTab === "list" && (
+        <>
+          <div className="bg-card border border-border/50 rounded-xl p-4 mb-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Filters</span>
+              {hasListFilters && (
+                <button
+                  onClick={clearListFilters}
+                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" /> Clear all
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Date</Label>
+                <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Time</Label>
+                <Input type="time" value={filterTime} onChange={(e) => setFilterTime(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Location</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    placeholder="Search location…"
+                    value={filterLocation}
+                    onChange={(e) => setFilterLocation(e.target.value)}
+                    className="h-9 pl-8 text-sm"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* ── Table ── */}
-      <div className="rounded-xl border border-border/60 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/60 bg-muted/30">
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Date</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Time</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Location</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Product</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Meeting Person</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Company</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">View</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                      <span className="text-sm">Loading activities…</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center">
-                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                      <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                        <MapPin className="w-6 h-6 opacity-40" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground/60">
-                          {hasFilters ? "No activities match your filters" : "No activities yet"}
-                        </p>
-                        <p className="text-xs mt-0.5">
-                          {hasFilters ? "Try adjusting the filters above" : `Click "Add Activity" to log your first field visit`}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((act, i) => (
-                  <tr
-                    key={act.id}
-                    className={`border-b border-border/30 transition-colors hover:bg-muted/20 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
-                  >
-                    <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDate(act.date)}</td>
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatTime(act.time)}</td>
-                    <td className="px-4 py-3 max-w-52">
-                      <div className="flex items-start gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-violet-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-xs text-muted-foreground leading-snug line-clamp-2">
-                          {act.locationName ?? `${act.latitude}, ${act.longitude}`}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {act.product
-                        ? <span className="inline-block bg-violet-500/10 text-violet-400 text-xs font-medium px-2 py-0.5 rounded-full border border-violet-500/20">{act.product}</span>
-                        : <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    <td className="px-4 py-3 font-medium">
-                      {act.meetingPerson ?? <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {act.company
-                        ? <span className="font-medium text-foreground/80">{act.company}</span>
-                        : <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1.5 text-violet-400 hover:text-violet-300 hover:bg-violet-500/10"
-                        onClick={() => setViewActivity(act)}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View
-                      </Button>
-                    </td>
+          <div className="rounded-xl border border-border/60 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/60 bg-muted/30">
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Date</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Time</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Location</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Product</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Meeting Person</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Company</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">View</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                          <span className="text-sm">Loading activities…</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : listFiltered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                          <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                            <MapPin className="w-6 h-6 opacity-40" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground/60">
+                              {hasListFilters ? "No activities match your filters" : "No activities yet"}
+                            </p>
+                            <p className="text-xs mt-0.5">
+                              {hasListFilters ? "Try adjusting the filters above" : `Click "Add Activity" to log your first field visit`}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    listFiltered.map((act, i) => (
+                      <tr
+                        key={act.id}
+                        className={`border-b border-border/30 transition-colors hover:bg-muted/20 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
+                      >
+                        <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDate(act.date)}</td>
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatTime(act.time)}</td>
+                        <td className="px-4 py-3 max-w-52">
+                          <div className="flex items-start gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-violet-400 mt-0.5 flex-shrink-0" />
+                            <span className="text-xs text-muted-foreground leading-snug line-clamp-2">
+                              {act.locationName ?? `${act.latitude}, ${act.longitude}`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {act.product
+                            ? <span className="inline-block bg-violet-500/10 text-violet-400 text-xs font-medium px-2 py-0.5 rounded-full border border-violet-500/20">{act.product}</span>
+                            : <span className="text-muted-foreground/40 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3 font-medium">
+                          {act.meetingPerson ?? <span className="text-muted-foreground/40 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {act.company
+                            ? <span className="font-medium text-foreground/80">{act.company}</span>
+                            : <span className="text-muted-foreground/40 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 text-violet-400 hover:text-violet-300 hover:bg-violet-500/10"
+                            onClick={() => setViewActivity(act)}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-      {filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground mt-3 text-right">
-          {filtered.length} of {activities.length} {activities.length === 1 ? "activity" : "activities"}
-        </p>
+          {listFiltered.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-3 text-right">
+              {listFiltered.length} of {activities.length} {activities.length === 1 ? "activity" : "activities"}
+            </p>
+          )}
+        </>
+      )}
+
+      {/* ── MAP VIEW (owner only) ── */}
+      {activeTab === "map" && isOwner && (
+        <>
+          {/* Map filters */}
+          <div className="bg-card border border-border/50 rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Filters</span>
+              <span className="text-xs text-muted-foreground ml-1">({mapFiltered.length} pin{mapFiltered.length !== 1 ? "s" : ""})</span>
+              {hasMapFilters && (
+                <button
+                  onClick={clearMapFilters}
+                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" /> Clear all
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {/* Salesperson multi-select */}
+              <div className="space-y-1.5 lg:col-span-2">
+                <Label className="text-xs text-muted-foreground">Salesperson</Label>
+                <MultiSelectSalesperson
+                  users={users.filter((u) => u.role !== "owner")}
+                  selected={mapSalespeople}
+                  onChange={setMapSalespeople}
+                />
+              </div>
+              {/* Date from */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Date From</Label>
+                <Input type="date" value={mapDateFrom} onChange={(e) => setMapDateFrom(e.target.value)} className="h-9 text-sm" />
+              </div>
+              {/* Date to */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Date To</Label>
+                <Input type="date" value={mapDateTo} onChange={(e) => setMapDateTo(e.target.value)} className="h-9 text-sm" />
+              </div>
+              {/* Time range */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Time From → To</Label>
+                <div className="flex gap-1.5 items-center">
+                  <Input type="time" value={mapTimeFrom} onChange={(e) => setMapTimeFrom(e.target.value)} className="h-9 text-sm flex-1" />
+                  <span className="text-muted-foreground text-xs">–</span>
+                  <Input type="time" value={mapTimeTo} onChange={(e) => setMapTimeTo(e.target.value)} className="h-9 text-sm flex-1" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          {mapFiltered.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[...new Set(mapFiltered.map((a) => a.salespersonId))].map((spId, i) => (
+                <div key={spId} className="flex items-center gap-1.5 bg-muted/40 rounded-full px-2.5 py-1 text-xs">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ background: SP_COLORS[i % SP_COLORS.length] }}
+                  />
+                  <span>{usersMap[spId] ?? `SP #${spId}`}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Map */}
+          {loading ? (
+            <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/20" style={{ height: "460px" }}>
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-sm">Loading activities…</span>
+              </div>
+            </div>
+          ) : mapFiltered.length === 0 ? (
+            <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/20" style={{ height: "460px" }}>
+              <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                <Map className="w-10 h-10 opacity-30" />
+                <div className="text-center">
+                  <p className="font-medium text-foreground/60">
+                    {hasMapFilters ? "No activities match your filters" : "No activities to show"}
+                  </p>
+                  <p className="text-xs mt-0.5">
+                    {hasMapFilters ? "Try adjusting the filters above" : "Activities will appear here once logged"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <AllActivitiesMap activities={mapFiltered} usersMap={usersMap} />
+          )}
+        </>
       )}
 
       <AddActivityModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={fetchActivities} />
-      <ViewActivityModal activity={viewActivity} onClose={() => setViewActivity(null)} />
+      <ViewActivityModal
+        activity={viewActivity}
+        onClose={() => setViewActivity(null)}
+        salespersonName={viewActivity && isOwner ? usersMap[viewActivity.salespersonId] : undefined}
+      />
     </div>
   );
 }
