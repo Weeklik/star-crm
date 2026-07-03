@@ -734,9 +734,8 @@ ${data.pdc ? `<!-- ── PDC ── -->
 <div class="section">
   <span class="section-title">Number of PDC :</span> ${escHtml(data.pdc)} cheque(s)${(() => {
     const count = parseInt(data.pdc ?? "");
-    const outstanding = data.outstandingAmount ?? 0;
-    if (count > 0 && outstanding > 0) {
-      return ` &nbsp;|&nbsp; <span style="font-weight:600;">Amount per cheque : ${fmt(outstanding / count, curr)} ${curr}</span>`;
+    if (count > 0 && outstandingAmt > 0) {
+      return ` &nbsp;|&nbsp; <span style="font-weight:600;">Amount per cheque : ${fmt(outstandingAmt / count, curr)} ${curr}</span>`;
     }
     return "";
   })()}
