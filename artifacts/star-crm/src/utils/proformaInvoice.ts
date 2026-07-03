@@ -1,5 +1,6 @@
 import tnHeaderBanner from "@assets/image_1782552446892.png";
 import tnFooterBanner from "@assets/image_1782553154223.png";
+import starGlobalTechHeader from "@assets/image_1783078148368.png";
 
 export interface ProformaInvoiceItem {
   brand: string;
@@ -33,6 +34,7 @@ export interface ProformaInvoiceData {
   deliveryTime?: string | null;
   region?: string | null;
   companyNameImageUrl?: string;
+  companySelection?: string | null;
   // Multi-item fields from AddOrder
   items?: ProformaInvoiceItem[] | null;
   transportationFee?: number | null;
@@ -652,7 +654,10 @@ ${cfg.headerVariant === "wave" ? `
   ${logoHtml}
   <div class="company-info">
     ${data.companyNameImageUrl ? `<img src="${data.companyNameImageUrl}" alt="" style="width:100%;height:auto;max-height:28px;object-fit:contain;object-position:center;display:block;margin:0 auto 3px;" />` : ""}
-    <div class="co-name" ${cfg.companyNameColor ? `style="color:${cfg.companyNameColor}"` : ""}>${cfg.companyName}</div>
+    ${data.companySelection === "STAR GLOBAL TECH FZCO"
+      ? `<img src="${starGlobalTechHeader}" alt="STAR GLOBAL TECH FZCO" style="width:100%;max-width:420px;height:auto;display:block;margin:0 auto 4px;object-fit:contain;" />`
+      : `<div class="co-name" ${cfg.companyNameColor ? `style="color:${cfg.companyNameColor}"` : ""}>${cfg.companyName}</div>`
+    }
     <div class="co-sub">${cfg.companySubTitle}</div>
     <div class="co-contact" ${cfg.addressUnderline ? `style="text-decoration:underline"` : ""}>
       ${cfg.letterheadContact}

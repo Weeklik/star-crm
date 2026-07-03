@@ -830,6 +830,7 @@ export default function Deals() {
         receivedAmount: fresh.receivedAmount ?? 0,
         outstandingAmount: fresh.outstandingAmount ?? 0,
         deliveryTime: (fresh as any).deliveryTime ?? undefined,
+        companySelection: (fresh as any).companySelection ?? undefined,
       });
     } catch {
       toast({ title: "Failed to load invoice data", variant: "destructive" });

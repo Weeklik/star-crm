@@ -44,6 +44,7 @@ function formatDeal(deal: any) {
     pdc: deal.pdc ?? null,
     deliveryTerms: deal.deliveryTerms ?? null,
     deliveryTime: deal.deliveryTime ?? null,
+    companySelection: deal.companySelection ?? null,
     items: deal.items ?? null,
     dealStartDate:
       deal.dealStartDate instanceof Date
@@ -152,6 +153,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       pdc: (data as any).pdc ?? null,
       deliveryTerms: (data as any).deliveryTerms ?? null,
       deliveryTime: (data as any).deliveryTime ?? null,
+      companySelection: (data as any).companySelection ?? null,
     })
     .returning();
 
@@ -255,6 +257,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if ((d as any).pdc !== undefined) updateData.pdc = (d as any).pdc;
   if ((d as any).deliveryTerms !== undefined) updateData.deliveryTerms = (d as any).deliveryTerms;
   if ((d as any).deliveryTime !== undefined) updateData.deliveryTime = (d as any).deliveryTime;
+  if ((d as any).companySelection !== undefined) updateData.companySelection = (d as any).companySelection;
 
   const [updated] = await db
     .update(dealsTable)

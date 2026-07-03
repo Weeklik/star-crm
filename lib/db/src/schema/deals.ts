@@ -36,6 +36,7 @@ export const dealsTable = pgTable("deals", {
   pdc: text("pdc"),
   deliveryTerms: text("delivery_terms"),
   deliveryTime: text("delivery_time"),
+  companySelection: text("company_selection"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -365,6 +365,7 @@ export default function AddOrder() {
         pdc: pdc || null,
         deliveryTerms: deliveryTerms || null,
         deliveryTime: deliveryTime || null,
+        companySelection: companySelection || null,
       } as any;
 
       if (editId !== null) {

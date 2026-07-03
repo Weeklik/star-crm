@@ -87,6 +87,7 @@ export const ListDealsResponseItem = zod.object({
   warranty: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
+  companySelection: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -151,6 +152,7 @@ export const CreateDealBody = zod.object({
   pdc: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
+  companySelection: zod.string().nullish(),
 });
 
 /**
@@ -218,6 +220,7 @@ export const GetDealResponse = zod.object({
   warranty: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
+  companySelection: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -287,6 +290,7 @@ export const UpdateDealBody = zod.object({
   pdc: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
+  companySelection: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
@@ -347,6 +351,7 @@ export const UpdateDealResponse = zod.object({
   warranty: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
+  companySelection: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
