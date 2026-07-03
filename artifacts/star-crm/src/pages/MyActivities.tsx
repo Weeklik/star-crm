@@ -740,45 +740,52 @@ export default function MyActivities() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="flex flex-wrap items-end gap-3">
+              {/* Date From → To — left side */}
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Date From → To</Label>
                 <div className="flex gap-1.5 items-center">
-                  <Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="h-9 text-sm flex-1" />
+                  <Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="h-9 text-sm w-36" />
                   <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
-                  <Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="h-9 text-sm flex-1" />
+                  <Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="h-9 text-sm w-36" />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Time From → To</Label>
-                <div className="flex gap-1.5 items-center">
-                  <Input type="time" value={filterTimeFrom} onChange={(e) => setFilterTimeFrom(e.target.value)} className="h-9 text-sm flex-1" />
-                  <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
-                  <Input type="time" value={filterTimeTo} onChange={(e) => setFilterTimeTo(e.target.value)} className="h-9 text-sm flex-1" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Location</Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    placeholder="Search location…"
-                    value={filterLocation}
-                    onChange={(e) => setFilterLocation(e.target.value)}
-                    className="h-9 pl-8 text-sm"
-                  />
-                </div>
-              </div>
-              {isOwner && users.length > 0 && (
+
+              {/* Time / Location / Salesperson — pushed to the right */}
+              <div className="ml-auto flex flex-wrap items-end gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Salesperson</Label>
-                  <MultiSelectSalesperson
-                    users={users}
-                    selected={filterSalesperson}
-                    onChange={setFilterSalesperson}
-                  />
+                  <Label className="text-xs text-muted-foreground">Time From → To</Label>
+                  <div className="flex gap-1.5 items-center">
+                    <Input type="time" value={filterTimeFrom} onChange={(e) => setFilterTimeFrom(e.target.value)} className="h-9 text-sm w-28" />
+                    <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
+                    <Input type="time" value={filterTimeTo} onChange={(e) => setFilterTimeTo(e.target.value)} className="h-9 text-sm w-28" />
+                  </div>
                 </div>
-              )}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Location</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      placeholder="Search location…"
+                      value={filterLocation}
+                      onChange={(e) => setFilterLocation(e.target.value)}
+                      className="h-9 pl-8 text-sm w-44"
+                    />
+                  </div>
+                </div>
+                {isOwner && users.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Salesperson</Label>
+                    <div className="w-44">
+                      <MultiSelectSalesperson
+                        users={users}
+                        selected={filterSalesperson}
+                        onChange={setFilterSalesperson}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
