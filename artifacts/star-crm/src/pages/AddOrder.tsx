@@ -372,7 +372,7 @@ export default function AddOrder() {
         await createDeal.mutateAsync({ data: payload });
         toast({ title: "Order created successfully" });
       }
-      await queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
       navigate("/deals");
     } catch (err: any) {
       toast({
