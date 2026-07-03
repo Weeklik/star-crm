@@ -827,6 +827,9 @@ export default function Deals() {
         paymentTerms: fresh.paymentTerms ?? undefined,
         warranty: fresh.warranty ?? undefined,
         deliveryTerms: fresh.deliveryTerms ?? undefined,
+        receivedAmount: fresh.receivedAmount ?? 0,
+        outstandingAmount: fresh.outstandingAmount ?? 0,
+        deliveryTime: (fresh as any).deliveryTime ?? undefined,
       });
     } catch {
       toast({ title: "Failed to load invoice data", variant: "destructive" });

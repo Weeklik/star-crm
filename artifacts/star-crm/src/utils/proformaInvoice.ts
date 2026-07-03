@@ -21,6 +21,8 @@ export interface ProformaInvoiceData {
   model?: string | null;
   quantity?: number | null;
   agreedAmount: number;
+  receivedAmount?: number | null;
+  outstandingAmount?: number | null;
   currency?: string | null;
   vatApplicable?: boolean;
   notes?: string | null;
@@ -28,6 +30,7 @@ export interface ProformaInvoiceData {
   logoUrl?: string;
   orderType?: string | null;
   pdc?: string | null;
+  deliveryTime?: string | null;
   region?: string | null;
   companyNameImageUrl?: string;
   // Multi-item fields from AddOrder
@@ -319,6 +322,9 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     </tr>`;
   }).join("\n");
 
+  const receivedAmt = data.receivedAmount ?? 0;
+  const outstandingAmt = data.outstandingAmount ?? grandTotal;
+
   const totalsHtml = `
   <tr>
     <td class="label">Sub Total (${curr})</td>
@@ -339,6 +345,14 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   <tr class="grand">
     <td class="label">Grand Total (${curr})</td>
     <td class="value">${fmt(grandTotal, curr)} ${curr}</td>
+  </tr>
+  ${receivedAmt > 0 ? `<tr>
+    <td class="label">Received Amount (${curr})</td>
+    <td class="value" style="color:#1a7a1a;font-weight:700;">${fmt(receivedAmt, curr)} ${curr}</td>
+  </tr>` : ""}
+  <tr>
+    <td class="label">Outstanding Amount (${curr})</td>
+    <td class="value" style="color:${outstandingAmt > 0 ? "#c0392b" : "#1a7a1a"};font-weight:700;">${fmt(outstandingAmt, curr)} ${curr}</td>
   </tr>`;
 
   const html = `<!DOCTYPE html>
@@ -701,6 +715,16 @@ ${cfg.validityText ? `<div class="section" style="font-style:italic;color:#555;"
   <span class="section-title">${paymentLabel} :</span> ${escHtml(data.paymentTerms) || cfg.paymentText}
 </div>
 
+${data.deliveryTime ? `<!-- ── DELIVERY TIME ── -->
+<div class="section">
+  <span class="section-title">Delivery Time :</span> ${escHtml(data.deliveryTime)}
+</div>` : ""}
+
+${data.deliveryTerms ? `<!-- ── DELIVERY TERMS ── -->
+<div class="section">
+  <span class="section-title">Delivery Terms :</span> ${escHtml(data.deliveryTerms)}
+</div>` : ""}
+
 ${data.warranty ? `<!-- ── WARRANTY ── -->
 <div class="section">
   <span class="section-title">Warranty :</span> ${escHtml(data.warranty)}
@@ -708,12 +732,14 @@ ${data.warranty ? `<!-- ── WARRANTY ── -->
 
 ${data.pdc ? `<!-- ── PDC ── -->
 <div class="section">
-  <span class="section-title">PDC :</span> ${escHtml(data.pdc)}
-</div>` : ""}
-
-${data.deliveryTerms ? `<!-- ── DELIVERY TERMS ── -->
-<div class="section">
-  <span class="section-title">Delivery Terms :</span> ${escHtml(data.deliveryTerms)}
+  <span class="section-title">Number of PDC :</span> ${escHtml(data.pdc)} cheque(s)${(() => {
+    const count = parseInt(data.pdc ?? "");
+    const outstanding = data.outstandingAmount ?? 0;
+    if (count > 0 && outstanding > 0) {
+      return ` &nbsp;|&nbsp; <span style="font-weight:600;">Amount per cheque : ${fmt(outstanding / count, curr)} ${curr}</span>`;
+    }
+    return "";
+  })()}
 </div>` : ""}
 
 <!-- ── BANK DETAILS ── -->

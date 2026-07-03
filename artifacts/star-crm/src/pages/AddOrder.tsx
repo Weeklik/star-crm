@@ -81,6 +81,18 @@ const WARRANTY_OPTIONS = [
   "No Warranty",
 ];
 const DELIVERY_TERMS = ["FOB Dubai", "CIF", "EXW", "DDP", "DAP", "CFR"];
+const DELIVERY_TIME_OPTIONS = [
+  "7 Days",
+  "14 Days",
+  "30 Days",
+  "45 Days",
+  "60 Days",
+  "90 Days",
+  "120 Days",
+  "180 Days",
+  "Upon Availability",
+  "To Be Confirmed",
+];
 const REGIONS = [
   "Abu Dhabi",
   "Dubai",
@@ -172,6 +184,7 @@ export default function AddOrder() {
   const [warranty, setWarranty] = useState("");
   const [pdc, setPdc] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
   const [saving, setSaving] = useState(false);
@@ -212,6 +225,7 @@ export default function AddOrder() {
     setWarranty(deal.warranty ?? "");
     setPdc((deal as any).pdc ?? "");
     setDeliveryTerms(deal.deliveryTerms ?? "");
+    setDeliveryTime((deal as any).deliveryTime ?? "");
     setNotes(deal.notes ?? "");
 
     const dealItems = deal.items;
@@ -348,6 +362,7 @@ export default function AddOrder() {
         warranty: warranty || null,
         pdc: pdc || null,
         deliveryTerms: deliveryTerms || null,
+        deliveryTime: deliveryTime || null,
       } as any;
 
       if (editId !== null) {
@@ -789,10 +804,11 @@ export default function AddOrder() {
                     </div>
                     {(() => {
                       const count = parseInt(pdc);
-                      if (count > 0 && grandTotal > 0) {
+                      const outstanding = Math.max(0, grandTotal - receivedAmount);
+                      if (count > 0 && outstanding > 0) {
                         return (
                           <p className="text-xs font-semibold text-violet-500 dark:text-violet-400">
-                            Amount per cheque: {fmt(grandTotal / count)}
+                            Amount per cheque: {fmt(outstanding / count)}
                           </p>
                         );
                       }
@@ -835,6 +851,27 @@ export default function AddOrder() {
                 <SelectContent>
                   <SelectItem value="__none__">— Select —</SelectItem>
                   {DELIVERY_TERMS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Time</label>
+              <Select
+                value={deliveryTime || "__none__"}
+                onValueChange={(v) =>
+                  setDeliveryTime(v === "__none__" ? "" : v)
+                }
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Select —</SelectItem>
+                  {DELIVERY_TIME_OPTIONS.map((t) => (
                     <SelectItem key={t} value={t}>
                       {t}
                     </SelectItem>
