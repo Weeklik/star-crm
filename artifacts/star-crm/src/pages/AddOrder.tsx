@@ -704,10 +704,9 @@ export default function AddOrder() {
                       <td className="px-2 py-1">
                         <Input
                           type="number"
-                          min={1}
                           value={item.qty}
                           onChange={(e) =>
-                            updateItem(item.id, "qty", parseInt(e.target.value) || 1)
+                            updateItem(item.id, "qty", parseInt(e.target.value) || 0)
                           }
                           className="w-full text-center"
                         />
