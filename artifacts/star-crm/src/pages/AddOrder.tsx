@@ -628,7 +628,7 @@ export default function AddOrder() {
                   <th className="px-3 py-2.5 text-center font-medium w-36">Brand</th>
                   <th className="px-3 py-2.5 text-center font-medium w-36">Model</th>
                   <th className="px-3 py-2.5 text-center font-medium">Description</th>
-                  <th className="px-3 py-2.5 text-center font-medium w-16">Qty</th>
+                  <th className="px-3 py-2.5 text-center font-medium w-24">Qty</th>
                   <th className="px-3 py-2.5 text-center font-medium w-28">Unit Price</th>
                   <th className="px-3 py-2.5 text-center font-medium w-24">Discount (%)</th>
                   <th className="px-3 py-2.5 text-center font-medium w-20">VAT (%)</th>
