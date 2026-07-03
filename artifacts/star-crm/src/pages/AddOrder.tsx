@@ -112,6 +112,16 @@ const VAT_BY_COUNTRY: Record<string, number> = {
   Ghana:    15,
 };
 
+function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 function getCountryVat(country: string | null | undefined): number {
   if (!country) return 0;
   return VAT_BY_COUNTRY[country] ?? 0;
@@ -207,12 +217,20 @@ export default function AddOrder() {
     const dealItems = deal.items;
     if (Array.isArray(dealItems) && dealItems.length > 0) {
       setItems(
+<<<<<<< HEAD
         dealItems.map((it: any) => ({ ...it, id: uuidv4() }))
+=======
+        dealItems.map((it: any) => ({ ...it, id: generateId() }))
+>>>>>>> 97b2d15 (Fix error preventing orders from being added due to browser compatibility)
       );
     } else {
       setItems([
         {
+<<<<<<< HEAD
           id: uuidv4(),
+=======
+          id: generateId(),
+>>>>>>> 97b2d15 (Fix error preventing orders from being added due to browser compatibility)
           brand: deal.brand ?? "",
           model: deal.model ?? "",
           description: deal.productItem ?? "",
