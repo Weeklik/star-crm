@@ -145,8 +145,10 @@ export const CreateDealBody = zod.object({
     )
     .nullish(),
   transportationFee: zod.number().optional(),
+  orderType: zod.string().nullish(),
   paymentTerms: zod.string().nullish(),
   warranty: zod.string().nullish(),
+  pdc: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
 });
@@ -279,8 +281,10 @@ export const UpdateDealBody = zod.object({
     )
     .nullish(),
   transportationFee: zod.number().optional(),
+  orderType: zod.string().nullish(),
   paymentTerms: zod.string().nullish(),
   warranty: zod.string().nullish(),
+  pdc: zod.string().nullish(),
   deliveryTerms: zod.string().nullish(),
   deliveryTime: zod.string().nullish(),
 });
