@@ -1,6 +1,7 @@
 import tnHeaderBanner from "@assets/image_1782552446892.png";
 import tnFooterBanner from "@assets/image_1782553154223.png";
 import starGlobalTechHeader from "@assets/image_1783078148368.png";
+import starGlobalTechFooter from "@assets/image_1783078365006.png";
 
 export interface ProformaInvoiceItem {
   brand: string;
@@ -776,7 +777,9 @@ ${data.pdc ? `<!-- ── PDC ── -->
 <!-- ── ADDRESS FOOTER ── -->
 ${cfg.headerVariant === "wave"
   ? `<img src="${tnFooterBanner}" alt="Star North Africa Footer" class="footer-banner-img" />`
-  : `<div class="address-footer">
+  : data.companySelection === "STAR GLOBAL TECH FZCO"
+    ? `<img src="${starGlobalTechFooter}" alt="STAR GLOBAL TECH FZCO Footer" style="display:block;width:calc(100% + 72px);margin:28px -36px -32px;height:auto;" />`
+    : `<div class="address-footer">
   <div class="af-line1">${cfg.footerLine1}</div>
   <div class="af-line2">${cfg.footerLine2}</div>
 </div>`
