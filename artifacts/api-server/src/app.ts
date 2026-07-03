@@ -2,14 +2,14 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
-import memorystore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import path from "path";
 import { existsSync } from "fs";
 import { pool } from "@workspace/db";
 
-const MemoryStore = memorystore(session);
+const PgSessionStore = connectPgSimple(session);
 
 export interface CachedUser {
   id: number;
@@ -64,9 +64,11 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 app.use(
   session({
-    store: new MemoryStore({
-      checkPeriod: 60 * 60 * 1000, // prune expired entries every hour
-      ttl: SESSION_TTL_MS,
+    store: new PgSessionStore({
+      pool,
+      tableName: "session",
+      ttl: SESSION_TTL_MS / 1000, // connect-pg-simple uses seconds
+      pruneSessionInterval: 60 * 60, // prune expired every hour (seconds)
     }),
     secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
     resave: false,
