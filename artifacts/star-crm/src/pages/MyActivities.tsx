@@ -477,71 +477,42 @@ function AddActivityModal({
 
         <div className="space-y-4 pt-1">
           <div className="space-y-3">
-            {geoState !== "error" && (
-              <Button
-                type="button"
-                onClick={handleGetLocation}
-                disabled={geoState === "loading" || geoState === "done"}
-                className="w-full gap-2"
-                variant={geoState === "done" ? "outline" : "default"}
-              >
-                {geoState === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
-                {geoState === "done" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-                {geoState === "idle" && <Navigation className="w-4 h-4" />}
-                {geoState === "loading" ? "Getting location…" : geoState === "done" ? "Location captured" : "Get My Location"}
-              </Button>
-            )}
+            <Button
+              type="button"
+              onClick={handleGetLocation}
+              disabled={geoState === "loading" || geoState === "done"}
+              className="w-full gap-2"
+              variant={geoState === "done" ? "outline" : "default"}
+            >
+              {geoState === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
+              {geoState === "done" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+              {geoState === "error" && <Navigation className="w-4 h-4" />}
+              {geoState === "idle" && <Navigation className="w-4 h-4" />}
+              {geoState === "loading"
+                ? "Getting location…"
+                : geoState === "done"
+                ? "Location captured"
+                : geoState === "error"
+                ? "Try Again"
+                : "Get My Location"}
+            </Button>
 
             {geoState === "error" && (
-              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-semibold text-sm">
-                  <Navigation className="w-4 h-4 flex-shrink-0" />
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 space-y-1">
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                   {geoErrorCode === 1
-                    ? "Location access was blocked"
+                    ? "Location permission was blocked"
                     : geoErrorCode === 3
-                    ? "Location timed out"
-                    : "Location unavailable"}
-                </div>
-
-                {geoErrorCode === 1 ? (
-                  <div className="text-xs text-muted-foreground space-y-2 leading-relaxed">
-                    <p>This website's location was previously blocked. Safari remembers this per website — follow the steps for your device:</p>
-                    <div className="space-y-1 bg-background/60 rounded p-2">
-                      <p className="font-semibold text-foreground">Safari (iPhone / iPad) — per-site reset:</p>
-                      <p>1. Open the iPhone <span className="font-medium text-foreground">Settings</span> app</p>
-                      <p>2. Scroll down and tap <span className="font-medium text-foreground">Safari</span></p>
-                      <p>3. Tap <span className="font-medium text-foreground">Settings for Websites</span> → <span className="font-medium text-foreground">Location</span></p>
-                      <p>4. Find this website and change it to <span className="font-medium text-foreground">Allow</span></p>
-                      <p className="text-amber-600 dark:text-amber-400 mt-1">Or tap <span className="font-medium">Clear History and Website Data</span> in Safari settings to reset all site permissions.</p>
-                    </div>
-                    <div className="space-y-1 bg-background/60 rounded p-2">
-                      <p className="font-semibold text-foreground">Chrome (Android):</p>
-                      <p>Tap the lock 🔒 in the address bar → <span className="font-medium text-foreground">Site settings</span> → <span className="font-medium text-foreground">Location</span> → <span className="font-medium text-foreground">Allow</span></p>
-                    </div>
-                    <div className="space-y-1 bg-background/60 rounded p-2">
-                      <p className="font-semibold text-foreground">Chrome (iPhone / iPad):</p>
-                      <p>iPhone Settings → <span className="font-medium text-foreground">Privacy & Security</span> → <span className="font-medium text-foreground">Location Services</span> → <span className="font-medium text-foreground">Chrome</span> → <span className="font-medium text-foreground">While Using</span></p>
-                    </div>
-                    <p className="text-amber-600 dark:text-amber-400">After updating the permission, tap "Try Again" below.</p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {geoErrorCode === 3
-                      ? "Location took too long. Make sure GPS / Location Services is on, then try again."
-                      : "Could not determine your location. Make sure Location Services is enabled on your device."}
-                  </p>
-                )}
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="w-full gap-2 mt-1"
-                  onClick={handleGetLocation}
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  Try Again
-                </Button>
+                    ? "Location timed out — is GPS on?"
+                    : "Location service is off on this device"}
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {geoErrorCode === 1
+                    ? "Your browser blocked this site from accessing location. Open your browser or device settings, allow location for this site, then tap \"Try Again\"."
+                    : geoErrorCode === 3
+                    ? "GPS took too long to respond. Make sure Location Services is enabled, then tap \"Try Again\"."
+                    : "Go to your device Settings → Privacy → Location Services and turn it on, then tap \"Try Again\"."}
+                </p>
               </div>
             )}
 
