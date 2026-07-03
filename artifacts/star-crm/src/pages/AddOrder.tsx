@@ -187,6 +187,7 @@ export default function AddOrder() {
   const [deliveryTime, setDeliveryTime] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
+  const [companySelection, setCompanySelection] = useState("");
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -226,6 +227,7 @@ export default function AddOrder() {
     setPdc((deal as any).pdc ?? "");
     setDeliveryTerms(deal.deliveryTerms ?? "");
     setDeliveryTime((deal as any).deliveryTime ?? "");
+    setCompanySelection((deal as any).companySelection ?? "");
     setNotes(deal.notes ?? "");
 
     const dealItems = deal.items;
@@ -406,6 +408,35 @@ export default function AddOrder() {
           Back
         </button>
       </div>
+
+      {/* ── Company Selection (UAE only) ── */}
+      {me?.country === "UAE" && (
+        <div className="flex items-center gap-4 px-6 py-3 border-b border-border bg-muted/40">
+          <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+            Choose Your Company
+          </label>
+          <Select
+            value={companySelection || "__none__"}
+            onValueChange={(v) => setCompanySelection(v === "__none__" ? "" : v)}
+          >
+            <SelectTrigger className="w-96">
+              <SelectValue placeholder="Select company..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Select —</SelectItem>
+              <SelectItem value="STAR SEWING MACHINES TRADING L.L.C">
+                STAR SEWING MACHINES TRADING L.L.C
+              </SelectItem>
+              <SelectItem value="STAR GLOBAL TECH FZCO">
+                STAR GLOBAL TECH FZCO
+              </SelectItem>
+              <SelectItem value="STAR SEWING MACHINES TRADING L.L.C BR & MODREN SEWING MACHINE TRADING">
+                STAR SEWING MACHINES TRADING L.L.C BR &amp; MODREN SEWING MACHINE TRADING
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* ── Content ── */}
       <div className="p-4 space-y-4">
