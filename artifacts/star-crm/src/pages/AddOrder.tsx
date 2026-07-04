@@ -85,6 +85,7 @@ const WARRANTY_OPTIONS = [
 ];
 const DELIVERY_TERMS = ["FOB Dubai", "CIF", "EXW", "DDP", "DAP", "CFR"];
 const DELIVERY_TIME_OPTIONS = [
+  "3 Days",
   "7 Days",
   "14 Days",
   "30 Days",
