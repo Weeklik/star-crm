@@ -628,8 +628,8 @@ export default function AddOrder() {
                   <th className="px-3 py-2.5 text-center font-medium w-36">Brand</th>
                   <th className="px-3 py-2.5 text-center font-medium w-36">Model</th>
                   <th className="px-3 py-2.5 text-center font-medium">Description</th>
-                  <th className="px-3 py-2.5 text-center font-medium w-24">Qty</th>
-                  <th className="px-3 py-2.5 text-center font-medium w-28">Unit Price</th>
+                  <th className="px-3 py-2.5 text-center font-medium min-w-[4rem]">Qty</th>
+                  <th className="px-3 py-2.5 text-center font-medium min-w-[5rem]">Unit Price</th>
                   <th className="px-3 py-2.5 text-center font-medium w-24">Discount (%)</th>
                   <th className="px-3 py-2.5 text-center font-medium w-20">VAT (%)</th>
                   <th className="px-3 py-2.5 text-center font-medium w-28">Total Amount</th>
@@ -708,7 +708,8 @@ export default function AddOrder() {
                           onChange={(e) =>
                             updateItem(item.id, "qty", parseInt(e.target.value) || 0)
                           }
-                          className="w-full text-center"
+                          className="text-center"
+                          style={{ width: `${Math.max(4, String(item.qty).length + 2)}ch` }}
                         />
                       </td>
                       <td className="px-2 py-1">
@@ -724,7 +725,8 @@ export default function AddOrder() {
                               parseFloat(e.target.value) || 0
                             )
                           }
-                          className="w-full text-right"
+                          className="text-right"
+                          style={{ width: `${Math.max(5, String(item.unitPrice || 0).length + 2)}ch` }}
                         />
                       </td>
                       <td className="px-2 py-1">
