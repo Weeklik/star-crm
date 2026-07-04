@@ -945,9 +945,9 @@ export default function MyActivities() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="flex flex-wrap gap-3">
               {/* Salesperson multi-select */}
-              <div className="space-y-1.5 lg:col-span-2">
+              <div className="space-y-1.5 min-w-[180px] flex-1">
                 <Label className="text-xs text-muted-foreground">Salesperson</Label>
                 <MultiSelectSalesperson
                   users={users.filter((u) => u.role !== "owner")}
@@ -956,26 +956,26 @@ export default function MyActivities() {
                 />
               </div>
               {/* Date from */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-[140px]">
                 <Label className="text-xs text-muted-foreground">Date From</Label>
                 <Input type="date" value={mapDateFrom} onChange={(e) => setMapDateFrom(e.target.value)} className="h-9 text-sm" />
               </div>
               {/* Date to */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-[140px]">
                 <Label className="text-xs text-muted-foreground">Date To</Label>
                 <Input type="date" value={mapDateTo} onChange={(e) => setMapDateTo(e.target.value)} className="h-9 text-sm" />
               </div>
               {/* Time range */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-[200px]">
                 <Label className="text-xs text-muted-foreground">Time From → To</Label>
                 <div className="flex gap-1.5 items-center">
                   <Input type="time" value={mapTimeFrom} onChange={(e) => setMapTimeFrom(e.target.value)} className="h-9 text-sm flex-1" />
-                  <span className="text-muted-foreground text-xs">–</span>
+                  <span className="text-muted-foreground text-xs flex-shrink-0">–</span>
                   <Input type="time" value={mapTimeTo} onChange={(e) => setMapTimeTo(e.target.value)} className="h-9 text-sm flex-1" />
                 </div>
               </div>
               {/* Map style toggle */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-[180px]">
                 <Label className="text-xs text-muted-foreground">Map Style</Label>
                 <div className="flex h-9 rounded-md border border-input bg-background p-0.5 gap-0.5">
                   <button
