@@ -341,6 +341,7 @@ export default function Users() {
                 value={addEmail}
                 onChange={(e) => setAddEmail(e.target.value)}
                 disabled={addSaving}
+                autoComplete="off"
               />
             </div>
 
@@ -355,6 +356,7 @@ export default function Users() {
                   onChange={(e) => setAddPassword(e.target.value)}
                   disabled={addSaving}
                   className="pr-10"
+                  autoComplete="new-password"
                   onKeyDown={(e) => { if (e.key === "Enter") handleAddSalesperson(); }}
                 />
                 <button
