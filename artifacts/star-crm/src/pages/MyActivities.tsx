@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   MapPin, Plus, Loader2, Navigation, CheckCircle2, Eye, X, Search,
-  Filter, Map, List, ChevronDown, Check, Users,
+  Filter, Map, List, ChevronDown, Check, Users, Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,29 +89,55 @@ function LocationMap({ lat, lng, height = "h-52" }: { lat: number; lng: number; 
   return <div ref={mapRef} className={`w-full ${height} rounded-lg overflow-hidden`} />;
 }
 
+const TILE_CONFIGS = {
+  standard: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: "© OpenStreetMap contributors",
+    subdomains: "abc",
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: "© Esri, Maxar, Earthstar Geographics",
+    subdomains: "",
+  },
+};
+
+type MapStyle = "standard" | "satellite";
+
 // ── Multi-pin map for Map View (owner) ────────────────────────────────────────
 function AllActivitiesMap({
   activities,
   usersMap,
+  mapStyle,
 }: {
   activities: Activity[];
   usersMap: Record<number, string>;
+  mapStyle: MapStyle;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   // Init map once
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
     const map = L.map(mapRef.current, { zoomControl: true });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(map);
+    const cfg = TILE_CONFIGS.standard;
+    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution }).addTo(map);
     map.setView([25, 45], 5);
     mapInstanceRef.current = map;
-    return () => { map.remove(); mapInstanceRef.current = null; };
+    return () => { map.remove(); mapInstanceRef.current = null; tileLayerRef.current = null; };
   }, []);
+
+  // Swap tile layer when mapStyle changes
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (tileLayerRef.current) { tileLayerRef.current.remove(); tileLayerRef.current = null; }
+    const cfg = TILE_CONFIGS[mapStyle];
+    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution }).addTo(map);
+  }, [mapStyle]);
 
   // Update markers when activities change
   useEffect(() => {
@@ -613,6 +639,7 @@ export default function MyActivities() {
   const [mapDateTo, setMapDateTo] = useState("");
   const [mapTimeFrom, setMapTimeFrom] = useState("");
   const [mapTimeTo, setMapTimeTo] = useState("");
+  const [mapStyle, setMapStyle] = useState<MapStyle>("standard");
 
   async function fetchActivities() {
     setLoading(true);
@@ -918,7 +945,7 @@ export default function MyActivities() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               {/* Salesperson multi-select */}
               <div className="space-y-1.5 lg:col-span-2">
                 <Label className="text-xs text-muted-foreground">Salesperson</Label>
@@ -945,6 +972,36 @@ export default function MyActivities() {
                   <Input type="time" value={mapTimeFrom} onChange={(e) => setMapTimeFrom(e.target.value)} className="h-9 text-sm flex-1" />
                   <span className="text-muted-foreground text-xs">–</span>
                   <Input type="time" value={mapTimeTo} onChange={(e) => setMapTimeTo(e.target.value)} className="h-9 text-sm flex-1" />
+                </div>
+              </div>
+              {/* Map style toggle */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Map Style</Label>
+                <div className="flex h-9 rounded-md border border-input bg-background p-0.5 gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setMapStyle("standard")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded transition-all ${
+                      mapStyle === "standard"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Map className="w-3 h-3" />
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMapStyle("satellite")}
+                    className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded transition-all ${
+                      mapStyle === "satellite"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Layers className="w-3 h-3" />
+                    3D Realistic
+                  </button>
                 </div>
               </div>
             </div>
@@ -988,7 +1045,7 @@ export default function MyActivities() {
               </div>
             </div>
           ) : (
-            <AllActivitiesMap activities={mapFiltered} usersMap={usersMap} />
+            <AllActivitiesMap activities={mapFiltered} usersMap={usersMap} mapStyle={mapStyle} />
           )}
         </>
       )}
