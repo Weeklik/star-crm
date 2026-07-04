@@ -122,9 +122,9 @@ function AllActivitiesMap({
   // Init map once
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
-    const map = L.map(mapRef.current, { zoomControl: true });
+    const map = L.map(mapRef.current, { zoomControl: true, maxZoom: 22 });
     const cfg = TILE_CONFIGS.standard;
-    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution }).addTo(map);
+    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: 19 }).addTo(map);
     map.setView([25, 45], 5);
     mapInstanceRef.current = map;
     return () => { map.remove(); mapInstanceRef.current = null; tileLayerRef.current = null; };
@@ -136,7 +136,7 @@ function AllActivitiesMap({
     if (!map) return;
     if (tileLayerRef.current) { tileLayerRef.current.remove(); tileLayerRef.current = null; }
     const cfg = TILE_CONFIGS[mapStyle];
-    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution }).addTo(map);
+    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: 19 }).addTo(map);
   }, [mapStyle]);
 
   // Update markers when activities change
