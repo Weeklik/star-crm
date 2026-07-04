@@ -14,6 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { Popover, PopoverContent, PopoverAnchor } from "@/components/ui/popover";
+import { Command, CommandList, CommandItem, CommandEmpty } from "@/components/ui/command";
+import { useRef } from "react";
 import {
   useCreateDeal,
   useUpdateDeal,
@@ -123,6 +126,88 @@ const VAT_BY_COUNTRY: Record<string, number> = {
   Egypt:    14,
   Ghana:    15,
 };
+
+function SearchableModelSelect({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keep query in sync when value changes externally
+  useEffect(() => { setQuery(value); }, [value]);
+
+  const filtered = query.trim()
+    ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  function handleSelect(opt: string) {
+    onChange(opt);
+    setQuery(opt);
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQuery(e.target.value);
+    setOpen(true);
+    if (e.target.value === "") onChange("");
+  }
+
+  function handleBlur() {
+    // Small delay so click on item fires first
+    setTimeout(() => setOpen(false), 150);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <Input
+          ref={inputRef}
+          value={query}
+          onChange={handleInputChange}
+          onFocus={() => setOpen(true)}
+          onBlur={handleBlur}
+          placeholder="Search model…"
+          className="w-full"
+          autoComplete="off"
+        />
+      </PopoverAnchor>
+      {open && filtered.length > 0 && (
+        <PopoverContent
+          className="p-0 w-[var(--radix-popover-trigger-width)]"
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <Command shouldFilter={false}>
+            <CommandList>
+              {filtered.length === 0 ? (
+                <CommandEmpty className="py-2 px-3 text-sm text-muted-foreground">No matches</CommandEmpty>
+              ) : (
+                filtered.map((opt) => (
+                  <CommandItem
+                    key={opt}
+                    value={opt}
+                    onSelect={() => handleSelect(opt)}
+                    className={opt === value ? "font-medium text-primary" : ""}
+                  >
+                    {opt}
+                  </CommandItem>
+                ))
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+}
 
 function generateId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -659,27 +744,11 @@ export default function AddOrder() {
                       </td>
                       <td className="px-2 py-1">
                         {brandProds.length > 0 ? (
-                          <Select
-                            value={item.model || "__none__"}
-                            onValueChange={(v) =>
-                              updateItem(item.id, "model", v === "__none__" ? "" : v)
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Model" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">— Select —</SelectItem>
-                              {brandProds.map((p, i) => (
-                                <SelectItem
-                                  key={i}
-                                  value={p.model ?? `m-${i}`}
-                                >
-                                  {p.model ?? "(no model)"}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <SearchableModelSelect
+                            options={brandProds.map((p, i) => p.model ?? `m-${i}`).filter(Boolean)}
+                            value={item.model}
+                            onChange={(v) => updateItem(item.id, "model", v)}
+                          />
                         ) : (
                           <Input
                             value={item.model}
