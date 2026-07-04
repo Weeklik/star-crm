@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useLocation, useRoute } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, ChevronLeft, ClipboardList } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ClipboardList, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,74 +137,87 @@ function SearchableModelSelect({
   onChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(value);
+  const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Keep query in sync when value changes externally
-  useEffect(() => { setQuery(value); }, [value]);
 
   const filtered = query.trim()
     ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
     : options;
 
+  function handleOpen() {
+    setOpen(true);
+    setQuery("");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
   function handleSelect(opt: string) {
     onChange(opt);
-    setQuery(opt);
     setOpen(false);
-    inputRef.current?.blur();
+    setQuery("");
   }
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setQuery(e.target.value);
-    setOpen(true);
-    if (e.target.value === "") onChange("");
-  }
-
-  function handleBlur() {
-    // Small delay so click on item fires first
-    setTimeout(() => setOpen(false), 150);
+  function handleClear() {
+    onChange("");
+    setOpen(false);
+    setQuery("");
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
       <PopoverAnchor asChild>
-        <Input
-          ref={inputRef}
-          value={query}
-          onChange={handleInputChange}
-          onFocus={() => setOpen(true)}
-          onBlur={handleBlur}
-          placeholder="Search model…"
-          className="w-full"
-          autoComplete="off"
-        />
-      </PopoverAnchor>
-      {open && filtered.length > 0 && (
-        <PopoverContent
-          className="p-0 w-[var(--radix-popover-trigger-width)]"
-          align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Command shouldFilter={false}>
-            <CommandList>
-              {filtered.length === 0 ? (
-                <CommandEmpty className="py-2 px-3 text-sm text-muted-foreground">No matches</CommandEmpty>
-              ) : (
-                filtered.map((opt) => (
+          <span className={value ? "text-foreground" : "text-muted-foreground"}>
+            {value || "Select model…"}
+          </span>
+          <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+        </button>
+      </PopoverAnchor>
+      <PopoverContent
+        className="p-0 w-[var(--radix-popover-trigger-width)]"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="flex items-center border-b border-border px-2">
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Type to search…"
+            className="h-9 border-0 shadow-none focus-visible:ring-0 text-sm px-1"
+            autoComplete="off"
+          />
+        </div>
+        <Command shouldFilter={false}>
+          <CommandList className="max-h-52">
+            {filtered.length === 0 ? (
+              <CommandEmpty className="py-2 px-3 text-sm text-muted-foreground">No matches</CommandEmpty>
+            ) : (
+              <>
+                {value && (
+                  <CommandItem onSelect={handleClear} className="text-muted-foreground text-xs italic">
+                    — Clear selection —
+                  </CommandItem>
+                )}
+                {filtered.map((opt) => (
                   <CommandItem
                     key={opt}
                     value={opt}
                     onSelect={() => handleSelect(opt)}
-                    className={opt === value ? "font-medium text-primary" : ""}
+                    className="flex items-center justify-between"
                   >
                     {opt}
+                    {opt === value && <Check className="w-3.5 h-3.5 text-primary" />}
                   </CommandItem>
-                ))
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      )}
+                ))}
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
     </Popover>
   );
 }
