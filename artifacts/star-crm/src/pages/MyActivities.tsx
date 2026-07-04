@@ -93,12 +93,12 @@ const TILE_CONFIGS = {
   standard: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "© OpenStreetMap contributors",
-    subdomains: "abc",
+    maxNativeZoom: 19,
   },
   satellite: {
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "© Esri, Maxar, Earthstar Geographics",
-    subdomains: "",
+    maxNativeZoom: 18,
   },
 };
 
@@ -124,8 +124,8 @@ function AllActivitiesMap({
     if (!mapRef.current || mapInstanceRef.current) return;
     const map = L.map(mapRef.current, { zoomControl: true, maxZoom: 22 });
     const cfg = TILE_CONFIGS.standard;
-    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: 19 }).addTo(map);
-    map.setView([25, 45], 5);
+    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: cfg.maxNativeZoom }).addTo(map);
+    map.setView([20, 0], 2);
     mapInstanceRef.current = map;
     return () => { map.remove(); mapInstanceRef.current = null; tileLayerRef.current = null; };
   }, []);
@@ -136,7 +136,7 @@ function AllActivitiesMap({
     if (!map) return;
     if (tileLayerRef.current) { tileLayerRef.current.remove(); tileLayerRef.current = null; }
     const cfg = TILE_CONFIGS[mapStyle];
-    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: 19 }).addTo(map);
+    tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: cfg.maxNativeZoom }).addTo(map);
   }, [mapStyle]);
 
   // Update markers when activities change
