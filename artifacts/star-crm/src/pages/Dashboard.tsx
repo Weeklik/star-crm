@@ -410,9 +410,6 @@ export default function Dashboard() {
     }));
   }, [weeklyData, chartRate]);
 
-  // Current month short label (e.g. "Jul") — matches weekLabel prefix format
-  const currentMonthLabel = new Date().toLocaleString("en-US", { month: "short" });
-  const currentMonthAvg = monthlyAvgData.find((m) => m.month === currentMonthLabel) ?? null;
 
   if (!me || loading) {
     return (
@@ -436,6 +433,19 @@ export default function Dashboard() {
     orderConfirmedAmount:       Math.round(w.orderConfirmedAmount       * chartRate),
     orderLostAmount:            Math.round(w.orderLostAmount            * chartRate),
   }));
+
+  // Average monthly sales total — same formula as the "Average Monthly Sales — {year}" chart
+  const _avgMonthlyTotals = (() => {
+    const currentMonthNum = new Date().getFullYear() === selectedYear ? new Date().getMonth() + 1 : 12;
+    return [1,2,3,4,5,6,7,8,9,10,11,12].map((m) => ({
+      total: Math.round(monthlySalesData.reduce((s, r) => s + (r.monthly[m] ?? 0) * getRateFor(r.currency ?? ""), 0)),
+      isFuture: m > currentMonthNum,
+    }));
+  })();
+  const _nonZeroMonths = _avgMonthlyTotals.filter((d) => d.total > 0 && !d.isFuture);
+  const avgMonthlySalesTotal = _nonZeroMonths.length > 0
+    ? Math.round(_nonZeroMonths.reduce((s, d) => s + d.total, 0) / _nonZeroMonths.length)
+    : null;
 
   const quotationSentAmt = useConverted
     ? (allRegionsTotals?.quotationSentAmount ?? 0)
@@ -938,23 +948,23 @@ export default function Dashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t("dashboard.weeklyPerformance")}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Average weekly deal amount for the current month
+              Average monthly sales amount across all months in {selectedYear}
             </p>
           </CardHeader>
           <CardContent className="pt-0">
-            {!currentMonthAvg ? (
+            {avgMonthlySalesTotal === null ? (
               <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
                 {t("dashboard.noData")}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-3 py-8">
                 <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                  {new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}
+                  {selectedYear}
                 </p>
                 <p className="text-4xl font-bold tabular-nums text-foreground">
-                  {fmtDisplay(currentMonthAvg.total)}
+                  {fmtDisplay(avgMonthlySalesTotal)}
                 </p>
-                <p className="text-xs text-muted-foreground">per week on average</p>
+                <p className="text-xs text-muted-foreground">monthly average</p>
               </div>
             )}
           </CardContent>
