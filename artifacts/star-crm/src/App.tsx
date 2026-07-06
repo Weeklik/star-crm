@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { OwnerControlsProvider } from "@/contexts/OwnerControlsContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { NavigationHistoryProvider } from "@/contexts/NavigationHistoryContext";
 
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -118,7 +119,9 @@ function App() {
           <WouterRouter base={basePath}>
             <QueryClientProvider client={queryClient}>
               <AuthProvider>
-                <AppRoutes />
+                <NavigationHistoryProvider>
+                  <AppRoutes />
+                </NavigationHistoryProvider>
               </AuthProvider>
             </QueryClientProvider>
           </WouterRouter>

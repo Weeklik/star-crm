@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
   ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays, Package, MapPin,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -11,12 +11,14 @@ import { useTranslation } from "@/i18n/LanguageContext";
 import { LANGUAGE_CONFIGS, type Language } from "@/i18n/translations";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useNavigationHistory } from "@/contexts/NavigationHistoryContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, isLoading, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t, language, setLanguage } = useTranslation();
+  const { canGoBack, goBack } = useNavigationHistory();
 
   const isReportsActive =
     location === "/reports" || location.startsWith("/reports/");
@@ -209,8 +211,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-background min-w-0">
-        {/* Sidebar toggle strip */}
-        <div className="flex items-center px-3 py-2 border-b border-border/40 flex-shrink-0">
+        {/* Top strip: sidebar toggle (left) + back button (right) */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 flex-shrink-0">
           <button
             onClick={() => setSidebarOpen((o) => !o)}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
@@ -221,6 +223,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               : <PanelLeftOpen className="w-5 h-5" />
             }
           </button>
+
+          {canGoBack && (
+            <button
+              onClick={goBack}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           {children}
