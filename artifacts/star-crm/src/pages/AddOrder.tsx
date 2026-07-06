@@ -74,6 +74,7 @@ const PAYMENT_TERMS = [
   "Net 30",
   "Net 60",
   "PDC",
+  "Other",
 ];
 const WARRANTY_OPTIONS = [
   "6 Months",
@@ -82,8 +83,9 @@ const WARRANTY_OPTIONS = [
   "3 Years",
   "5 Years",
   "No Warranty",
+  "Other",
 ];
-const DELIVERY_TERMS = ["FOB Dubai", "CIF", "EXW", "DDP", "DAP", "CFR"];
+const DELIVERY_TERMS = ["FOB Dubai", "CIF", "EXW", "DDP", "DAP", "CFR", "Other"];
 const DELIVERY_TIME_OPTIONS = [
   "3 Days",
   "7 Days",
@@ -96,6 +98,7 @@ const DELIVERY_TIME_OPTIONS = [
   "180 Days",
   "Upon Availability",
   "To Be Confirmed",
+  "Other",
 ];
 const REGIONS = [
   "Abu Dhabi",
@@ -106,6 +109,7 @@ const REGIONS = [
   "Ras Al Khaimah",
   "Fujairah",
   "Qatar",
+  "Other Country",
 ];
 
 const CREDIT_TERMS = [
