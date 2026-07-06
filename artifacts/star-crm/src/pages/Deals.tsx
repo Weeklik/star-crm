@@ -584,10 +584,23 @@ export default function Deals() {
     return p.get("salespersonId") ?? "all";
   });
   const [search, setSearch] = useState("");
-  const [orderDateRange, setOrderDateRange] = useState<DateRange>("fullyear");
-  const [orderYear, setOrderYear] = useState(new Date().getFullYear());
-  const [orderFromMonth, setOrderFromMonth] = useState(0);
-  const [orderToMonth, setOrderToMonth] = useState(0);
+  const [orderDateRange, setOrderDateRange] = useState<DateRange>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return (p.get("dateRange") as DateRange) ?? "fullyear";
+  });
+  const [orderYear, setOrderYear] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    const y = parseInt(p.get("year") ?? "");
+    return isNaN(y) ? new Date().getFullYear() : y;
+  });
+  const [orderFromMonth, setOrderFromMonth] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return parseInt(p.get("fromMonth") ?? "0") || 0;
+  });
+  const [orderToMonth, setOrderToMonth] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return parseInt(p.get("toMonth") ?? "0") || 0;
+  });
   const [stageFilter, setStageFilter] = useState<Stage | "">(() => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("stage") as Stage) ?? "";
@@ -618,6 +631,13 @@ export default function Deals() {
   const [pageSize, setPageSize] = useState(50);
 
   const { getRateFor, selectedCurrency, selectedRegion, setSelectedRegion, regions, getActiveDateBounds } = useOwnerControls();
+
+  // On mount: apply region from URL (passed by Dashboard KPI click)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const region = p.get("region");
+    if (region) setSelectedRegion(region);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { startDate: orderStart, endDate: orderEnd } = (() => {
     if (orderFromMonth > 0 || orderToMonth > 0) {

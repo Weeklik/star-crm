@@ -636,6 +636,11 @@ export default function Dashboard() {
               const params = new URLSearchParams();
               params.set("stage", card.stage);
               if (isOwner && selectedSpId !== "all") params.set("salespersonId", selectedSpId);
+              if (isOwner && selectedRegion !== "all") params.set("region", selectedRegion);
+              params.set("year", String(selectedYear));
+              params.set("dateRange", dateRange);
+              if (fromMonth > 0) params.set("fromMonth", String(fromMonth));
+              if (toMonth > 0) params.set("toMonth", String(toMonth));
               navigate(`/deals?${params.toString()}`);
             };
             return (
