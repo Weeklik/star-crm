@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Globe, DollarSign, Loader2, Pencil, CalendarDays } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useOwnerControls, CURRENCIES, type RegionOption } from "@/contexts/OwnerControlsContext";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const YEAR_OPTIONS = [2024, 2025, 2026, 2027, 2028];
 
@@ -37,6 +38,19 @@ export function OwnerControlsBar() {
   } = useOwnerControls();
 
   const { t } = useTranslation();
+  const { user } = useAuth();
+
+  const isTunisian = user?.country === "Tunisia";
+  const visibleCurrencies = isTunisian
+    ? CURRENCIES.filter((c) => c.code === "EUR")
+    : CURRENCIES;
+
+  // Auto-lock Tunisian users to EUR
+  useEffect(() => {
+    if (isTunisian && selectedCurrency !== "EUR") {
+      setSelectedCurrency("EUR");
+    }
+  }, [isTunisian, selectedCurrency, setSelectedCurrency]);
 
   const [rateInput, setRateInput] = useState<string>("");
   const [editingRate, setEditingRate] = useState(false);
@@ -107,7 +121,7 @@ export function OwnerControlsBar() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            {CURRENCIES.map((c) => (
+            {visibleCurrencies.map((c) => (
               <SelectItem key={c.code} value={c.code}>
                 {c.code} — {c.name}
               </SelectItem>
