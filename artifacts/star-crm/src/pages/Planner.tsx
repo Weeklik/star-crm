@@ -344,6 +344,7 @@ function CalendarTab({ spId, isOwner, users }: CalendarTabProps) {
         date={selectedDate} meeting={editMeeting}
         onCreate={d => create.mutate(d)} onUpdate={d => update.mutate(d)} onDelete={id => del.mutate(id)}
         saving={create.isPending || update.isPending} deleting={del.isPending}
+        isOwner={isOwner}
       />
 
       {/* ── Day overflow modal ── */}
@@ -509,9 +510,10 @@ interface MeetingModalProps {
   open: boolean; onClose: () => void; date: string; meeting: Meeting | null;
   onCreate: (d: Omit<Meeting, "id">) => void; onUpdate: (d: Meeting) => void;
   onDelete: (id: number) => void; saving: boolean; deleting: boolean;
+  isOwner: boolean;
 }
 
-function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDelete, saving, deleting }: MeetingModalProps) {
+function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDelete, saving, deleting, isOwner }: MeetingModalProps) {
   const [form, setForm] = useState({ companyName: "", productName: "", meetingTime: "", location: "", notes: "" });
   const { t } = useTranslation();
   const prevOpen = useRef(false);
@@ -580,7 +582,7 @@ function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDele
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          {meeting && (
+          {meeting && isOwner && (
             <Button variant="destructive" size="sm" onClick={() => onDelete(meeting.id)} disabled={deleting} className="mr-auto">
               <Trash2 className="w-3.5 h-3.5 mr-1.5" />{deleting ? "…" : t("planner.deleteMeeting")}
             </Button>

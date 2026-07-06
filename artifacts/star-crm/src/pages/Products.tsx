@@ -16,6 +16,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Product {
   id: number;
@@ -61,6 +62,8 @@ export default function Products() {
   const [deleteId, setDeleteId]   = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
   const fileRef                   = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
   const { toast } = useToast();
 
   async function load() {
@@ -294,12 +297,14 @@ export default function Products() {
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => setDeleteId(p.id)}
-                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {isOwner && (
+                        <button
+                          onClick={() => setDeleteId(p.id)}
+                          className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

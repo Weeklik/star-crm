@@ -858,15 +858,17 @@ export default function AddOrder() {
                         {fmt(total)}
                       </td>
                       <td className="px-3 py-1.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          disabled={items.length === 1}
-                          className="text-red-500 hover:text-red-700 disabled:opacity-30 transition-colors"
-                          title="Remove item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {me?.role === "owner" && (
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            disabled={items.length === 1}
+                            className="text-red-500 hover:text-red-700 disabled:opacity-30 transition-colors"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

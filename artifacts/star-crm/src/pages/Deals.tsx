@@ -1425,13 +1425,15 @@ export default function Deals() {
                           >
                             <Pencil className="w-4 h-4 mr-2" /> Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDeleteId(deal.id)}
-                            data-testid={`btn-delete-deal-${deal.id}`}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+                          {isOwner && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setDeleteId(deal.id)}
+                              data-testid={`btn-delete-deal-${deal.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
