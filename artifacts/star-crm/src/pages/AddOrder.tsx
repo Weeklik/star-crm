@@ -799,11 +799,15 @@ export default function AddOrder() {
                       </td>
                       <td className="px-2 py-1">
                         <Input
-                          type="number"
-                          value={item.qty}
-                          onChange={(e) =>
-                            updateItem(item.id, "qty", parseInt(e.target.value) || 0)
-                          }
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={item.qty === 0 ? "" : String(item.qty)}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/[^0-9]/g, "");
+                            updateItem(item.id, "qty", digits === "" ? 0 : parseInt(digits, 10));
+                          }}
+                          placeholder="0"
                           className="text-center"
                           style={{ width: `${Math.max(String(item.qty).length * 10 + 40, 80)}px` }}
                         />
