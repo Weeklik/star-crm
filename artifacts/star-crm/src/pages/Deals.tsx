@@ -753,7 +753,15 @@ export default function Deals() {
   // Format an amount using the deal's own stored currency for table rows.
   // If the stored currency is USD (the legacy default), derive the correct
   // native currency from the salesperson's country instead.
+  // Tunisian salespersons always see amounts in EUR.
   function fmtDealAmt(dealCurrency: string | null | undefined, amount: number, salespersonId?: number | null): string {
+    if (me?.country === "Tunisia") {
+      try {
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
+      } catch {
+        return formatAmount(amount);
+      }
+    }
     let cur = dealCurrency ?? userCurrency;
     if ((cur === "USD" || !cur) && salespersonId != null) {
       const spCountry = spCountryById[salespersonId];
