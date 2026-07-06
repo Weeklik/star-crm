@@ -260,6 +260,20 @@ export default function Dashboard() {
   }, [me, buildQs, isOwner, selectedSpId, selectedRegion, loadMultiRates]);
 
   // Aggregate region-stage raw rows into chart-ready entries with currency conversion
+  // Determine the native currency of the selected region (most-used currency by deal count).
+  // Falls back to selectedCurrency when "all" regions are shown.
+  const regionNativeCurrency = useMemo(() => {
+    if (selectedRegion === "all") return selectedCurrency;
+    const counts = new Map<string, number>();
+    for (const row of regionStageRaw) {
+      if (row.region === selectedRegion && row.currency) {
+        counts.set(row.currency, (counts.get(row.currency) ?? 0) + row.count);
+      }
+    }
+    if (counts.size === 0) return selectedCurrency;
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }, [regionStageRaw, selectedRegion, selectedCurrency]);
+
   const regionChartData = useMemo(() => {
     if (!isOwner || regionStageRaw.length === 0) return [];
     type RegionEntry = {
@@ -268,6 +282,13 @@ export default function Dashboard() {
       "Order Confirmed": number; orderConfirmedCount: number;
       "Order Closed": number; orderClosedCount: number;
       "Order Lost": number; orderLostCount: number;
+    };
+    // Convert row.currency → regionNativeCurrency via selectedCurrency as intermediary:
+    // rate = getRateFor(row.currency) / getRateFor(regionNativeCurrency)
+    // When regionNativeCurrency === selectedCurrency, getRateFor(selectedCurrency) = 1 → same as before.
+    const rateToNative = (fromCurrency: string) => {
+      const nativeRate = getRateFor(regionNativeCurrency);
+      return nativeRate > 0 ? getRateFor(fromCurrency) / nativeRate : getRateFor(fromCurrency);
     };
     const map = new Map<string, RegionEntry>();
     for (const row of regionStageRaw) {
@@ -281,7 +302,7 @@ export default function Dashboard() {
         });
       }
       const entry = map.get(row.region)!;
-      const converted = Math.round(row.amount * getRateFor(row.currency));
+      const converted = Math.round(row.amount * rateToNative(row.currency));
       if (row.stage === "Quotation Sent")  { entry["Quotation Sent"]  += converted; entry.quotationSentCount  += row.count; }
       if (row.stage === "Order Confirmed") { entry["Order Confirmed"] += converted; entry.orderConfirmedCount += row.count; }
       if (row.stage === "Order Closed")    { entry["Order Closed"]    += converted; entry.orderClosedCount    += row.count; }
@@ -290,7 +311,7 @@ export default function Dashboard() {
     return Array.from(map.values()).sort(
       (a, b) => b["Quotation Sent"] - a["Quotation Sent"],
     );
-  }, [regionStageRaw, getRateFor, isOwner]);
+  }, [regionStageRaw, getRateFor, isOwner, regionNativeCurrency]);
 
   // Aggregate category breakdown rows with currency conversion
   const categoryChartData = useMemo(() => {
@@ -350,6 +371,17 @@ export default function Dashboard() {
       return fmtK(n);
     }
   }, [selectedCurrency]);
+
+  // Formats a value in the region's native currency (used by Region Breakdown chart/table)
+  const fmtRegionAmt = useCallback((n: number) => {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency", currency: regionNativeCurrency, maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return fmtK(n);
+    }
+  }, [regionNativeCurrency]);
 
   // Rate to apply to raw API chart data (weekly / stage) so bars reflect display currency.
   // topPersons values are already converted individually via getRateFor — don't apply this to them.
@@ -461,7 +493,7 @@ export default function Dashboard() {
                 <span className="text-xs" style={{ color: p.fill }}>{p.name}</span>
               </div>
               <div className="text-right">
-                <span className="text-xs font-semibold">{fmtDisplay(p.value ?? 0)}</span>
+                <span className="text-xs font-semibold">{fmtRegionAmt(p.value ?? 0)}</span>
                 {meta && <span className="text-[10px] text-muted-foreground ml-1">({meta.count})</span>}
               </div>
             </div>
@@ -970,7 +1002,9 @@ export default function Dashboard() {
                         <tr className="border-b border-border/50">
                           <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Region</th>
                           {["Quotation Sent", "Order Confirmed", "Order Closed", "Order Lost"].map((s) => (
-                            <th key={s} className="text-right py-2 px-3 font-semibold" style={{ color: STAGE_COLORS[s] }}>{s}</th>
+                            <th key={s} className="text-right py-2 px-3 font-semibold" style={{ color: STAGE_COLORS[s] }}>
+                              {s} <span className="text-muted-foreground font-normal text-[10px]">({regionNativeCurrency})</span>
+                            </th>
                           ))}
                         </tr>
                       </thead>
@@ -979,19 +1013,19 @@ export default function Dashboard() {
                           <tr key={row.region} className="border-b border-border/20 hover:bg-secondary/30 transition-colors">
                             <td className="py-2 pr-4 font-medium text-foreground/90">{row.region}</td>
                             <td className="py-2 px-3 text-right tabular-nums">
-                              <span style={{ color: STAGE_COLORS["Quotation Sent"] }} className="font-semibold">{fmtK(row["Quotation Sent"])}</span>
+                              <span style={{ color: STAGE_COLORS["Quotation Sent"] }} className="font-semibold">{fmtRegionAmt(row["Quotation Sent"])}</span>
                               <span className="text-muted-foreground ml-1">({row.quotationSentCount})</span>
                             </td>
                             <td className="py-2 px-3 text-right tabular-nums">
-                              <span style={{ color: STAGE_COLORS["Order Confirmed"] }} className="font-semibold">{fmtK(row["Order Confirmed"])}</span>
+                              <span style={{ color: STAGE_COLORS["Order Confirmed"] }} className="font-semibold">{fmtRegionAmt(row["Order Confirmed"])}</span>
                               <span className="text-muted-foreground ml-1">({row.orderConfirmedCount})</span>
                             </td>
                             <td className="py-2 px-3 text-right tabular-nums">
-                              <span style={{ color: STAGE_COLORS["Order Closed"] }} className="font-semibold">{fmtK(row["Order Closed"])}</span>
+                              <span style={{ color: STAGE_COLORS["Order Closed"] }} className="font-semibold">{fmtRegionAmt(row["Order Closed"])}</span>
                               <span className="text-muted-foreground ml-1">({row.orderClosedCount})</span>
                             </td>
                             <td className="py-2 px-3 text-right tabular-nums">
-                              <span style={{ color: STAGE_COLORS["Order Lost"] }} className="font-semibold">{fmtK(row["Order Lost"])}</span>
+                              <span style={{ color: STAGE_COLORS["Order Lost"] }} className="font-semibold">{fmtRegionAmt(row["Order Lost"])}</span>
                               <span className="text-muted-foreground ml-1">({row.orderLostCount})</span>
                             </td>
                           </tr>
