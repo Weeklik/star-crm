@@ -1259,9 +1259,9 @@ export default function Deals() {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("orders.kpiQuotation")}</span>
             <Clock4 className={`w-4 h-4 ${stageFilter === "Quotation Sent" ? "text-violet-500" : "text-muted-foreground"}`} />
           </div>
-          <p className="text-2xl font-bold tabular-nums">{showKpi ? (ordersKpi?.quotationSentCount ?? "—") : "—"}</p>
+          <p className="text-2xl font-bold tabular-nums">{ordersKpi?.quotationSentCount ?? 0}</p>
           <p className="text-xs text-muted-foreground">All active quotations</p>
-          <p className="text-xs font-medium text-muted-foreground tabular-nums">{showKpi ? fmtCurrency(ordersKpi?.quotationSentAmount ?? 0) : "—"}</p>
+          <p className="text-xs font-medium text-muted-foreground tabular-nums">{fmtCurrency(ordersKpi?.quotationSentAmount ?? 0)}</p>
         </div>
 
         {/* Confirmed Orders */}
@@ -1274,10 +1274,10 @@ export default function Deals() {
             <CheckCircle2 className="w-4 h-4 text-yellow-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-yellow-600 dark:text-yellow-400">
-            {showKpi ? (ordersKpi?.confirmedDeals ?? "—") : "—"}
+            {ordersKpi?.confirmedDeals ?? 0}
           </p>
           <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 tabular-nums">
-            {showKpi ? fmtCurrency(ordersKpi?.confirmedAmount ?? 0) : "—"}
+            {fmtCurrency(ordersKpi?.confirmedAmount ?? 0)}
           </p>
         </div>
 
@@ -1291,10 +1291,10 @@ export default function Deals() {
             <Handshake className="w-4 h-4 text-green-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
-            {showKpi ? (ordersKpi?.closedDeals ?? "—") : "—"}
+            {ordersKpi?.closedDeals ?? 0}
           </p>
           <p className="text-xs font-medium text-green-700 dark:text-green-300 tabular-nums">
-            {showKpi ? fmtCurrency(ordersKpi?.closedAmount ?? 0) : "—"}
+            {fmtCurrency(ordersKpi?.closedAmount ?? 0)}
           </p>
         </div>
 
@@ -1308,10 +1308,10 @@ export default function Deals() {
             <XCircle className="w-4 h-4 text-red-500" />
           </div>
           <p className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
-            {showKpi ? (ordersKpi?.lostDeals ?? "—") : "—"}
+            {ordersKpi?.lostDeals ?? 0}
           </p>
           <p className="text-xs font-medium text-red-700 dark:text-red-300 tabular-nums">
-            {showKpi ? fmtCurrency(ordersKpi?.lostAmount ?? 0) : "—"}
+            {fmtCurrency(ordersKpi?.lostAmount ?? 0)}
           </p>
         </div>
 
