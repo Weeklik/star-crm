@@ -387,6 +387,28 @@ export default function Dashboard() {
   // topPersons values are already converted individually via getRateFor — don't apply this to them.
   const chartRate = useConverted ? 1 : conversionRate;
 
+  // Aggregate weekly data into monthly averages — must stay above the early return (hooks rule)
+  const monthlyAvgData = useMemo(() => {
+    if (weeklyData.length === 0) return [];
+    type MonthEntry = { month: string; orderClosedAmount: number; orderConfirmedAmount: number; orderLostAmount: number; weekCount: number };
+    const map = new Map<string, MonthEntry>();
+    for (const w of weeklyData) {
+      const month = w.weekLabel.split(" ")[0];
+      if (!map.has(month)) map.set(month, { month, orderClosedAmount: 0, orderConfirmedAmount: 0, orderLostAmount: 0, weekCount: 0 });
+      const e = map.get(month)!;
+      e.orderClosedAmount    += Math.round(w.orderClosedAmount    * chartRate);
+      e.orderConfirmedAmount += Math.round(w.orderConfirmedAmount * chartRate);
+      e.orderLostAmount      += Math.round(w.orderLostAmount      * chartRate);
+      e.weekCount            += 1;
+    }
+    return Array.from(map.values()).map((m) => ({
+      month:                 m.month,
+      orderClosedAmount:     Math.round(m.orderClosedAmount    / m.weekCount),
+      orderConfirmedAmount:  Math.round(m.orderConfirmedAmount / m.weekCount),
+      orderLostAmount:       Math.round(m.orderLostAmount      / m.weekCount),
+    }));
+  }, [weeklyData, chartRate]);
+
   if (!me || loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -409,28 +431,6 @@ export default function Dashboard() {
     orderConfirmedAmount:       Math.round(w.orderConfirmedAmount       * chartRate),
     orderLostAmount:            Math.round(w.orderLostAmount            * chartRate),
   }));
-
-  // Aggregate weekly data into monthly averages (sum per month / number of weeks in that month)
-  const monthlyAvgData = useMemo(() => {
-    if (convertedWeeklyData.length === 0) return [];
-    type MonthEntry = { month: string; orderClosedAmount: number; orderConfirmedAmount: number; orderLostAmount: number; weekCount: number };
-    const map = new Map<string, MonthEntry>();
-    for (const w of convertedWeeklyData) {
-      const month = w.weekLabel.split(" ")[0];
-      if (!map.has(month)) map.set(month, { month, orderClosedAmount: 0, orderConfirmedAmount: 0, orderLostAmount: 0, weekCount: 0 });
-      const e = map.get(month)!;
-      e.orderClosedAmount    += w.orderClosedAmount;
-      e.orderConfirmedAmount += w.orderConfirmedAmount;
-      e.orderLostAmount      += w.orderLostAmount;
-      e.weekCount            += 1;
-    }
-    return Array.from(map.values()).map((m) => ({
-      month:                 m.month,
-      orderClosedAmount:     Math.round(m.orderClosedAmount    / m.weekCount),
-      orderConfirmedAmount:  Math.round(m.orderConfirmedAmount / m.weekCount),
-      orderLostAmount:       Math.round(m.orderLostAmount      / m.weekCount),
-    }));
-  }, [convertedWeeklyData]);
 
   const quotationSentAmt = useConverted
     ? (allRegionsTotals?.quotationSentAmount ?? 0)
