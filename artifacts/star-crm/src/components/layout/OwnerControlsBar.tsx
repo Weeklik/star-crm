@@ -86,82 +86,88 @@ export function OwnerControlsBar() {
         </Select>
       </div>
 
-      <div className="h-4 w-px bg-border hidden sm:block" />
+      {!isTunisian && (
+        <>
+          <div className="h-4 w-px bg-border hidden sm:block" />
 
-      {/* Region filter */}
-      <div className="flex items-center gap-2 min-w-0">
-        <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.region")}</Label>
-        <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-          <SelectTrigger className="h-7 text-xs w-36 bg-background">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("ownerControls.allRegions")}</SelectItem>
-            {regions.map((r: RegionOption) => (
-              <SelectItem key={r.country} value={r.country}>
-                {countryLabel(r.country)}
-              </SelectItem>
-            ))}
-            {regions.length === 0 && (
-              <div className="px-3 py-2 text-xs text-muted-foreground">{t("ownerControls.noSalespersonCountries")}</div>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
+          {/* Region filter */}
+          <div className="flex items-center gap-2 min-w-0">
+            <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.region")}</Label>
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger className="h-7 text-xs w-36 bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("ownerControls.allRegions")}</SelectItem>
+                {regions.map((r: RegionOption) => (
+                  <SelectItem key={r.country} value={r.country}>
+                    {countryLabel(r.country)}
+                  </SelectItem>
+                ))}
+                {regions.length === 0 && (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">{t("ownerControls.noSalespersonCountries")}</div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <div className="h-4 w-px bg-border hidden sm:block" />
+          <div className="h-4 w-px bg-border hidden sm:block" />
+        </>
+      )}
 
       {/* Currency converter */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
-        <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.displayCurrency")}</Label>
-        <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-          <SelectTrigger className="h-7 text-xs w-44 bg-background">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="max-h-64">
-            {visibleCurrencies.map((c) => (
-              <SelectItem key={c.code} value={c.code}>
-                {c.code} — {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {!isTunisian && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.displayCurrency")}</Label>
+          <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+            <SelectTrigger className="h-7 text-xs w-44 bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-64">
+              {visibleCurrencies.map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  {c.code} — {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        {!isSameCurrency && user?.role !== "salesperson" && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="whitespace-nowrap">1 {sourceCurrency} =</span>
-            {rateLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : editingRate ? (
-              <Input
-                autoFocus
-                className="h-6 w-24 text-xs px-2"
-                value={rateInput}
-                onChange={(e) => setRateInput(e.target.value)}
-                onBlur={handleRateBlur}
-                onKeyDown={(e) => { if (e.key === "Enter") handleRateBlur(); if (e.key === "Escape") setEditingRate(false); }}
-              />
-            ) : (
-              <button
-                onClick={startEditingRate}
-                className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors"
-                title={t("ownerControls.clickToEditRate")}
-              >
-                {displayRate}
-                <Pencil className="w-3 h-3 opacity-50" />
-              </button>
-            )}
-            <span className="whitespace-nowrap">{selectedCurrency}</span>
-            {rateEdited && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500/50 text-amber-600 dark:text-amber-400">
-                {t("common.custom")}
-              </Badge>
-            )}
-          </div>
-        )}
-      </div>
+          {!isSameCurrency && user?.role !== "salesperson" && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="whitespace-nowrap">1 {sourceCurrency} =</span>
+              {rateLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : editingRate ? (
+                <Input
+                  autoFocus
+                  className="h-6 w-24 text-xs px-2"
+                  value={rateInput}
+                  onChange={(e) => setRateInput(e.target.value)}
+                  onBlur={handleRateBlur}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleRateBlur(); if (e.key === "Escape") setEditingRate(false); }}
+                />
+              ) : (
+                <button
+                  onClick={startEditingRate}
+                  className="inline-flex items-center gap-1 font-medium text-foreground hover:text-primary transition-colors"
+                  title={t("ownerControls.clickToEditRate")}
+                >
+                  {displayRate}
+                  <Pencil className="w-3 h-3 opacity-50" />
+                </button>
+              )}
+              <span className="whitespace-nowrap">{selectedCurrency}</span>
+              {rateEdited && (
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500/50 text-amber-600 dark:text-amber-400">
+                  {t("common.custom")}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

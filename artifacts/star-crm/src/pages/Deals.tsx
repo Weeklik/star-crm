@@ -732,7 +732,7 @@ export default function Deals() {
     "NG":  "NGN",
     "TN":  "TND",
   };
-  const receivedCurrency = REGION_CURRENCY_MAP[selectedRegion] ?? "AED";
+  const receivedCurrency = me?.country === "Tunisia" ? "EUR" : (REGION_CURRENCY_MAP[selectedRegion] ?? "AED");
   const fmtReceived = (n: number) => {
     try {
       return new Intl.NumberFormat("en-US", { style: "currency", currency: receivedCurrency, maximumFractionDigits: 0 }).format(n);
