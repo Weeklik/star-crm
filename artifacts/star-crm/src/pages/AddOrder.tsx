@@ -805,7 +805,7 @@ export default function AddOrder() {
                             updateItem(item.id, "qty", parseInt(e.target.value) || 0)
                           }
                           className="text-center"
-                          style={{ width: `${Math.max(8, String(item.qty).length + 2)}ch` }}
+                          style={{ width: `${Math.max(String(item.qty).length * 10 + 40, 80)}px` }}
                         />
                       </td>
                       <td className="px-2 py-1">
