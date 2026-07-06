@@ -410,6 +410,28 @@ export default function Dashboard() {
     orderLostAmount:            Math.round(w.orderLostAmount            * chartRate),
   }));
 
+  // Aggregate weekly data into monthly averages (sum per month / number of weeks in that month)
+  const monthlyAvgData = useMemo(() => {
+    if (convertedWeeklyData.length === 0) return [];
+    type MonthEntry = { month: string; orderClosedAmount: number; orderConfirmedAmount: number; orderLostAmount: number; weekCount: number };
+    const map = new Map<string, MonthEntry>();
+    for (const w of convertedWeeklyData) {
+      const month = w.weekLabel.split(" ")[0];
+      if (!map.has(month)) map.set(month, { month, orderClosedAmount: 0, orderConfirmedAmount: 0, orderLostAmount: 0, weekCount: 0 });
+      const e = map.get(month)!;
+      e.orderClosedAmount    += w.orderClosedAmount;
+      e.orderConfirmedAmount += w.orderConfirmedAmount;
+      e.orderLostAmount      += w.orderLostAmount;
+      e.weekCount            += 1;
+    }
+    return Array.from(map.values()).map((m) => ({
+      month:                 m.month,
+      orderClosedAmount:     Math.round(m.orderClosedAmount    / m.weekCount),
+      orderConfirmedAmount:  Math.round(m.orderConfirmedAmount / m.weekCount),
+      orderLostAmount:       Math.round(m.orderLostAmount      / m.weekCount),
+    }));
+  }, [convertedWeeklyData]);
+
   const quotationSentAmt = useConverted
     ? (allRegionsTotals?.quotationSentAmount ?? 0)
     : (stageData.find((s) => s.stage === "Quotation Sent")?.totalAgreedAmount ?? 0);
@@ -906,24 +928,24 @@ export default function Dashboard() {
           );
         })()}
 
-        {/* Weekly Sales Comparison Chart */}
+        {/* Monthly Average Comparison Chart */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t("dashboard.weeklyPerformance")}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Order Closed amounts vs Received amounts · trend follows Order Closed
+              Average monthly amounts per stage · each bar = weekly average for that month
             </p>
           </CardHeader>
           <CardContent className="pt-0">
-            {convertedWeeklyData.length === 0 || convertedWeeklyData.every((w) => w.totalDeals === 0) ? (
+            {monthlyAvgData.length === 0 ? (
               <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
                 {t("dashboard.noData")}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={convertedWeeklyData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="30%">
+                <ComposedChart data={monthlyAvgData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="30%">
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-                  <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="amount" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
                   <Tooltip content={<CustomWeeklyTooltip />} />
                   <Legend
