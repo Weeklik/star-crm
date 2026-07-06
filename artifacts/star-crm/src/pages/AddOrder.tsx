@@ -548,6 +548,9 @@ export default function AddOrder() {
               <SelectItem value="MODREN SEWING MACHINE TRADING">
                 MODREN SEWING MACHINE TRADING
               </SelectItem>
+              <SelectItem value="DUBAI SEWING MACHINE">
+                DUBAI SEWING MACHINE
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
