@@ -129,7 +129,7 @@ export function OwnerControlsBar() {
           </SelectContent>
         </Select>
 
-        {!isSameCurrency && (
+        {!isSameCurrency && user?.role !== "salesperson" && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="whitespace-nowrap">1 {sourceCurrency} =</span>
             {rateLoading ? (
