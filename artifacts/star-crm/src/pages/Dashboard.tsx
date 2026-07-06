@@ -849,8 +849,7 @@ export default function Dashboard() {
                           <div key={entry.name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary/50">
                             <span className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground truncate">{entry.name}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex items-center gap-2">
                                 <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden">
                                   <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, opacity: 0.8 }} />
                                 </div>
