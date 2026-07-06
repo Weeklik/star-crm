@@ -1,0 +1,525 @@
+import { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Lead {
+  id: number;
+  leadSource: string;
+  dateTime: string;
+  customerName: string;
+  companyName: string | null;
+  mobileCountryCode: string;
+  mobileNumber: string;
+  email: string | null;
+  region: string;
+  brand: string;
+  model: string;
+  closure: string;
+  notes: string | null;
+  assignedToId: number;
+  assignedToName: string | null;
+  leadStatus: string;
+  nextFollowUpDate: string;
+  followUpRemarks: string | null;
+  createdById: number;
+  createdAt: string;
+}
+
+interface UserOption { id: number; name: string | null; email: string; }
+interface RegionOption { country: string; currency: string | null; }
+
+interface LeadForm {
+  leadSource: string;
+  dateTime: string;
+  customerName: string;
+  companyName: string;
+  mobileCountryCode: string;
+  mobileNumber: string;
+  email: string;
+  region: string;
+  brand: string;
+  model: string;
+  closure: string;
+  notes: string;
+  assignedToId: string;
+  leadStatus: string;
+  nextFollowUpDate: string;
+  followUpRemarks: string;
+}
+
+const LEAD_SOURCES = [
+  "Walk-in", "Phone Call", "Email", "Social Media", "Referral",
+  "Website", "Exhibition", "Cold Call", "WhatsApp", "Other",
+];
+const LEAD_STATUSES = [
+  "New", "Contacted", "Qualified", "Proposal Sent",
+  "Negotiation", "Won", "Lost", "Follow-up",
+];
+const CLOSURE_OPTIONS = [
+  "Immediately", "Within 1 Month", "1-3 Months",
+  "3-6 Months", "6-12 Months", "More than 1 Year",
+];
+const COUNTRY_CODES = [
+  { code: "+971", flag: "🇦🇪", label: "UAE" },
+  { code: "+966", flag: "🇸🇦", label: "Saudi" },
+  { code: "+974", flag: "🇶🇦", label: "Qatar" },
+  { code: "+965", flag: "🇰🇼", label: "Kuwait" },
+  { code: "+973", flag: "🇧🇭", label: "Bahrain" },
+  { code: "+968", flag: "🇴🇲", label: "Oman" },
+  { code: "+20",  flag: "🇪🇬", label: "Egypt" },
+  { code: "+216", flag: "🇹🇳", label: "Tunisia" },
+  { code: "+33",  flag: "🇫🇷", label: "France" },
+  { code: "+44",  flag: "🇬🇧", label: "UK" },
+  { code: "+1",   flag: "🇺🇸", label: "USA" },
+];
+const STATUS_COLORS: Record<string, string> = {
+  "New":           "bg-blue-500/15 text-blue-400",
+  "Contacted":     "bg-yellow-500/15 text-yellow-400",
+  "Qualified":     "bg-violet-500/15 text-violet-400",
+  "Proposal Sent": "bg-orange-500/15 text-orange-400",
+  "Negotiation":   "bg-indigo-500/15 text-indigo-400",
+  "Won":           "bg-emerald-500/15 text-emerald-400",
+  "Lost":          "bg-red-500/15 text-red-400",
+  "Follow-up":     "bg-cyan-500/15 text-cyan-400",
+};
+
+const emptyForm = (): LeadForm => ({
+  leadSource: "",
+  dateTime: new Date().toISOString().slice(0, 16),
+  customerName: "",
+  companyName: "",
+  mobileCountryCode: "+971",
+  mobileNumber: "",
+  email: "",
+  region: "",
+  brand: "",
+  model: "",
+  closure: "",
+  notes: "",
+  assignedToId: "",
+  leadStatus: "New",
+  nextFollowUpDate: "",
+  followUpRemarks: "",
+});
+
+async function apiFetch(path: string, opts?: RequestInit) {
+  const res = await fetch(path, { credentials: "include", ...opts });
+  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+const selClass = "w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring";
+
+export default function Leads() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [leads, setLeads]         = useState<Lead[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm]           = useState<LeadForm>(emptyForm());
+  const [saving, setSaving]       = useState(false);
+  const [deleteId, setDeleteId]   = useState<number | null>(null);
+  const [users, setUsers]         = useState<UserOption[]>([]);
+  const [regions, setRegions]     = useState<RegionOption[]>([]);
+  const [brands, setBrands]       = useState<string[]>([]);
+
+  const loadLeads = () => {
+    setLoading(true);
+    apiFetch("/api/leads")
+      .then((d) => setLeads(Array.isArray(d) ? d : []))
+      .catch(() => toast({ title: "Failed to load leads", variant: "destructive" }))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadLeads();
+    apiFetch("/api/users").then((d) => setUsers(Array.isArray(d) ? d : [])).catch(() => {});
+    apiFetch("/api/lookup/regions").then((d) => setRegions(Array.isArray(d) ? d : [])).catch(() => {});
+    apiFetch("/api/lookup?type=brand").then((d) => setBrands(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
+
+  const sf = (field: keyof LeadForm, value: string) => setForm((f) => ({ ...f, [field]: value }));
+
+  const openAdd = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm(), assignedToId: user ? String(user.id) : "" });
+    setModalOpen(true);
+  };
+
+  const openEdit = (lead: Lead) => {
+    setEditingId(lead.id);
+    setForm({
+      leadSource:        lead.leadSource,
+      dateTime:          lead.dateTime ? lead.dateTime.slice(0, 16) : "",
+      customerName:      lead.customerName,
+      companyName:       lead.companyName ?? "",
+      mobileCountryCode: lead.mobileCountryCode,
+      mobileNumber:      lead.mobileNumber,
+      email:             lead.email ?? "",
+      region:            lead.region,
+      brand:             lead.brand,
+      model:             lead.model,
+      closure:           lead.closure,
+      notes:             lead.notes ?? "",
+      assignedToId:      String(lead.assignedToId),
+      leadStatus:        lead.leadStatus,
+      nextFollowUpDate:  lead.nextFollowUpDate ?? "",
+      followUpRemarks:   lead.followUpRemarks ?? "",
+    });
+    setModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    const required = ["leadSource","customerName","mobileNumber","region","brand","model","closure","assignedToId","nextFollowUpDate"] as const;
+    if (required.some((k) => !form[k])) {
+      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const body = { ...form, assignedToId: Number(form.assignedToId) };
+      if (editingId) {
+        await apiFetch(`/api/leads/${editingId}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+        });
+        toast({ title: "Lead updated successfully" });
+      } else {
+        await apiFetch("/api/leads", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+        });
+        toast({ title: "Lead created successfully" });
+      }
+      setModalOpen(false);
+      loadLeads();
+    } catch {
+      toast({ title: "Failed to save lead", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await apiFetch(`/api/leads/${deleteId}`, { method: "DELETE" });
+      toast({ title: "Lead deleted" });
+      loadLeads();
+    } catch {
+      toast({ title: "Failed to delete lead", variant: "destructive" });
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  const filtered = leads.filter((l) => {
+    const q = search.toLowerCase();
+    const matchSearch = !search
+      || l.customerName.toLowerCase().includes(q)
+      || (l.companyName ?? "").toLowerCase().includes(q)
+      || l.mobileNumber.includes(q);
+    const matchStatus = statusFilter === "all" || l.leadStatus === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Lead Management</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Track and manage your sales leads</p>
+        </div>
+        <Button onClick={openAdd} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Add Lead
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search name, company, mobile…"
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="all">All Statuses</option>
+          {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <span className="text-xs text-muted-foreground ml-1">{filtered.length} lead{filtered.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      {/* Table */}
+      <div className="border border-border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer</TableHead>
+              <TableHead>Lead Source</TableHead>
+              <TableHead>Mobile</TableHead>
+              <TableHead>Region</TableHead>
+              <TableHead>Brand / Model</TableHead>
+              <TableHead>Closure</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Assigned To</TableHead>
+              <TableHead>Follow-up</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={10} className="text-center py-14">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="text-center py-14 text-muted-foreground">
+                  No leads found
+                </TableCell>
+              </TableRow>
+            ) : filtered.map((lead) => (
+              <TableRow key={lead.id}>
+                <TableCell>
+                  <div className="font-medium text-sm">{lead.customerName}</div>
+                  {lead.companyName && (
+                    <div className="text-xs text-muted-foreground">{lead.companyName}</div>
+                  )}
+                </TableCell>
+                <TableCell className="text-sm">{lead.leadSource}</TableCell>
+                <TableCell className="text-sm tabular-nums">
+                  {lead.mobileCountryCode} {lead.mobileNumber}
+                </TableCell>
+                <TableCell className="text-sm">{lead.region}</TableCell>
+                <TableCell className="text-sm">
+                  <span className="font-medium">{lead.brand}</span>
+                  <span className="text-muted-foreground"> / {lead.model}</span>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">{lead.closure}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[lead.leadStatus] ?? "bg-secondary text-muted-foreground"}`}>
+                    {lead.leadStatus}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm">{lead.assignedToName ?? "—"}</TableCell>
+                <TableCell className="text-sm tabular-nums">{lead.nextFollowUpDate}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEdit(lead)}
+                      className="p-1.5 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(lead.id)}
+                      className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Add / Edit Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Lead" : "Add New Lead"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-1">
+            {/* Lead Source + Date & Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Lead Source (Means) <span className="text-destructive">*</span></Label>
+                <select value={form.leadSource} onChange={(e) => sf("leadSource", e.target.value)} className={selClass}>
+                  <option value="">Select Lead Source</option>
+                  {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Date &amp; Time</Label>
+                <Input type="datetime-local" value={form.dateTime} onChange={(e) => sf("dateTime", e.target.value)} />
+              </div>
+            </div>
+
+            {/* Customer Name + Company Name */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Customer Name <span className="text-destructive">*</span></Label>
+                <Input placeholder="Enter customer name" value={form.customerName} onChange={(e) => sf("customerName", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Company Name</Label>
+                <Input placeholder="Enter company name" value={form.companyName} onChange={(e) => sf("companyName", e.target.value)} />
+              </div>
+            </div>
+
+            {/* Mobile + Email */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Mobile Number <span className="text-destructive">*</span></Label>
+                <div className="flex gap-2">
+                  <select
+                    value={form.mobileCountryCode}
+                    onChange={(e) => sf("mobileCountryCode", e.target.value)}
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm w-[110px] shrink-0 focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    {COUNTRY_CODES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                    ))}
+                  </select>
+                  <Input placeholder="50 123 4567" value={form.mobileNumber} onChange={(e) => sf("mobileNumber", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" placeholder="Enter email address" value={form.email} onChange={(e) => sf("email", e.target.value)} />
+              </div>
+            </div>
+
+            {/* Region */}
+            <div className="space-y-1.5">
+              <Label>Regions/Country <span className="text-destructive">*</span></Label>
+              <select value={form.region} onChange={(e) => sf("region", e.target.value)} className={selClass}>
+                <option value="">Select region / country</option>
+                {regions.map((r) => <option key={r.country} value={r.country}>{r.country}</option>)}
+              </select>
+            </div>
+
+            {/* Brand + Model */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Brand <span className="text-destructive">*</span></Label>
+                <select value={form.brand} onChange={(e) => sf("brand", e.target.value)} className={selClass}>
+                  <option value="">Select brand</option>
+                  {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Model <span className="text-destructive">*</span></Label>
+                <Input placeholder="Enter model" value={form.model} onChange={(e) => sf("model", e.target.value)} />
+              </div>
+            </div>
+
+            {/* Closure */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Closure (Expected Purchase Time) <span className="text-destructive">*</span></Label>
+                <select value={form.closure} onChange={(e) => sf("closure", e.target.value)} className={selClass}>
+                  <option value="">Select closure</option>
+                  {CLOSURE_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-1.5">
+              <Label>Additional Requirements / Notes</Label>
+              <Textarea
+                placeholder="Enter details about requirement (optional)"
+                value={form.notes}
+                onChange={(e) => sf("notes", e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            {/* Employee + Lead Status */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>All Employee <span className="text-destructive">*</span></Label>
+                <select value={form.assignedToId} onChange={(e) => sf("assignedToId", e.target.value)} className={selClass}>
+                  <option value="">Select employee</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={String(u.id)}>{u.name ?? u.email}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Lead Status <span className="text-destructive">*</span></Label>
+                <select value={form.leadStatus} onChange={(e) => sf("leadStatus", e.target.value)} className={selClass}>
+                  {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Next Follow-up Date + Remarks */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Next Follow-up Date <span className="text-destructive">*</span></Label>
+                <Input type="date" value={form.nextFollowUpDate} onChange={(e) => sf("nextFollowUpDate", e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Follow-up Remarks</Label>
+                <Input placeholder="Enter follow-up remarks…" value={form.followUpRemarks} onChange={(e) => sf("followUpRemarks", e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {editingId ? "Update Lead" : "Create Lead"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the lead. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

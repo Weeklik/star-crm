@@ -8,6 +8,7 @@ import lookupRouter from "./lookup";
 import plannerRouter from "./planner";
 import productsRouter from "./products";
 import activitiesRouter from "./activities";
+import leadsRouter from "./leads";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(lookupRouter);
 router.use(plannerRouter);
 router.use(productsRouter);
 router.use(activitiesRouter);
+router.use(leadsRouter);
 
 export default router;
