@@ -789,6 +789,92 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Stage Amount Distribution Pie Chart */}
+        {(() => {
+          const amountPieData = pieData
+            .filter((d) => d.name !== "Sales Return")
+            .map((d) => ({ ...d }));
+          const totalAmt = amountPieData.reduce((s, d) => s + d.amount, 0);
+          const hasData = totalAmt > 0;
+          return (
+            <Card className="border-border/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">Stage Amount Distribution</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Total agreed amounts split across all four order stages · filtered by selected period
+                </p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {!hasData ? (
+                  <div className="h-56 flex items-center justify-center text-muted-foreground text-sm">
+                    {t("dashboard.noData")}
+                  </div>
+                ) : (
+                  <div className="flex flex-col md:flex-row gap-6 items-center">
+                    {/* Donut */}
+                    <div className="w-full md:w-64 shrink-0">
+                      <ResponsiveContainer width="100%" height={220}>
+                        <PieChart>
+                          <Pie
+                            data={amountPieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={90}
+                            paddingAngle={3}
+                            dataKey="amount"
+                            label={renderCustomPieLabel}
+                            labelLine={false}
+                          >
+                            {amountPieData.map((entry) => (
+                              <Cell key={entry.name} fill={STAGE_COLORS[entry.name] ?? "#94a3b8"} stroke="transparent" />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={TOOLTIP_STYLE}
+                            formatter={(value: number, _name: string, props: any) => [
+                              fmtDisplay(value),
+                              props.payload.name,
+                            ]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Breakdown */}
+                    <div className="flex-1 w-full space-y-2">
+                      {amountPieData.map((entry) => {
+                        const pct = totalAmt > 0 ? (entry.amount / totalAmt) * 100 : 0;
+                        const color = STAGE_COLORS[entry.name] ?? "#94a3b8";
+                        return (
+                          <div key={entry.name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary/50">
+                            <span className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground truncate">{entry.name}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden">
+                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color, opacity: 0.8 }} />
+                                </div>
+                                <span className="text-[11px] text-muted-foreground shrink-0">{pct.toFixed(1)}%</span>
+                              </div>
+                            </div>
+                            <p className="text-sm font-bold tabular-nums shrink-0" style={{ color }}>
+                              {fmtDisplay(entry.amount)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                      <div className="flex justify-between items-center px-3 py-2 border-t border-border/40 mt-1">
+                        <span className="text-xs font-medium text-muted-foreground">Total</span>
+                        <span className="text-sm font-bold tabular-nums">{fmtDisplay(totalAmt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Weekly Sales Comparison Chart */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
