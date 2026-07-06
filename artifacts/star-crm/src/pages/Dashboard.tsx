@@ -406,8 +406,13 @@ export default function Dashboard() {
       orderClosedAmount:     Math.round(m.orderClosedAmount    / m.weekCount),
       orderConfirmedAmount:  Math.round(m.orderConfirmedAmount / m.weekCount),
       orderLostAmount:       Math.round(m.orderLostAmount      / m.weekCount),
+      total:                 Math.round((m.orderClosedAmount + m.orderConfirmedAmount + m.orderLostAmount) / m.weekCount),
     }));
   }, [weeklyData, chartRate]);
+
+  // Current month short label (e.g. "Jul") — matches weekLabel prefix format
+  const currentMonthLabel = new Date().toLocaleString("en-US", { month: "short" });
+  const currentMonthAvg = monthlyAvgData.find((m) => m.month === currentMonthLabel) ?? null;
 
   if (!me || loading) {
     return (
@@ -928,37 +933,29 @@ export default function Dashboard() {
           );
         })()}
 
-        {/* Monthly Average Comparison Chart */}
+        {/* Monthly Average Comparison — current month KPI */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">{t("dashboard.weeklyPerformance")}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Average monthly amounts per stage · each bar = weekly average for that month
+              Average weekly deal amount for the current month
             </p>
           </CardHeader>
           <CardContent className="pt-0">
-            {monthlyAvgData.length === 0 ? (
-              <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+            {!currentMonthAvg ? (
+              <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
                 {t("dashboard.noData")}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={monthlyAvgData} margin={{ top: 24, right: 56, left: 0, bottom: 4 }} barCategoryGap="30%">
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="amount" tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
-                  <Tooltip content={<CustomWeeklyTooltip />} />
-                  <Legend
-                    iconType="circle"
-                    iconSize={8}
-                    wrapperStyle={{ paddingTop: "12px" }}
-                    formatter={(value) => <span className="text-xs text-foreground/80">{value}</span>}
-                  />
-                  <Bar yAxisId="amount" dataKey="orderClosedAmount" name="Order Closed" fill="#a78bfa" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
-                  <Bar yAxisId="amount" dataKey="orderConfirmedAmount" name="Order Confirmed" fill="#34d399" fillOpacity={0.85} radius={[4, 4, 0, 0]} maxBarSize={32} />
-                  <Bar yAxisId="amount" dataKey="orderLostAmount" name="Order Lost" fill="#f87171" fillOpacity={0.75} radius={[4, 4, 0, 0]} maxBarSize={32} />
-                </ComposedChart>
-              </ResponsiveContainer>
+              <div className="flex flex-col items-center justify-center gap-3 py-8">
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                  {new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}
+                </p>
+                <p className="text-4xl font-bold tabular-nums text-foreground">
+                  {fmtDisplay(currentMonthAvg.total)}
+                </p>
+                <p className="text-xs text-muted-foreground">per week on average</p>
+              </div>
             )}
           </CardContent>
         </Card>
