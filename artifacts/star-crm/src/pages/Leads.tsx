@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Pencil, Trash2, Loader2, Search, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,13 +66,10 @@ const LEAD_SOURCES = [
   "Walk-in", "Phone Call", "Email", "Social Media", "Referral",
   "Website", "Exhibition", "Cold Call", "WhatsApp", "Other",
 ];
-const LEAD_STATUSES = [
-  "New", "Contacted", "Qualified", "Proposal Sent",
-  "Negotiation", "Won", "Lost", "Follow-up",
-];
+const LEAD_STATUSES = ["New Lead", "Dealer Lead", "Existing Lead", "Other"];
 const CLOSURE_OPTIONS = [
   "Immediately", "Within 1 Month", "1-3 Months",
-  "3-6 Months", "6-12 Months", "More than 1 Year",
+  "3-6 Months", "6-12 Months", "More than 1 Year", "Other",
 ];
 const COUNTRY_CODES = [
   { code: "+971", flag: "🇦🇪", label: "UAE" },
@@ -88,14 +85,10 @@ const COUNTRY_CODES = [
   { code: "+1",   flag: "🇺🇸", label: "USA" },
 ];
 const STATUS_COLORS: Record<string, string> = {
-  "New":           "bg-blue-500/15 text-blue-400",
-  "Contacted":     "bg-yellow-500/15 text-yellow-400",
-  "Qualified":     "bg-violet-500/15 text-violet-400",
-  "Proposal Sent": "bg-orange-500/15 text-orange-400",
-  "Negotiation":   "bg-indigo-500/15 text-indigo-400",
-  "Won":           "bg-emerald-500/15 text-emerald-400",
-  "Lost":          "bg-red-500/15 text-red-400",
-  "Follow-up":     "bg-cyan-500/15 text-cyan-400",
+  "New Lead":      "bg-blue-500/15 text-blue-400",
+  "Dealer Lead":   "bg-violet-500/15 text-violet-400",
+  "Existing Lead": "bg-emerald-500/15 text-emerald-400",
+  "Other":         "bg-secondary text-muted-foreground",
 };
 
 const emptyForm = (): LeadForm => ({
@@ -112,7 +105,7 @@ const emptyForm = (): LeadForm => ({
   closure: "",
   notes: "",
   assignedToId: "",
-  leadStatus: "New",
+  leadStatus: "New Lead",
   nextFollowUpDate: "",
   followUpRemarks: "",
 });
@@ -126,6 +119,116 @@ async function apiFetch(path: string, opts?: RequestInit) {
 
 const selClass = "w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
+/* ── Searchable Model Dropdown ─────────────────────────────────── */
+function ModelCombobox({
+  models,
+  value,
+  onChange,
+  loading,
+  disabled,
+}: {
+  models: string[];
+  value: string;
+  onChange: (v: string) => void;
+  loading: boolean;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = models.filter((m) =>
+    m.toLowerCase().includes(search.toLowerCase())
+  );
+  const allOptions = [...filtered, "Other"];
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const select = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    setSearch("");
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((o) => !o);
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }}
+        className={`${selClass} flex items-center justify-between gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+      >
+        <span className={value ? "text-foreground" : "text-muted-foreground"}>
+          {loading ? "Loading models…" : value || (disabled ? "Select a brand first" : "Select model")}
+        </span>
+        {loading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-muted-foreground" />
+        ) : value ? (
+          <X
+            className="w-3.5 h-3.5 shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onChange(""); }}
+          />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute z-50 left-0 right-0 top-[calc(100%+4px)] rounded-md border border-border bg-popover shadow-lg overflow-hidden">
+          {/* Search bar */}
+          <div className="p-2 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search model…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-8 pl-8 pr-3 rounded border border-input bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          </div>
+          {/* Options list */}
+          <div className="max-h-52 overflow-y-auto">
+            {allOptions.length === 0 ? (
+              <div className="px-3 py-4 text-sm text-center text-muted-foreground">No models found</div>
+            ) : (
+              allOptions.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onMouseDown={() => select(m)}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                    value === m ? "bg-accent font-medium" : ""
+                  } ${m === "Other" ? "text-muted-foreground italic border-t border-border mt-0.5" : ""}`}
+                >
+                  {m}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Main Component ────────────────────────────────────────────── */
 export default function Leads() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -139,9 +242,12 @@ export default function Leads() {
   const [form, setForm]           = useState<LeadForm>(emptyForm());
   const [saving, setSaving]       = useState(false);
   const [deleteId, setDeleteId]   = useState<number | null>(null);
+
   const [users, setUsers]         = useState<UserOption[]>([]);
   const [regions, setRegions]     = useState<RegionOption[]>([]);
   const [brands, setBrands]       = useState<string[]>([]);
+  const [models, setModels]       = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
 
   const loadLeads = () => {
     setLoading(true);
@@ -155,14 +261,37 @@ export default function Leads() {
     loadLeads();
     apiFetch("/api/users").then((d) => setUsers(Array.isArray(d) ? d : [])).catch(() => {});
     apiFetch("/api/lookup/regions").then((d) => setRegions(Array.isArray(d) ? d : [])).catch(() => {});
-    apiFetch("/api/lookup?type=brand").then((d) => setBrands(Array.isArray(d) ? d : [])).catch(() => {});
+    apiFetch("/api/products-catalog/brands").then((d) => setBrands(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
 
-  const sf = (field: keyof LeadForm, value: string) => setForm((f) => ({ ...f, [field]: value }));
+  /* Fetch models whenever the selected brand changes */
+  useEffect(() => {
+    if (!form.brand || form.brand === "Other") {
+      setModels([]);
+      return;
+    }
+    setModelsLoading(true);
+    apiFetch(`/api/products-catalog/lookup?brand=${encodeURIComponent(form.brand)}`)
+      .then((rows: any[]) => {
+        const unique = [...new Set((rows ?? []).map((r: any) => r.model).filter(Boolean))].sort() as string[];
+        setModels(unique);
+      })
+      .catch(() => setModels([]))
+      .finally(() => setModelsLoading(false));
+  }, [form.brand]);
+
+  const sf = (field: keyof LeadForm, value: string) => {
+    if (field === "brand") {
+      setForm((f) => ({ ...f, brand: value, model: "" }));
+    } else {
+      setForm((f) => ({ ...f, [field]: value }));
+    }
+  };
 
   const openAdd = () => {
     setEditingId(null);
     setForm({ ...emptyForm(), assignedToId: user ? String(user.id) : "" });
+    setModels([]);
     setModalOpen(true);
   };
 
@@ -418,6 +547,7 @@ export default function Leads() {
               <select value={form.region} onChange={(e) => sf("region", e.target.value)} className={selClass}>
                 <option value="">Select region / country</option>
                 {regions.map((r) => <option key={r.country} value={r.country}>{r.country}</option>)}
+                <option value="Other">Other</option>
               </select>
             </div>
 
@@ -428,11 +558,18 @@ export default function Leads() {
                 <select value={form.brand} onChange={(e) => sf("brand", e.target.value)} className={selClass}>
                   <option value="">Select brand</option>
                   {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                  <option value="Other">Other</option>
                 </select>
               </div>
               <div className="space-y-1.5">
                 <Label>Model <span className="text-destructive">*</span></Label>
-                <Input placeholder="Enter model" value={form.model} onChange={(e) => sf("model", e.target.value)} />
+                <ModelCombobox
+                  models={models}
+                  value={form.model}
+                  onChange={(v) => sf("model", v)}
+                  loading={modelsLoading}
+                  disabled={!form.brand}
+                />
               </div>
             </div>
 
