@@ -434,6 +434,10 @@ export default function Dashboard() {
     orderLostAmount:            Math.round(w.orderLostAmount            * chartRate),
   }));
 
+  // Current month's weeks filtered from convertedWeeklyData (weekLabel starts with e.g. "Jul")
+  const currentMonthShort = new Date().toLocaleString("en-US", { month: "short" });
+  const currentMonthWeeklyData = convertedWeeklyData.filter((w) => w.weekLabel.startsWith(currentMonthShort));
+
   // Average monthly sales total — same formula as the "Average Monthly Sales — {year}" chart
   const _avgMonthlyTotals = (() => {
     const currentMonthNum = new Date().getFullYear() === selectedYear ? new Date().getMonth() + 1 : 12;
@@ -943,29 +947,50 @@ export default function Dashboard() {
           );
         })()}
 
-        {/* Monthly Average Comparison — current month KPI */}
+        {/* Monthly Average Comparison — current month bar chart */}
         <Card className="border-border/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">{t("dashboard.weeklyPerformance")}</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Average monthly sales amount across all months in {selectedYear}
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base font-semibold">{t("dashboard.weeklyPerformance")}</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {new Date().toLocaleString("en-US", { month: "long", year: "numeric" })} · weekly breakdown
+                </p>
+              </div>
+              {avgMonthlySalesTotal !== null && (
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{selectedYear} avg</p>
+                  <p className="text-lg font-bold tabular-nums">{fmtDisplay(avgMonthlySalesTotal)}</p>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="pt-0">
-            {avgMonthlySalesTotal === null ? (
-              <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
+            {currentMonthWeeklyData.length === 0 ? (
+              <div className="h-56 flex items-center justify-center text-muted-foreground text-sm">
                 {t("dashboard.noData")}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center gap-3 py-8">
-                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                  {selectedYear}
-                </p>
-                <p className="text-4xl font-bold tabular-nums text-foreground">
-                  {fmtDisplay(avgMonthlySalesTotal)}
-                </p>
-                <p className="text-xs text-muted-foreground">monthly average</p>
-              </div>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={currentMonthWeeklyData} margin={{ top: 16, right: 16, left: 0, bottom: 4 }} barCategoryGap="28%" barGap={2}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                  <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={48} />
+                  <Tooltip
+                    formatter={(value: number, name: string) => [fmtDisplay(value), name]}
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 4 }}
+                  />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: "10px" }} formatter={(v) => <span className="text-xs text-foreground/80">{v}</span>} />
+                  {avgMonthlySalesTotal !== null && (
+                    <ReferenceLine y={avgMonthlySalesTotal} stroke="#fbbf24" strokeDasharray="5 3" strokeWidth={1.5}
+                      label={{ value: `${selectedYear} avg`, position: "insideTopRight", fontSize: 10, fill: "#fbbf24" }} />
+                  )}
+                  <Bar dataKey="orderClosedAmount"    name="Order Closed"    fill="#a78bfa" fillOpacity={0.85} radius={[3,3,0,0]} maxBarSize={20} />
+                  <Bar dataKey="orderConfirmedAmount" name="Order Confirmed" fill="#34d399" fillOpacity={0.85} radius={[3,3,0,0]} maxBarSize={20} />
+                  <Bar dataKey="orderLostAmount"      name="Order Lost"      fill="#f87171" fillOpacity={0.75} radius={[3,3,0,0]} maxBarSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
