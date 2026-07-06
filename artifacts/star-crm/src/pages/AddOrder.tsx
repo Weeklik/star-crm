@@ -242,6 +242,15 @@ function getCountryVat(country: string | null | undefined): number {
   return VAT_BY_COUNTRY[country] ?? 0;
 }
 
+function getEffectiveVat(
+  country: string | null | undefined,
+  company: string,
+): number {
+  if (company === "STAR GLOBAL TECH FZCO") return 0;
+  if (country === "Tunisia") return 0;
+  return getCountryVat(country);
+}
+
 function newItem(vatPct = 0): OrderItem {
   return {
     id: uuidv4(),
@@ -294,12 +303,12 @@ export default function AddOrder() {
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  // Enforce country VAT on all items whenever the user's country is known or edit finishes loading
+  // Enforce VAT on all items — 0 if company is STAR GLOBAL TECH FZCO or salesperson is from Tunisia
   useEffect(() => {
     if (!me?.country) return;
-    const vat = getCountryVat(me.country);
+    const vat = getEffectiveVat(me.country, companySelection);
     setItems((prev) => prev.map((it) => ({ ...it, vatPct: vat })));
-  }, [me?.country, loaded]);
+  }, [me?.country, companySelection, loaded]);
 
   // Catalog state: brand → products
   const [catalogByBrand, setCatalogByBrand] = useState<
