@@ -253,7 +253,8 @@ function fmtDate(dateStr?: string | null): string {
 
 export function openProformaInvoice(data: ProformaInvoiceData): void {
   const cfg = getRegionConfig(data.region);
-  const curr = data.currency || cfg.currency;
+  const _rawCurr = data.currency || cfg.currency;
+  const curr = _rawCurr === "TND" ? "EUR" : _rawCurr;
   const yr = new Date().getFullYear().toString().slice(-2);
   const invoiceNo = `SSMT/PI-${yr}/${String(data.id).padStart(3, "0")}`;
   const dateStr = fmtDate(data.dealStartDate);

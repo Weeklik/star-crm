@@ -323,6 +323,7 @@ export default function SalesBreakdown() {
   const dataCurrency = isAllRegions && selectedUser?.currency
     ? selectedUser.currency
     : sourceCurrency;
+  const dataCurrencyDisplay = dataCurrency === "TND" ? "EUR" : dataCurrency;
   const effectiveRate = isAllRegions
     ? getRateFor(dataCurrency)
     : conversionRate;
@@ -549,7 +550,7 @@ export default function SalesBreakdown() {
                                 <span className="font-bold text-sm">{monthLabel}</span>
                                 {!isSameCurrency && (
                                   <MonthRateCell
-                                    baseCurrency={dataCurrency}
+                                    baseCurrency={dataCurrencyDisplay}
                                     targetCurrency={selectedCurrency}
                                     rate={monthRate}
                                     loading={rateIsLoading(monthYear, monthIdx)}

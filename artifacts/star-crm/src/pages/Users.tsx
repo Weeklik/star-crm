@@ -247,7 +247,7 @@ export default function Users() {
                       <span>{countryName(user.country)}</span>
                       {user.currency && (
                         <span className="ml-1 px-1.5 py-0.5 bg-secondary rounded text-xs font-mono">
-                          {user.currency}
+                          {user.currency === "TND" ? "EUR" : user.currency}
                         </span>
                       )}
                     </div>
