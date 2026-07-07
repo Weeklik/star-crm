@@ -82,6 +82,7 @@ interface RegionConfig {
   grandTotalLabel?: string;    // default "Grand Total"
   receivedLabel?: string;      // default "Received Amount"
   outstandingLabel?: string;   // default "Outstanding Amount"
+  currencySymbol?: string;     // display symbol override, e.g. "€" instead of "EUR"
   // wave header variant (Tunisia / North Africa style)
   headerVariant?: "wave";
   waveCompanyName?: string;    // text shown in the white wave area (e.g. "STAR NORTH AFRICA")
@@ -203,6 +204,7 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     grandTotalLabel:"Total HT",
     receivedLabel:  "Montant reçu",
     outstandingLabel:"Montant restant dû",
+    currencySymbol:  "€",
   },
   NG: {
     currency: "NGN",
@@ -268,6 +270,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const cfg = getRegionConfig(data.region);
   const _rawCurr = data.currency || cfg.currency;
   const curr = _rawCurr === "TND" ? "EUR" : _rawCurr;
+  const currDisp = cfg.currencySymbol ?? curr;
   const yr = new Date().getFullYear().toString().slice(-2);
   const invoiceNo = `SSMT/PI-${yr}/${String(data.id).padStart(3, "0")}`;
   const dateStr = fmtDate(data.dealStartDate);
@@ -284,8 +287,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const colModel       = cfg.colModel       ?? "Model";
   const colDesc        = cfg.colDesc        ?? "Description";
   const colQty         = cfg.colQty         ?? "Qty";
-  const colUnitPrice   = cfg.colUnitPrice   ?? `Unit Price<br>(${curr})`;
-  const colTotal       = cfg.colTotal       ?? `Total<br>(${curr})`;
+  const colUnitPrice   = cfg.colUnitPrice   ?? `Unit Price<br>(${currDisp})`;
+  const colTotal       = cfg.colTotal       ?? `Total<br>(${currDisp})`;
   const paymentLabel   = cfg.paymentLabel   ?? "Payment";
   const bankLabel      = cfg.bankLabel      ?? "Our Bank Details";
   const noteLabel      = cfg.noteLabel      ?? "Note";
@@ -351,32 +354,32 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
   const totalsHtml = `
   <tr>
-    <td class="label">${lSubTotal} (${curr})</td>
-    <td class="value">${fmt(subTotal, curr)} ${curr}</td>
+    <td class="label">${lSubTotal} (${currDisp})</td>
+    <td class="value">${fmt(subTotal, curr)} ${currDisp}</td>
   </tr>
   ${totalDiscount > 0 ? `<tr>
-    <td class="label">${lDiscount} (${curr})</td>
-    <td class="value">- ${fmt(totalDiscount, curr)} ${curr}</td>
+    <td class="label">${lDiscount} (${currDisp})</td>
+    <td class="value">- ${fmt(totalDiscount, curr)} ${currDisp}</td>
   </tr>` : ""}
   ${totalVat > 0 ? `<tr>
-    <td class="label">${vatLabel} (${curr})</td>
-    <td class="value">${fmt(totalVat, curr)} ${curr}</td>
+    <td class="label">${vatLabel} (${currDisp})</td>
+    <td class="value">${fmt(totalVat, curr)} ${currDisp}</td>
   </tr>` : ""}
   ${transportFee > 0 ? `<tr>
-    <td class="label">${lDelivery} (${curr})</td>
-    <td class="value">${fmt(transportFee, curr)} ${curr}</td>
+    <td class="label">${lDelivery} (${currDisp})</td>
+    <td class="value">${fmt(transportFee, curr)} ${currDisp}</td>
   </tr>` : ""}
   <tr class="grand">
-    <td class="label">${lGrandTotal} (${curr})</td>
-    <td class="value">${fmt(grandTotal, curr)} ${curr}</td>
+    <td class="label">${lGrandTotal} (${currDisp})</td>
+    <td class="value">${fmt(grandTotal, curr)} ${currDisp}</td>
   </tr>
   ${receivedAmt > 0 ? `<tr>
-    <td class="label">${lReceived} (${curr})</td>
-    <td class="value" style="color:#1a7a1a;font-weight:700;">${fmt(receivedAmt, curr)} ${curr}</td>
+    <td class="label">${lReceived} (${currDisp})</td>
+    <td class="value" style="color:#1a7a1a;font-weight:700;">${fmt(receivedAmt, curr)} ${currDisp}</td>
   </tr>` : ""}
   <tr>
-    <td class="label">${lOutstanding} (${curr})</td>
-    <td class="value" style="color:${outstandingAmt > 0 ? "#c0392b" : "#1a7a1a"};font-weight:700;">${fmt(outstandingAmt, curr)} ${curr}</td>
+    <td class="label">${lOutstanding} (${currDisp})</td>
+    <td class="value" style="color:${outstandingAmt > 0 ? "#c0392b" : "#1a7a1a"};font-weight:700;">${fmt(outstandingAmt, curr)} ${currDisp}</td>
   </tr>`;
 
   const html = `<!DOCTYPE html>
@@ -759,7 +762,7 @@ ${data.pdc ? `<!-- ── PDC ── -->
   <span class="section-title">Number of PDC :</span> ${escHtml(data.pdc)} cheque(s)${(() => {
     const count = parseInt(data.pdc ?? "");
     if (count > 0 && outstandingAmt > 0) {
-      return ` &nbsp;|&nbsp; <span style="font-weight:600;">Amount per cheque : ${fmt(outstandingAmt / count, curr)} ${curr}</span>`;
+      return ` &nbsp;|&nbsp; <span style="font-weight:600;">Amount per cheque : ${fmt(outstandingAmt / count, curr)} ${currDisp}</span>`;
     }
     return "";
   })()}
