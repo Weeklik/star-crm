@@ -773,9 +773,12 @@ export default function Deals() {
   // Format an amount using the deal's own stored currency for table rows.
   // If the stored currency is USD (the legacy default), derive the correct
   // native currency from the salesperson's country instead.
-  // Tunisian salespersons always see amounts in EUR.
+  // Tunisian salespersons always see amounts in EUR (same value, € symbol only).
   function fmtDealAmt(dealCurrency: string | null | undefined, amount: number, salespersonId?: number | null): string {
-    if (me?.country === "Tunisia") {
+    // Tunisia: show € symbol without converting the value.
+    // Check both me?.country (once loaded) and whether the deal is TND with EUR display
+    // currency (covers existing TND-stored deals before me loads).
+    if (me?.country === "Tunisia" || (dealCurrency === "TND" && userCurrency === "EUR") || dealCurrency === "EUR") {
       try {
         return new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
       } catch {
