@@ -156,7 +156,7 @@ function fmt(n: number, currency: string): string {
 
 export function OwnerControlsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const baseCurrency = user?.currency ?? "USD";
+  const baseCurrency = user?.country === "Tunisia" ? "EUR" : (user?.currency ?? "USD");
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
   const [regions, setRegions] = useState<RegionOption[]>([]);

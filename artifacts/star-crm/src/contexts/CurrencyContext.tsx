@@ -31,7 +31,7 @@ const CurrencyContext = createContext<CurrencyContextValue>({
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const currency = user?.currency ?? "USD";
+  const currency = user?.country === "Tunisia" ? "EUR" : (user?.currency ?? "USD");
 
   const formatAmount = (n: number): string => defaultFormat(n, currency);
   const formatAmountOrEmpty = (n: number): string => (n ? defaultFormat(n, currency) : "");
