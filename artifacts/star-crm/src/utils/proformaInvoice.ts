@@ -42,6 +42,7 @@ export interface ProformaInvoiceData {
   paymentTerms?: string | null;
   warranty?: string | null;
   deliveryTerms?: string | null;
+  delayReason?: string | null;
 }
 
 interface RegionConfig {
@@ -776,6 +777,11 @@ ${data.pdc ? `<!-- ── PDC ── -->
   </div>
 </div>
 
+
+${data.delayReason ? `<!-- ── DELAY REASON ── -->
+<div class="section" style="margin-bottom:8px;">
+  <span class="section-title">Raison du délai client : </span>${escHtml(data.delayReason)}
+</div>` : ""}
 
 <!-- ── NOTE ── -->
 <div class="note-block">

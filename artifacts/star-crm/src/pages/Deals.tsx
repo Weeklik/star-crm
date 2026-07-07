@@ -159,6 +159,7 @@ interface DealFormState {
   latestClosingDate: string;
   notes: string;
   lostReason: string;
+  delayReason: string;
   creditTerm: string;
   transportationFee: number;
 }
@@ -190,6 +191,7 @@ const emptyForm = (): DealFormState => ({
   latestClosingDate: "",
   notes: "",
   lostReason: "",
+  delayReason: "",
   creditTerm: "",
   transportationFee: 0,
 });
@@ -215,6 +217,7 @@ function toPayload(f: DealFormState) {
     latestClosingDate: f.latestClosingDate || undefined,
     notes: f.notes || undefined,
     lostReason: f.stage === "Order Lost" ? (f.lostReason || undefined) : undefined,
+    delayReason: f.stage === "Order Confirmed" ? (f.delayReason || undefined) : undefined,
     creditTerm: f.creditTerm || undefined,
   };
 }
@@ -864,6 +867,7 @@ export default function Deals() {
         outstandingAmount: fresh.outstandingAmount ?? 0,
         deliveryTime: (fresh as any).deliveryTime ?? undefined,
         companySelection: (fresh as any).companySelection ?? undefined,
+        delayReason: (fresh as any).delayReason ?? undefined,
       });
     } catch {
       toast({ title: "Failed to load invoice data", variant: "destructive" });
@@ -1807,6 +1811,7 @@ export default function Deals() {
                   const stage = v as Stage;
                   set("stage", stage);
                   if (stage !== "Order Lost") set("lostReason", "");
+                  if (stage !== "Order Confirmed") set("delayReason", "");
                   if (stage === "Quotation Sent") set("salesStatus", "25%");
                   else if (stage === "Order Confirmed") set("salesStatus", "90%");
                   else if (stage === "Order Closed") set("salesStatus", "100%");
@@ -1908,7 +1913,23 @@ export default function Deals() {
               />
             </div>
 
-            {/* Row 14: Lost Reason — conditional, full width */}
+            {/* Row 14a: Delay Reason — conditional on Order Confirmed, full width */}
+            {form.stage === "Order Confirmed" && (
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label>
+                  Raison du délai client
+                  <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+                </Label>
+                <textarea
+                  className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+                  placeholder="Entrez la raison du délai du client…"
+                  value={form.delayReason}
+                  onChange={(e) => set("delayReason", e.target.value)}
+                />
+              </div>
+            )}
+
+            {/* Row 14b: Lost Reason — conditional, full width */}
             {form.stage === "Order Lost" && (() => {
               const isOther = form.lostReason === "Other Factors" || form.lostReason.startsWith("Other Factors: ");
               const dropdownVal = form.lostReason === "" ? "__none__" : isOther ? "Other Factors" : form.lostReason;

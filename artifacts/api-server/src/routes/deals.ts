@@ -141,6 +141,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       latestClosingDate: data.latestClosingDate as unknown as string | undefined,
       notes: data.notes ?? null,
       lostReason: data.lostReason ?? null,
+      delayReason: (data as any).delayReason ?? null,
       creditTerm: (data as any).creditTerm ?? null,
       brand: (data as any).brand ?? null,
       model: (data as any).model ?? null,
@@ -245,6 +246,7 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
     updateData.latestClosingDate = d.latestClosingDate as unknown as string | null;
   if (d.notes !== undefined) updateData.notes = d.notes;
   if (d.lostReason !== undefined) updateData.lostReason = d.lostReason;
+  if ((d as any).delayReason !== undefined) updateData.delayReason = (d as any).delayReason;
   if ((d as any).creditTerm !== undefined) updateData.creditTerm = (d as any).creditTerm;
   if ((d as any).brand !== undefined) updateData.brand = (d as any).brand;
   if ((d as any).model !== undefined) updateData.model = (d as any).model;

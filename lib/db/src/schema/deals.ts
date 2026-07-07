@@ -23,6 +23,7 @@ export const dealsTable = pgTable("deals", {
   currency: text("currency").notNull().default("USD"),
   notes: text("notes"),
   lostReason: text("lost_reason"),
+  delayReason: text("delay_reason"),
   creditTerm: text("credit_term"),
   brand: text("brand"),
   model: text("model"),
