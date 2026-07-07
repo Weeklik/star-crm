@@ -749,18 +749,17 @@ export default function MyActivities() {
   const [mapStyle, setMapStyle] = useState<MapStyle>("standard");
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
 
-  // Start watching GPS position whenever the map tab is active
+  // Get a one-shot GPS pin when the map tab is opened
   useEffect(() => {
     if (activeTab !== "map") return;
     if (!navigator.geolocation) return;
-    const watchId = navigator.geolocation.watchPosition(
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
         setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
-    return () => navigator.geolocation.clearWatch(watchId);
   }, [activeTab]);
 
   async function fetchActivities() {
