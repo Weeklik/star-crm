@@ -109,15 +109,19 @@ function AllActivitiesMap({
   activities,
   usersMap,
   mapStyle,
+  myLocation,
 }: {
   activities: Activity[];
   usersMap: Record<number, string>;
   mapStyle: MapStyle;
+  myLocation: { lat: number; lng: number; accuracy: number } | null;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const myMarkerRef = useRef<L.Marker | null>(null);
+  const myCircleRef = useRef<L.Circle | null>(null);
 
   // Init map once
   useEffect(() => {
@@ -139,7 +143,7 @@ function AllActivitiesMap({
     tileLayerRef.current = L.tileLayer(cfg.url, { attribution: cfg.attribution, maxZoom: 22, maxNativeZoom: cfg.maxNativeZoom }).addTo(map);
   }, [mapStyle]);
 
-  // Update markers when activities change
+  // Update activity markers when activities change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -206,8 +210,81 @@ function AllActivitiesMap({
     }
   }, [activities, usersMap]);
 
+  // Live "my location" pulsing blue dot — updates whenever GPS position changes
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Remove previous my-location marker/circle
+    if (myMarkerRef.current) { myMarkerRef.current.remove(); myMarkerRef.current = null; }
+    if (myCircleRef.current) { myCircleRef.current.remove(); myCircleRef.current = null; }
+
+    if (!myLocation) return;
+
+    const { lat, lng, accuracy } = myLocation;
+
+    // Accuracy circle (semi-transparent blue)
+    myCircleRef.current = L.circle([lat, lng], {
+      radius: accuracy,
+      color: "#2563eb",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.12,
+      weight: 1.5,
+    }).addTo(map);
+
+    // Pulsing blue dot icon — sits on top of all activity markers via zIndexOffset
+    const myIcon = L.divIcon({
+      html: `<div style="position:relative;width:22px;height:22px;display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;width:22px;height:22px;border-radius:50%;background:rgba(37,99,235,0.25);animation:myLocPulse 1.8s ease-out infinite"></div>
+        <div style="width:14px;height:14px;border-radius:50%;background:#2563eb;border:2.5px solid white;box-shadow:0 0 0 2px rgba(37,99,235,0.4);position:relative;z-index:1"></div>
+        <style>@keyframes myLocPulse{0%{transform:scale(1);opacity:0.8}70%{transform:scale(2.4);opacity:0}100%{transform:scale(2.4);opacity:0}}</style>
+      </div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      className: "",
+    });
+
+    myMarkerRef.current = L.marker([lat, lng], { icon: myIcon, zIndexOffset: 1000 })
+      .addTo(map)
+      .bindPopup(`<div style="font-family:Arial,sans-serif;font-size:12px;min-width:130px">
+        <div style="font-weight:700;color:#2563eb;margin-bottom:4px">📍 My Location</div>
+        <div style="color:#555">Accuracy: ±${Math.round(accuracy)} m</div>
+      </div>`, { maxWidth: 200 });
+  }, [myLocation]);
+
+  function handleLocateMe() {
+    const map = mapInstanceRef.current;
+    if (!map || !myLocation) {
+      // No GPS yet — request it
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            mapInstanceRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 17, { animate: true, duration: 1.2 });
+          },
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+        );
+      }
+      return;
+    }
+    map.flyTo([myLocation.lat, myLocation.lng], 17, { animate: true, duration: 1.2 });
+  }
+
   return (
-    <div ref={mapRef} className="w-full rounded-xl overflow-hidden" style={{ height: "calc(100vh - 340px)", minHeight: "460px" }} />
+    <div className="relative w-full rounded-xl overflow-hidden" style={{ height: "calc(100vh - 340px)", minHeight: "460px" }}>
+      <div ref={mapRef} className="w-full h-full" />
+      {/* Locate Me button overlay */}
+      <button
+        type="button"
+        onClick={handleLocateMe}
+        title="Fly to my exact location"
+        className="absolute bottom-4 right-4 z-[999] flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-border shadow-md text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors"
+        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}
+      >
+        <Navigation className="w-3.5 h-3.5" />
+        {myLocation ? "My Location" : "Locate Me"}
+      </button>
+    </div>
   );
 }
 
@@ -222,12 +299,15 @@ function MultiSelectSalesperson({
   onChange: (ids: number[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [dropdownStyle, setDropdownStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setSearch(""); return; }
+    setTimeout(() => searchRef.current?.focus(), 50);
     function handler(e: MouseEvent) {
       const target = e.target as Node;
       if (
@@ -244,7 +324,7 @@ function MultiSelectSalesperson({
   function handleOpen() {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    setDropdownStyle({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setDropdownStyle({ top: rect.bottom + 4, left: rect.left, width: Math.max(rect.width, 220) });
     setOpen((o) => !o);
   }
 
@@ -260,6 +340,10 @@ function MultiSelectSalesperson({
       : selected.length === 1
       ? (users.find((u) => u.id === selected[0])?.name ?? "1 selected")
       : `${selected.length} selected`;
+
+  const filtered = search.trim()
+    ? users.filter((u) => u.name.toLowerCase().includes(search.trim().toLowerCase()))
+    : users;
 
   return (
     <div className="relative">
@@ -277,31 +361,54 @@ function MultiSelectSalesperson({
         <div
           ref={dropdownRef}
           style={{ position: "fixed", top: dropdownStyle.top, left: dropdownStyle.left, width: dropdownStyle.width, zIndex: 99999 }}
-          className="bg-popover border border-border rounded-md shadow-lg max-h-56 overflow-y-auto"
+          className="bg-popover border border-border rounded-md shadow-lg flex flex-col"
         >
-          <button
-            type="button"
-            onClick={selectAll}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 text-left border-b border-border/40"
-          >
-            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.length === 0 ? "bg-violet-500 border-violet-500" : "border-muted-foreground/40"}`}>
-              {selected.length === 0 && <Check className="w-3 h-3 text-white" />}
+          {/* Search box */}
+          <div className="px-2 pt-2 pb-1 border-b border-border/40">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search salesperson…"
+                className="w-full h-8 pl-7 pr-2 text-sm bg-muted/40 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+              />
             </div>
-            <span className="font-medium">All salespersons</span>
-          </button>
-          {users.map((u) => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => toggle(u.id)}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 text-left"
-            >
-              <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.includes(u.id) ? "bg-violet-500 border-violet-500" : "border-muted-foreground/40"}`}>
-                {selected.includes(u.id) && <Check className="w-3 h-3 text-white" />}
-              </div>
-              {u.name}
-            </button>
-          ))}
+          </div>
+          {/* All option — only when not searching */}
+          <div className="overflow-y-auto max-h-48">
+            {!search.trim() && (
+              <button
+                type="button"
+                onClick={selectAll}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 text-left border-b border-border/40"
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.length === 0 ? "bg-violet-500 border-violet-500" : "border-muted-foreground/40"}`}>
+                  {selected.length === 0 && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <span className="font-medium">All salespersons</span>
+              </button>
+            )}
+            {filtered.length === 0 && (
+              <p className="px-3 py-3 text-xs text-muted-foreground text-center">No results for "{search}"</p>
+            )}
+            {filtered.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => toggle(u.id)}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted/50 text-left"
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selected.includes(u.id) ? "bg-violet-500 border-violet-500" : "border-muted-foreground/40"}`}>
+                  {selected.includes(u.id) && <Check className="w-3 h-3 text-white" />}
+                </div>
+                {u.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -640,6 +747,21 @@ export default function MyActivities() {
   const [mapTimeFrom, setMapTimeFrom] = useState("");
   const [mapTimeTo, setMapTimeTo] = useState("");
   const [mapStyle, setMapStyle] = useState<MapStyle>("standard");
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+
+  // Start watching GPS position whenever the map tab is active
+  useEffect(() => {
+    if (activeTab !== "map") return;
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [activeTab]);
 
   async function fetchActivities() {
     setLoading(true);
@@ -1022,7 +1144,7 @@ export default function MyActivities() {
             </div>
           )}
 
-          {/* Map */}
+          {/* Map — always rendered so the live location dot is visible */}
           {loading ? (
             <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/20" style={{ height: "460px" }}>
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -1030,22 +1152,28 @@ export default function MyActivities() {
                 <span className="text-sm">Loading activities…</span>
               </div>
             </div>
-          ) : mapFiltered.length === 0 ? (
-            <div className="flex items-center justify-center rounded-xl border border-border/60 bg-muted/20" style={{ height: "460px" }}>
-              <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                <Map className="w-10 h-10 opacity-30" />
-                <div className="text-center">
-                  <p className="font-medium text-foreground/60">
-                    {hasMapFilters ? "No activities match your filters" : "No activities to show"}
-                  </p>
-                  <p className="text-xs mt-0.5">
-                    {hasMapFilters ? "Try adjusting the filters above" : "Activities will appear here once logged"}
-                  </p>
-                </div>
-              </div>
-            </div>
           ) : (
-            <AllActivitiesMap activities={mapFiltered} usersMap={usersMap} mapStyle={mapStyle} />
+            <div className="relative">
+              <AllActivitiesMap
+                activities={mapFiltered}
+                usersMap={usersMap}
+                mapStyle={mapStyle}
+                myLocation={myLocation}
+              />
+              {mapFiltered.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-background/80 backdrop-blur-sm rounded-xl px-5 py-4 flex flex-col items-center gap-2 text-muted-foreground shadow">
+                    <Map className="w-8 h-8 opacity-30" />
+                    <p className="font-medium text-foreground/60 text-sm">
+                      {hasMapFilters ? "No activities match your filters" : "No activities to show"}
+                    </p>
+                    <p className="text-xs">
+                      {hasMapFilters ? "Try adjusting the filters above" : "Activities will appear here once logged"}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </>
       )}
