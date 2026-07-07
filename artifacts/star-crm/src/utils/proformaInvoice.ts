@@ -75,6 +75,13 @@ interface RegionConfig {
   customerLabel?: string;      // label before customer name
   addressLabel?: string;       // label before address
   attentionLabel?: string;     // "A l'attention de" label
+  // totals row label overrides
+  subTotalLabel?: string;      // default "Sub Total"
+  discountLabel?: string;      // default "Discount"
+  deliveryLabel?: string;      // default "Delivery / Transportation"
+  grandTotalLabel?: string;    // default "Grand Total"
+  receivedLabel?: string;      // default "Received Amount"
+  outstandingLabel?: string;   // default "Outstanding Amount"
   // wave header variant (Tunisia / North Africa style)
   headerVariant?: "wave";
   waveCompanyName?: string;    // text shown in the white wave area (e.g. "STAR NORTH AFRICA")
@@ -190,6 +197,12 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     customerLabel:  "Destinataire",
     addressLabel:   "Adresse",
     attentionLabel: "À l'attention de",
+    subTotalLabel:  "Sous-total",
+    discountLabel:  "Remise",
+    deliveryLabel:  "Livraison / Transport",
+    grandTotalLabel:"Total HT",
+    receivedLabel:  "Montant reçu",
+    outstandingLabel:"Montant restant dû",
   },
   NG: {
     currency: "NGN",
@@ -329,13 +342,20 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const receivedAmt = data.receivedAmount ?? 0;
   const outstandingAmt = data.outstandingAmount ?? grandTotal;
 
+  const lSubTotal    = cfg.subTotalLabel   ?? "Sub Total";
+  const lDiscount    = cfg.discountLabel   ?? "Discount";
+  const lDelivery    = cfg.deliveryLabel   ?? "Delivery / Transportation";
+  const lGrandTotal  = cfg.grandTotalLabel ?? "Grand Total";
+  const lReceived    = cfg.receivedLabel   ?? "Received Amount";
+  const lOutstanding = cfg.outstandingLabel ?? "Outstanding Amount";
+
   const totalsHtml = `
   <tr>
-    <td class="label">Sub Total (${curr})</td>
+    <td class="label">${lSubTotal} (${curr})</td>
     <td class="value">${fmt(subTotal, curr)} ${curr}</td>
   </tr>
   ${totalDiscount > 0 ? `<tr>
-    <td class="label">Discount (${curr})</td>
+    <td class="label">${lDiscount} (${curr})</td>
     <td class="value">- ${fmt(totalDiscount, curr)} ${curr}</td>
   </tr>` : ""}
   ${totalVat > 0 ? `<tr>
@@ -343,19 +363,19 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     <td class="value">${fmt(totalVat, curr)} ${curr}</td>
   </tr>` : ""}
   ${transportFee > 0 ? `<tr>
-    <td class="label">Delivery / Transportation (${curr})</td>
+    <td class="label">${lDelivery} (${curr})</td>
     <td class="value">${fmt(transportFee, curr)} ${curr}</td>
   </tr>` : ""}
   <tr class="grand">
-    <td class="label">Grand Total (${curr})</td>
+    <td class="label">${lGrandTotal} (${curr})</td>
     <td class="value">${fmt(grandTotal, curr)} ${curr}</td>
   </tr>
   ${receivedAmt > 0 ? `<tr>
-    <td class="label">Received Amount (${curr})</td>
+    <td class="label">${lReceived} (${curr})</td>
     <td class="value" style="color:#1a7a1a;font-weight:700;">${fmt(receivedAmt, curr)} ${curr}</td>
   </tr>` : ""}
   <tr>
-    <td class="label">Outstanding Amount (${curr})</td>
+    <td class="label">${lOutstanding} (${curr})</td>
     <td class="value" style="color:${outstandingAmt > 0 ? "#c0392b" : "#1a7a1a"};font-weight:700;">${fmt(outstandingAmt, curr)} ${curr}</td>
   </tr>`;
 
