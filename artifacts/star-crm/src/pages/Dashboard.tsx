@@ -941,8 +941,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Region × Stage Breakdown Chart — owner only */}
-        {isOwner && (
+        {/* Region × Stage Breakdown Chart — owner only, shown only when All Regions selected */}
+        {isOwner && selectedRegion === "all" && (
           <Card className="border-border/60">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">{t("dashboard.regionBreakdown")}</CardTitle>
