@@ -792,6 +792,11 @@ export default function MyActivities() {
     }
   }, [me]);
 
+  // Re-fetch users every time the map tab is opened so newly added salespersons appear immediately
+  useEffect(() => {
+    if (activeTab === "map" && me?.role === "owner") fetchUsers();
+  }, [activeTab]);
+
   const usersMap: Record<number, string> = {};
   users.forEach((u) => { usersMap[u.id] = u.name; });
 
