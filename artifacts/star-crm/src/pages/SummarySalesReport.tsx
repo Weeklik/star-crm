@@ -398,7 +398,7 @@ export default function SummarySalesReport() {
                             <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-8 bg-card">
                               {row.name}
                               {!rowIsSame && (
-                                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency === "TND" ? "EUR" : rowCurrency})</span>
+                                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency === "TND" ? "€" : rowCurrency})</span>
                               )}
                             </td>
                             <td className="px-3 py-2 text-right">{fmtAmt(Math.round(row.avgMonthlySales), rowRate)}</td>
@@ -455,7 +455,7 @@ export default function SummarySalesReport() {
                                     </span>
                                     {!rowIsSame && (
                                       <span className="text-xs text-muted-foreground ml-2">
-                                        Rate: 1 {rowCurrency === "TND" ? "EUR" : rowCurrency} = {expandedRate.toFixed(4)} {selectedCurrency}
+                                        Rate: 1 {rowCurrency === "TND" ? "€" : rowCurrency} = {expandedRate.toFixed(4)} {selectedCurrency}
                                       </span>
                                     )}
                                     <button

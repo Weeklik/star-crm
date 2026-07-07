@@ -323,7 +323,7 @@ export default function SalesBreakdown() {
   const dataCurrency = isAllRegions && selectedUser?.currency
     ? selectedUser.currency
     : sourceCurrency;
-  const dataCurrencyDisplay = dataCurrency === "TND" ? "EUR" : dataCurrency;
+  const dataCurrencyDisplay = dataCurrency === "TND" ? "€" : dataCurrency;
   const effectiveRate = isAllRegions
     ? getRateFor(dataCurrency)
     : conversionRate;
