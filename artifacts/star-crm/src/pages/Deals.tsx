@@ -738,7 +738,8 @@ export default function Deals() {
   // Format in the display currency (matches Dashboard fmtAmt)
   const fmtCurrency = (n: number) => {
     try {
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: selectedCurrency, maximumFractionDigits: 0 }).format(n);
+      const dispCurr = selectedCurrency === "TND" ? "EUR" : selectedCurrency;
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: dispCurr, maximumFractionDigits: 0 }).format(n);
     } catch {
       return formatAmount(n);
     }
@@ -753,7 +754,7 @@ export default function Deals() {
     "NG":  "NGN",
     "TN":  "TND",
   };
-  const receivedCurrency = me?.country === "Tunisia" ? "EUR" : (REGION_CURRENCY_MAP[selectedRegion] ?? "AED");
+  const receivedCurrency = (me?.country === "Tunisia" || selectedRegion === "TN" || REGION_CURRENCY_MAP[selectedRegion] === "TND") ? "EUR" : (REGION_CURRENCY_MAP[selectedRegion] ?? "AED");
   const fmtReceived = (n: number) => {
     try {
       return new Intl.NumberFormat("en-US", { style: "currency", currency: receivedCurrency, maximumFractionDigits: 0 }).format(n);
@@ -779,7 +780,7 @@ export default function Deals() {
     // Tunisia: show € symbol without converting the value.
     // Check both me?.country (once loaded) and whether the deal is TND with EUR display
     // currency (covers existing TND-stored deals before me loads).
-    if (me?.country === "Tunisia" || (dealCurrency === "TND" && userCurrency === "EUR") || dealCurrency === "EUR") {
+    if (dealCurrency === "TND" || me?.country === "Tunisia" || dealCurrency === "EUR") {
       try {
         return new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
       } catch {
