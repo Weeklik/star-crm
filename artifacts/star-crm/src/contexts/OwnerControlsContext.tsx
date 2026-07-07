@@ -139,10 +139,11 @@ const OwnerControlsContext = createContext<OwnerControlsContextValue>({
 });
 
 function fmt(n: number, currency: string): string {
+  const dispCurrency = currency === "TND" ? "EUR" : currency;
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency,
+      currency: dispCurrency,
       maximumFractionDigits: 0,
     }).format(n);
   } catch {

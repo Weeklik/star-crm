@@ -354,8 +354,9 @@ export default function Dashboard() {
 
   const fmtAmt = useCallback((n: number) => {
     if (useConverted) {
+      const dispCurr = selectedCurrency === "TND" ? "EUR" : selectedCurrency;
       return new Intl.NumberFormat("en-US", {
-        style: "currency", currency: selectedCurrency, maximumFractionDigits: 0,
+        style: "currency", currency: dispCurr, maximumFractionDigits: 0,
       }).format(n);
     }
     return formatConverted(n);
@@ -364,8 +365,9 @@ export default function Dashboard() {
   // Formats an already-converted value in the display currency (no multiplication)
   const fmtDisplay = useCallback((n: number) => {
     try {
+      const dispCurr = selectedCurrency === "TND" ? "EUR" : selectedCurrency;
       return new Intl.NumberFormat("en-US", {
-        style: "currency", currency: selectedCurrency, maximumFractionDigits: 0,
+        style: "currency", currency: dispCurr, maximumFractionDigits: 0,
       }).format(n);
     } catch {
       return fmtK(n);
@@ -375,8 +377,9 @@ export default function Dashboard() {
   // Formats a value in the region's native currency (used by Region Breakdown chart/table)
   const fmtRegionAmt = useCallback((n: number) => {
     try {
+      const dispCurr = regionNativeCurrency === "TND" ? "EUR" : regionNativeCurrency;
       return new Intl.NumberFormat("en-US", {
-        style: "currency", currency: regionNativeCurrency, maximumFractionDigits: 0,
+        style: "currency", currency: dispCurr, maximumFractionDigits: 0,
       }).format(n);
     } catch {
       return fmtK(n);
