@@ -25,9 +25,10 @@ const LeadBody = z.object({
   followUpRemarks:   z.string().nullish(),
 });
 
-router.get("/leads", requireAuth, async (_req, res): Promise<void> => {
+router.get("/leads", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).user;
   try {
-    const rows = await db
+    const query = db
       .select({
         id:               leadsTable.id,
         leadSource:       leadsTable.leadSource,
@@ -53,6 +54,12 @@ router.get("/leads", requireAuth, async (_req, res): Promise<void> => {
       .from(leadsTable)
       .leftJoin(usersTable, eq(leadsTable.assignedToId, usersTable.id))
       .orderBy(desc(leadsTable.createdAt));
+
+    /* Salespersons only see leads assigned to them */
+    const rows = user.role === "owner"
+      ? await query
+      : await query.where(eq(leadsTable.assignedToId, user.id));
+
     res.json(rows);
   } catch {
     res.status(500).json({ error: "Failed to fetch leads" });
