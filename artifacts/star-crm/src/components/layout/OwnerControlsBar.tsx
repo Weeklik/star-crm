@@ -40,12 +40,13 @@ export function OwnerControlsBar() {
   const { t } = useTranslation();
   const { user } = useAuth();
 
+  const isSalesperson = user?.role === "salesperson";
   const isTunisian = user?.country === "Tunisia";
   const visibleCurrencies = isTunisian
     ? CURRENCIES.filter((c) => c.code === "EUR")
     : CURRENCIES;
 
-  // Auto-lock Tunisian users to EUR
+  // Auto-lock Tunisian users to EUR (symbol only — no value conversion)
   useEffect(() => {
     if (isTunisian && selectedCurrency !== "EUR") {
       setSelectedCurrency("EUR");
@@ -86,7 +87,7 @@ export function OwnerControlsBar() {
         </Select>
       </div>
 
-      {!isTunisian && (
+      {!isSalesperson && (
         <>
           <div className="h-4 w-px bg-border hidden sm:block" />
 
@@ -117,7 +118,7 @@ export function OwnerControlsBar() {
       )}
 
       {/* Currency converter */}
-      {!isTunisian && (
+      {!isSalesperson && (
         <div className="flex items-center gap-2 flex-wrap">
           <DollarSign className="w-4 h-4 text-muted-foreground shrink-0" />
           <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{t("ownerControls.displayCurrency")}</Label>
