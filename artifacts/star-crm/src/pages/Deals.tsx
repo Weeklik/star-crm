@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import type { Deal } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -579,33 +580,33 @@ export default function Deals() {
 
   const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
 
-  const [filterSpId, setFilterSpId] = useState<string>(() => {
+  const [filterSpId, setFilterSpId] = usePersistedState<string>("deals:filterSpId", () => {
     const p = new URLSearchParams(window.location.search);
     return p.get("salespersonId") ?? "all";
   });
-  const [search, setSearch] = useState("");
-  const [orderDateRange, setOrderDateRange] = useState<DateRange>(() => {
+  const [search, setSearch] = usePersistedState<string>("deals:search", "");
+  const [orderDateRange, setOrderDateRange] = usePersistedState<DateRange>("deals:orderDateRange", () => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("dateRange") as DateRange) ?? "fullyear";
   });
-  const [orderYear, setOrderYear] = useState(() => {
+  const [orderYear, setOrderYear] = usePersistedState<number>("deals:orderYear", () => {
     const p = new URLSearchParams(window.location.search);
     const y = parseInt(p.get("year") ?? "");
     return isNaN(y) ? new Date().getFullYear() : y;
   });
-  const [orderFromMonth, setOrderFromMonth] = useState(() => {
+  const [orderFromMonth, setOrderFromMonth] = usePersistedState<number>("deals:orderFromMonth", () => {
     const p = new URLSearchParams(window.location.search);
     return parseInt(p.get("fromMonth") ?? "0") || 0;
   });
-  const [orderToMonth, setOrderToMonth] = useState(() => {
+  const [orderToMonth, setOrderToMonth] = usePersistedState<number>("deals:orderToMonth", () => {
     const p = new URLSearchParams(window.location.search);
     return parseInt(p.get("toMonth") ?? "0") || 0;
   });
-  const [stageFilter, setStageFilter] = useState<Stage | "">(() => {
+  const [stageFilter, setStageFilter] = usePersistedState<Stage | "">("deals:stageFilter", () => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("stage") as Stage) ?? "";
   });
-  const [dealTypeFilter, setDealTypeFilter] = useState<string>("");
+  const [dealTypeFilter, setDealTypeFilter] = usePersistedState<string>("deals:dealTypeFilter", "");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<DealFormState>(emptyForm());

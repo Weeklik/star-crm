@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { Plus, Pencil, Trash2, Loader2, Search, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -240,8 +241,8 @@ export default function Leads() {
 
   const [leads, setLeads]         = useState<Lead[]>([]);
   const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch]       = usePersistedState<string>("leads:search", "");
+  const [statusFilter, setStatusFilter] = usePersistedState<string>("leads:statusFilter", "all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm]           = useState<LeadForm>(emptyForm());

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import {
   MapPin, Plus, Loader2, Navigation, CheckCircle2, Eye, X, Search,
   Filter, Map, List, ChevronDown, Check, Users, Layers,
@@ -725,7 +726,7 @@ export default function MyActivities() {
   const { toast } = useToast();
   const isOwner = me?.role === "owner";
 
-  const [activeTab, setActiveTab] = useState<"list" | "map">("list");
+  const [activeTab, setActiveTab] = usePersistedState<"list" | "map">("activities:activeTab", "list");
   const [activities, setActivities] = useState<Activity[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -733,20 +734,20 @@ export default function MyActivities() {
   const [viewActivity, setViewActivity] = useState<Activity | null>(null);
 
   // List tab filters
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [filterTimeFrom, setFilterTimeFrom] = useState("");
-  const [filterTimeTo, setFilterTimeTo] = useState("");
-  const [filterLocation, setFilterLocation] = useState("");
-  const [filterSalesperson, setFilterSalesperson] = useState<number[]>([]);
+  const [filterDateFrom, setFilterDateFrom] = usePersistedState<string>("activities:filterDateFrom", "");
+  const [filterDateTo, setFilterDateTo] = usePersistedState<string>("activities:filterDateTo", "");
+  const [filterTimeFrom, setFilterTimeFrom] = usePersistedState<string>("activities:filterTimeFrom", "");
+  const [filterTimeTo, setFilterTimeTo] = usePersistedState<string>("activities:filterTimeTo", "");
+  const [filterLocation, setFilterLocation] = usePersistedState<string>("activities:filterLocation", "");
+  const [filterSalesperson, setFilterSalesperson] = usePersistedState<number[]>("activities:filterSalesperson", []);
 
   // Map tab filters
-  const [mapSalespeople, setMapSalespeople] = useState<number[]>([]);
-  const [mapDateFrom, setMapDateFrom] = useState("");
-  const [mapDateTo, setMapDateTo] = useState("");
-  const [mapTimeFrom, setMapTimeFrom] = useState("");
-  const [mapTimeTo, setMapTimeTo] = useState("");
-  const [mapStyle, setMapStyle] = useState<MapStyle>("standard");
+  const [mapSalespeople, setMapSalespeople] = usePersistedState<number[]>("activities:mapSalespeople", []);
+  const [mapDateFrom, setMapDateFrom] = usePersistedState<string>("activities:mapDateFrom", "");
+  const [mapDateTo, setMapDateTo] = usePersistedState<string>("activities:mapDateTo", "");
+  const [mapTimeFrom, setMapTimeFrom] = usePersistedState<string>("activities:mapTimeFrom", "");
+  const [mapTimeTo, setMapTimeTo] = usePersistedState<string>("activities:mapTimeTo", "");
+  const [mapStyle, setMapStyle] = usePersistedState<MapStyle>("activities:mapStyle", "standard");
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
 
   // Get a one-shot GPS pin when the map tab is opened
