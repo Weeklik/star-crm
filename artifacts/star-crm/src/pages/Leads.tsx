@@ -118,6 +118,15 @@ async function apiFetch(path: string, opts?: RequestInit) {
 }
 
 const selClass = "w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring";
+const otherInputClass = "mt-1.5";
+
+/* Helper: detect if a value is "non-standard" (was typed via Other) */
+function detectOther(value: string, knownOptions: string[]): { formVal: string; otherVal: string } {
+  if (!value) return { formVal: "", otherVal: "" };
+  const known = knownOptions.filter((o) => o !== "Other");
+  if (known.includes(value)) return { formVal: value, otherVal: "" };
+  return { formVal: "Other", otherVal: value };
+}
 
 /* ── Searchable Model Dropdown ─────────────────────────────────── */
 function ModelCombobox({
@@ -138,9 +147,7 @@ function ModelCombobox({
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = models.filter((m) =>
-    m.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = models.filter((m) => m.toLowerCase().includes(search.toLowerCase()));
   const allOptions = [...filtered, "Other"];
 
   useEffect(() => {
@@ -189,7 +196,6 @@ function ModelCombobox({
 
       {open && (
         <div className="absolute z-50 left-0 right-0 top-[calc(100%+4px)] rounded-md border border-border bg-popover shadow-lg overflow-hidden">
-          {/* Search bar */}
           <div className="p-2 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -203,7 +209,6 @@ function ModelCombobox({
               />
             </div>
           </div>
-          {/* Options list */}
           <div className="max-h-52 overflow-y-auto">
             {allOptions.length === 0 ? (
               <div className="px-3 py-4 text-sm text-center text-muted-foreground">No models found</div>
@@ -249,6 +254,15 @@ export default function Leads() {
   const [models, setModels]       = useState<string[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
 
+  /* "Other" free-text values, keyed by form field name */
+  const [otherText, setOtherText] = useState<Record<string, string>>({});
+  const setOther = (field: string, val: string) =>
+    setOtherText((p) => ({ ...p, [field]: val }));
+
+  /* Resolve a field value: if "Other", use the typed text instead */
+  const resolve = (val: string, key: string) =>
+    val === "Other" ? (otherText[key]?.trim() ?? "") : val;
+
   const loadLeads = () => {
     setLoading(true);
     apiFetch("/api/leads")
@@ -283,6 +297,8 @@ export default function Leads() {
   const sf = (field: keyof LeadForm, value: string) => {
     if (field === "brand") {
       setForm((f) => ({ ...f, brand: value, model: "" }));
+      /* clear model's Other text when brand changes */
+      setOtherText((p) => ({ ...p, model: "" }));
     } else {
       setForm((f) => ({ ...f, [field]: value }));
     }
@@ -291,27 +307,56 @@ export default function Leads() {
   const openAdd = () => {
     setEditingId(null);
     setForm({ ...emptyForm(), assignedToId: user ? String(user.id) : "" });
+    setOtherText({});
     setModels([]);
     setModalOpen(true);
   };
 
   const openEdit = (lead: Lead) => {
     setEditingId(lead.id);
+
+    /* Detect which stored values were typed via "Other" */
+    const newOther: Record<string, string> = {};
+
+    const src = detectOther(lead.leadSource, LEAD_SOURCES);
+    if (src.otherVal) newOther.leadSource = src.otherVal;
+
+    const reg = detectOther(lead.region, regions.map((r) => r.country));
+    if (reg.otherVal) newOther.region = reg.otherVal;
+
+    const br = detectOther(lead.brand, brands);
+    if (br.otherVal) newOther.brand = br.otherVal;
+
+    /* Model: if brand resolved to "Other", model is free text */
+    if (br.formVal === "Other" && lead.model) {
+      newOther.model = lead.model;
+    } else {
+      /* Brand is known — model will be validated against loaded list later;
+         for now store it so the combobox shows the right value */
+    }
+
+    const cls = detectOther(lead.closure, CLOSURE_OPTIONS);
+    if (cls.otherVal) newOther.closure = cls.otherVal;
+
+    const st = detectOther(lead.leadStatus, LEAD_STATUSES);
+    if (st.otherVal) newOther.leadStatus = st.otherVal;
+
+    setOtherText(newOther);
     setForm({
-      leadSource:        lead.leadSource,
+      leadSource:        src.formVal || lead.leadSource,
       dateTime:          lead.dateTime ? lead.dateTime.slice(0, 16) : "",
       customerName:      lead.customerName,
       companyName:       lead.companyName ?? "",
       mobileCountryCode: lead.mobileCountryCode,
       mobileNumber:      lead.mobileNumber,
       email:             lead.email ?? "",
-      region:            lead.region,
-      brand:             lead.brand,
-      model:             lead.model,
-      closure:           lead.closure,
+      region:            reg.formVal || lead.region,
+      brand:             br.formVal || lead.brand,
+      model:             br.formVal === "Other" ? "" : lead.model,
+      closure:           cls.formVal || lead.closure,
       notes:             lead.notes ?? "",
       assignedToId:      String(lead.assignedToId),
-      leadStatus:        lead.leadStatus,
+      leadStatus:        st.formVal || lead.leadStatus,
       nextFollowUpDate:  lead.nextFollowUpDate ?? "",
       followUpRemarks:   lead.followUpRemarks ?? "",
     });
@@ -319,14 +364,45 @@ export default function Leads() {
   };
 
   const handleSave = async () => {
-    const required = ["leadSource","customerName","mobileNumber","region","brand","model","closure","assignedToId","nextFollowUpDate"] as const;
-    if (required.some((k) => !form[k])) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
+    /* Resolve "Other" fields to their typed text before validating */
+    const resolvedBrand  = resolve(form.brand,      "brand");
+    const resolvedModel  = form.brand === "Other"
+      ? (otherText.model?.trim() ?? "")
+      : resolve(form.model, "model");
+    const resolvedSource  = resolve(form.leadSource, "leadSource");
+    const resolvedRegion  = resolve(form.region,     "region");
+    const resolvedClosure = resolve(form.closure,    "closure");
+    const resolvedStatus  = resolve(form.leadStatus, "leadStatus");
+
+    const requiredResolved: [string, string][] = [
+      ["Lead Source",        resolvedSource],
+      ["Customer Name",      form.customerName],
+      ["Mobile Number",      form.mobileNumber],
+      ["Region",             resolvedRegion],
+      ["Brand",              resolvedBrand],
+      ["Model",              resolvedModel],
+      ["Closure",            resolvedClosure],
+      ["Assigned Employee",  form.assignedToId],
+      ["Next Follow-up Date",form.nextFollowUpDate],
+    ];
+    const missing = requiredResolved.find(([, v]) => !v);
+    if (missing) {
+      toast({ title: `Please fill in: ${missing[0]}`, variant: "destructive" });
       return;
     }
+
     setSaving(true);
     try {
-      const body = { ...form, assignedToId: Number(form.assignedToId) };
+      const body = {
+        ...form,
+        leadSource:  resolvedSource,
+        region:      resolvedRegion,
+        brand:       resolvedBrand,
+        model:       resolvedModel,
+        closure:     resolvedClosure,
+        leadStatus:  resolvedStatus || form.leadStatus,
+        assignedToId: Number(form.assignedToId),
+      };
       if (editingId) {
         await apiFetch(`/api/leads/${editingId}`, {
           method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -493,6 +569,7 @@ export default function Leads() {
           </DialogHeader>
 
           <div className="space-y-5 py-1">
+
             {/* Lead Source + Date & Time */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -501,6 +578,14 @@ export default function Leads() {
                   <option value="">Select Lead Source</option>
                   {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
+                {form.leadSource === "Other" && (
+                  <Input
+                    className={otherInputClass}
+                    placeholder="Please specify lead source…"
+                    value={otherText.leadSource ?? ""}
+                    onChange={(e) => setOther("leadSource", e.target.value)}
+                  />
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Date &amp; Time</Label>
@@ -551,6 +636,14 @@ export default function Leads() {
                 {regions.map((r) => <option key={r.country} value={r.country}>{r.country}</option>)}
                 <option value="Other">Other</option>
               </select>
+              {form.region === "Other" && (
+                <Input
+                  className={otherInputClass}
+                  placeholder="Please specify region / country…"
+                  value={otherText.region ?? ""}
+                  onChange={(e) => setOther("region", e.target.value)}
+                />
+              )}
             </div>
 
             {/* Brand + Model */}
@@ -562,16 +655,44 @@ export default function Leads() {
                   {brands.map((b) => <option key={b} value={b}>{b}</option>)}
                   <option value="Other">Other</option>
                 </select>
+                {form.brand === "Other" && (
+                  <Input
+                    className={otherInputClass}
+                    placeholder="Please specify brand…"
+                    value={otherText.brand ?? ""}
+                    onChange={(e) => setOther("brand", e.target.value)}
+                  />
+                )}
               </div>
+
               <div className="space-y-1.5">
                 <Label>Model <span className="text-destructive">*</span></Label>
-                <ModelCombobox
-                  models={models}
-                  value={form.model}
-                  onChange={(v) => sf("model", v)}
-                  loading={modelsLoading}
-                  disabled={!form.brand}
-                />
+                {/* When brand is "Other", show a plain text input for model */}
+                {form.brand === "Other" ? (
+                  <Input
+                    placeholder="Enter model…"
+                    value={otherText.model ?? ""}
+                    onChange={(e) => setOther("model", e.target.value)}
+                  />
+                ) : (
+                  <>
+                    <ModelCombobox
+                      models={models}
+                      value={form.model}
+                      onChange={(v) => sf("model", v)}
+                      loading={modelsLoading}
+                      disabled={!form.brand}
+                    />
+                    {form.model === "Other" && (
+                      <Input
+                        className={otherInputClass}
+                        placeholder="Please specify model…"
+                        value={otherText.model ?? ""}
+                        onChange={(e) => setOther("model", e.target.value)}
+                      />
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
@@ -583,6 +704,14 @@ export default function Leads() {
                   <option value="">Select closure</option>
                   {CLOSURE_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
+                {form.closure === "Other" && (
+                  <Input
+                    className={otherInputClass}
+                    placeholder="Please specify expected purchase time…"
+                    value={otherText.closure ?? ""}
+                    onChange={(e) => setOther("closure", e.target.value)}
+                  />
+                )}
               </div>
             </div>
 
@@ -613,6 +742,14 @@ export default function Leads() {
                 <select value={form.leadStatus} onChange={(e) => sf("leadStatus", e.target.value)} className={selClass}>
                   {LEAD_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
+                {form.leadStatus === "Other" && (
+                  <Input
+                    className={otherInputClass}
+                    placeholder="Please specify lead status…"
+                    value={otherText.leadStatus ?? ""}
+                    onChange={(e) => setOther("leadStatus", e.target.value)}
+                  />
+                )}
               </div>
             </div>
 
@@ -627,6 +764,7 @@ export default function Leads() {
                 <Input placeholder="Enter follow-up remarks…" value={form.followUpRemarks} onChange={(e) => sf("followUpRemarks", e.target.value)} />
               </div>
             </div>
+
           </div>
 
           <DialogFooter>

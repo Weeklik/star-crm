@@ -62,15 +62,16 @@ router.get("/leads", requireAuth, async (_req, res): Promise<void> => {
 router.post("/leads", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
   const parsed = LeadBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid request body" }); return; }
+  if (!parsed.success) { res.status(400).json({ error: "Invalid request body", details: parsed.error.issues }); return; }
   try {
     const [lead] = await db
       .insert(leadsTable)
       .values({ ...parsed.data, dateTime: new Date(parsed.data.dateTime), createdById: user.id })
       .returning();
     res.status(201).json(lead);
-  } catch {
-    res.status(500).json({ error: "Failed to create lead" });
+  } catch (err: any) {
+    console.error("POST /leads error:", err?.message ?? err);
+    res.status(500).json({ error: "Failed to create lead", detail: err?.message });
   }
 });
 
@@ -85,8 +86,9 @@ router.put("/leads/:id", requireAuth, async (req, res): Promise<void> => {
     const [lead] = await db.update(leadsTable).set(data).where(eq(leadsTable.id, id)).returning();
     if (!lead) { res.status(404).json({ error: "Lead not found" }); return; }
     res.json(lead);
-  } catch {
-    res.status(500).json({ error: "Failed to update lead" });
+  } catch (err: any) {
+    console.error("PUT /leads error:", err?.message ?? err);
+    res.status(500).json({ error: "Failed to update lead", detail: err?.message });
   }
 });
 
