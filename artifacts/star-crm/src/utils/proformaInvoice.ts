@@ -1,4 +1,4 @@
-import tnHeaderBanner from "@assets/image_1782552446892.png";
+import tnHeaderBanner from "@assets/326074F6-6EB2-4244-86F5-7F2C7460D9B5_1783437085201.jpeg";
 import tnFooterBanner from "@assets/image_1782553154223.png";
 import starGlobalTechHeader from "@assets/image_1783078148368.png";
 import starGlobalTechFooter from "@assets/image_1783078365006.png";
