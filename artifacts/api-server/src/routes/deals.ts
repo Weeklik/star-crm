@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lte, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, max, type SQL } from "drizzle-orm";
 import { db, dealsTable, customersTable, companiesTable, productsTable, brandsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import {
@@ -119,6 +119,14 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
+
+  // Compute next SGT invoice sequence number if this is an SGT order
+  let sgtInvoiceSeq: number | null = null;
+  if ((data as any).companySelection === "STAR GLOBAL TECH FZCO") {
+    const [row] = await db.select({ maxSeq: max(dealsTable.sgtInvoiceSeq) }).from(dealsTable);
+    sgtInvoiceSeq = ((row?.maxSeq as number | null) ?? 0) + 1;
+  }
+
   const [deal] = await db
     .insert(dealsTable)
     .values({
@@ -157,6 +165,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       companySelection: (data as any).companySelection ?? null,
       bankDetails: (data as any).bankDetails ?? null,
       additionalInfo: (data as any).additionalInfo ?? null,
+      sgtInvoiceSeq,
     })
     .returning();
 

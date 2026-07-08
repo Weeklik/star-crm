@@ -40,6 +40,7 @@ export const dealsTable = pgTable("deals", {
   companySelection: text("company_selection"),
   bankDetails: text("bank_details"),
   additionalInfo: jsonb("additional_info"),
+  sgtInvoiceSeq: integer("sgt_invoice_seq"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
