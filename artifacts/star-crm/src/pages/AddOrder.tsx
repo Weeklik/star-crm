@@ -36,6 +36,8 @@ interface OrderItem {
   unitPrice: number;
   discountPct: number;
   vatPct: number;
+  otherBrand?: string;
+  otherModel?: string;
 }
 
 interface CatalogProduct {
@@ -71,12 +73,11 @@ const PAYMENT_TERMS = [
   "90 Days",
   "100% Advance",
   "50% Advance",
-  "Net 30",
-  "Net 60",
   "PDC",
   "Other",
 ];
 const WARRANTY_OPTIONS = [
+  "3 Months",
   "6 Months",
   "1 Year",
   "2 Years",
@@ -119,6 +120,13 @@ const CREDIT_TERMS = [
   "100% Advance",
   "50% Advance",
   "Net 30",
+];
+
+const ADDITIONAL_INFO_ITEMS = [
+  "Machine inspected and tested before shipment",
+  "Spare parts kit included",
+  "Operator training to be provided",
+  "Warranty documentation to be issued",
 ];
 
 const VAT_BY_COUNTRY: Record<string, number> = {
@@ -300,6 +308,9 @@ export default function AddOrder() {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
   const [companySelection, setCompanySelection] = useState("STAR SEWING MACHINES TRADING L.L.C");
+  const [bankDetails, setBankDetails] = useState("AED");
+  const [additionalInfo, setAdditionalInfo] = useState<boolean[]>([false, false, false, false]);
+  const [addInfoOpen, setAddInfoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -340,6 +351,9 @@ export default function AddOrder() {
     setDeliveryTerms(deal.deliveryTerms ?? "");
     setDeliveryTime((deal as any).deliveryTime ?? "");
     setCompanySelection((deal as any).companySelection ?? "");
+    setBankDetails((deal as any).bankDetails ?? "AED");
+    const ai = (deal as any).additionalInfo;
+    if (Array.isArray(ai)) setAdditionalInfo([ai[0] ?? false, ai[1] ?? false, ai[2] ?? false, ai[3] ?? false]);
     setNotes(deal.notes ?? "");
 
     const dealItems = deal.items;
@@ -417,7 +431,8 @@ export default function AddOrder() {
           if (key === "brand") {
             updated.model = "";
             updated.description = "";
-            if (String(value).trim()) fetchCatalogForBrand(String(value));
+            updated.otherBrand = undefined;
+            if (String(value).trim() && value !== "Other") fetchCatalogForBrand(String(value));
           }
           if (key === "model" && it.brand) {
             const prods = catalogByBrand[it.brand] ?? [];
@@ -469,7 +484,11 @@ export default function AddOrder() {
         model: firstItem.model || null,
         quantity: firstItem.qty,
         // new fields
-        items,
+        items: items.map((it) => ({
+          ...it,
+          brand: it.brand === "Other" ? (it.otherBrand || "Other") : it.brand,
+          model: it.model === "Other" ? (it.otherModel || "Other") : it.model,
+        })),
         transportationFee,
         orderType: orderType || null,
         paymentTerms: paymentTerms || null,
@@ -478,6 +497,8 @@ export default function AddOrder() {
         deliveryTerms: deliveryTerms || null,
         deliveryTime: deliveryTime || null,
         companySelection: companySelection || null,
+        bankDetails: bankDetails || null,
+        additionalInfo,
       } as any;
 
       if (editId !== null) {
@@ -604,7 +625,7 @@ export default function AddOrder() {
                 </Select>
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-muted-foreground w-32 shrink-0">Order Type</label>
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Customer Name</label>
                 <Select
                   value={orderType || "__none__"}
                   onValueChange={(v) => setOrderType(v === "__none__" ? "" : v)}
@@ -764,30 +785,62 @@ export default function AddOrder() {
                         {idx + 1}
                       </td>
                       <td className="px-2 py-1">
-                        <AutocompleteInput
-                          value={item.brand}
-                          onChange={(v) => updateItem(item.id, "brand", v)}
-                          lookupType="catalog-brand"
-                          placeholder="Brand"
-                          className="w-full"
-                        />
+                        {item.brand === "Other" ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground italic">Other</span>
+                              <button type="button" onClick={() => updateItem(item.id, "brand", "")} className="text-xs text-blue-500 hover:underline">← back</button>
+                            </div>
+                            <Input
+                              value={item.otherBrand ?? ""}
+                              onChange={(e) => setItems((prev) => prev.map((it) => it.id === item.id ? { ...it, otherBrand: e.target.value } : it))}
+                              placeholder="Enter brand name"
+                              className="w-full"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <AutocompleteInput
+                              value={item.brand}
+                              onChange={(v) => updateItem(item.id, "brand", v)}
+                              lookupType="catalog-brand"
+                              placeholder="Brand"
+                              className="w-full"
+                            />
+                            <button type="button" onClick={() => updateItem(item.id, "brand", "Other")} className="text-xs text-muted-foreground hover:text-blue-500 text-left leading-none">+ Other</button>
+                          </div>
+                        )}
                       </td>
                       <td className="px-2 py-1">
-                        {brandProds.length > 0 ? (
+                        {item.model === "Other" ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground italic">Other</span>
+                              <button type="button" onClick={() => updateItem(item.id, "model", "")} className="text-xs text-blue-500 hover:underline">← back</button>
+                            </div>
+                            <Input
+                              value={item.otherModel ?? ""}
+                              onChange={(e) => setItems((prev) => prev.map((it) => it.id === item.id ? { ...it, otherModel: e.target.value } : it))}
+                              placeholder="Enter model name"
+                              className="w-full"
+                            />
+                          </div>
+                        ) : brandProds.length > 0 ? (
                           <SearchableModelSelect
-                            options={brandProds.map((p, i) => p.model ?? `m-${i}`).filter(Boolean)}
+                            options={[...brandProds.map((p, i) => p.model ?? `m-${i}`).filter(Boolean), "Other"]}
                             value={item.model}
                             onChange={(v) => updateItem(item.id, "model", v)}
                           />
                         ) : (
-                          <Input
-                            value={item.model}
-                            onChange={(e) =>
-                              updateItem(item.id, "model", e.target.value)
-                            }
-                            placeholder="Model"
-                            className="w-full"
-                          />
+                          <div className="flex flex-col gap-0.5">
+                            <Input
+                              value={item.model}
+                              onChange={(e) => updateItem(item.id, "model", e.target.value)}
+                              placeholder="Model"
+                              className="w-full"
+                            />
+                            <button type="button" onClick={() => updateItem(item.id, "model", "Other")} className="text-xs text-muted-foreground hover:text-blue-500 text-left leading-none">+ Other</button>
+                          </div>
                         )}
                       </td>
                       <td className="px-2 py-1">
@@ -1019,7 +1072,57 @@ export default function AddOrder() {
                 </SelectContent>
               </Select>
             </div>
+            {me?.country === "UAE" && (
+              <div className="flex items-center gap-3 sm:col-span-2">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Bank Details</label>
+                <Select value={bankDetails} onValueChange={setBankDetails}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AED">AED</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EURO">EURO</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* ── Additional Information ── */}
+        <div className="bg-card border border-border rounded-lg p-4">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between"
+            onClick={() => setAddInfoOpen((o) => !o)}
+          >
+            <h2 className="text-blue-600 dark:text-blue-400 font-bold text-xs uppercase tracking-wide">
+              Additional Information
+            </h2>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${addInfoOpen ? "rotate-180" : ""}`} />
+          </button>
+          {addInfoOpen && (
+            <div className="mt-4 space-y-3">
+              {ADDITIONAL_INFO_ITEMS.map((label, i) => (
+                <label key={i} className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={additionalInfo[i] ?? false}
+                    onChange={(e) =>
+                      setAdditionalInfo((prev) => {
+                        const next = [...prev] as boolean[];
+                        next[i] = e.target.checked;
+                        return next;
+                      })
+                    }
+                    className="w-4 h-4 rounded border-border accent-blue-600"
+                  />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Notes ── */}

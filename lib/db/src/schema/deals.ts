@@ -38,6 +38,8 @@ export const dealsTable = pgTable("deals", {
   deliveryTerms: text("delivery_terms"),
   deliveryTime: text("delivery_time"),
   companySelection: text("company_selection"),
+  bankDetails: text("bank_details"),
+  additionalInfo: jsonb("additional_info"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -43,6 +43,8 @@ export interface ProformaInvoiceData {
   warranty?: string | null;
   deliveryTerms?: string | null;
   delayReason?: string | null;
+  bankDetails?: string | null;
+  additionalInfo?: boolean[] | null;
 }
 
 interface RegionConfig {
@@ -273,7 +275,9 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const curr = _rawCurr === "TND" ? "EUR" : _rawCurr;
   const currDisp = cfg.currencySymbol ?? curr;
   const yr = new Date().getFullYear().toString().slice(-2);
-  const invoiceNo = `SSMT/PI-${yr}/${String(data.id).padStart(3, "0")}`;
+  const invoiceNo = data.companySelection === "STAR GLOBAL TECH FZCO"
+    ? `SGT/PI-${yr}/${String(data.id).padStart(4, "0")}`
+    : `SSMT/PI-${yr}/${String(data.id).padStart(3, "0")}`;
   const dateStr = fmtDate(data.dealStartDate);
   const baseAmt = data.agreedAmount ?? 0;
   const vatAmt = data.vatApplicable ? Math.round(baseAmt * (cfg.vatRate / 100) * 100) / 100 : 0;
@@ -337,8 +341,6 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
       <td>${escHtml(it.description)}</td>
       <td class="center">${it.qty}</td>
       <td class="right">${fmt(it.unitPrice, curr)}</td>
-      <td class="center">${it.discountPct > 0 ? it.discountPct + "%" : "—"}</td>
-      <td class="center">${it.vatPct > 0 ? it.vatPct + "%" : "—"}</td>
       <td class="right">${fmt(lineTotal, curr)}</td>
     </tr>`;
   }).join("\n");
@@ -671,6 +673,13 @@ ${cfg.headerVariant === "wave" ? `
 <!-- ── BANNER LETTERHEAD (Tunisia / North Africa) ── -->
 <img src="${tnHeaderBanner}" alt="Star North Africa" class="wave-banner-img" />
 <div class="devis-ref" style="text-align:center;margin-top:10px">${invoiceNo}</div>
+` : data.companySelection === "STAR GLOBAL TECH FZCO" ? `
+<!-- ── SGT FULL-WIDTH HEADER ── -->
+<img src="${starGlobalTechHeader}" alt="STAR GLOBAL TECH FZCO" style="display:block;width:calc(100% + 72px);margin:-20px -36px 0;height:auto;" />
+<div style="text-align:center;margin-top:18px;">
+  <span style="font-size:17px;font-weight:900;letter-spacing:3px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:3px;">PROFORMA INVOICE</span>
+</div>
+<div style="text-align:center;font-size:11px;font-weight:600;margin-top:8px;letter-spacing:0.5px;margin-bottom:14px;">${invoiceNo}</div>
 ` : `
 <!-- ── LETTERHEAD (standard) ── -->
 <div class="letterhead">
@@ -721,9 +730,7 @@ ${cfg.headerVariant === "wave" ? `
       <th class="left" style="width:30%">${colDesc}</th>
       <th style="width:5%">${colQty}</th>
       <th style="width:12%">${colUnitPrice}</th>
-      <th style="width:8%">Disc%</th>
-      <th style="width:7%">VAT%</th>
-      <th style="width:12%">${colTotal}</th>
+      <th style="width:15%">${colTotal}</th>
     </tr>
   </thead>
   <tbody>
@@ -781,6 +788,17 @@ ${data.pdc ? `<!-- ── PDC ── -->
 ${data.delayReason ? `<!-- ── DELAY REASON ── -->
 <div class="section" style="margin-bottom:8px;">
   <span class="section-title">Raison du délai client : </span>${escHtml(data.delayReason)}
+</div>` : ""}
+
+${Array.isArray(data.additionalInfo) && data.additionalInfo.some(Boolean) ? `<!-- ── ADDITIONAL INFORMATION ── -->
+<div class="section" style="margin-top:10px;">
+  <div class="section-title" style="margin-bottom:6px;">Additional Information :</div>
+  ${data.additionalInfo.map((checked, i) => checked ? `<div style="font-size:11px;margin:3px 0;">&#9746; ${escHtml([
+    "Machine inspected and tested before shipment",
+    "Spare parts kit included",
+    "Operator training to be provided",
+    "Warranty documentation to be issued",
+  ][i] ?? "")}</div>` : "").filter(Boolean).join("\n  ")}
 </div>` : ""}
 
 <!-- ── NOTE ── -->

@@ -155,6 +155,8 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       deliveryTerms: (data as any).deliveryTerms ?? null,
       deliveryTime: (data as any).deliveryTime ?? null,
       companySelection: (data as any).companySelection ?? null,
+      bankDetails: (data as any).bankDetails ?? null,
+      additionalInfo: (data as any).additionalInfo ?? null,
     })
     .returning();
 
@@ -260,6 +262,8 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if ((d as any).deliveryTerms !== undefined) updateData.deliveryTerms = (d as any).deliveryTerms;
   if ((d as any).deliveryTime !== undefined) updateData.deliveryTime = (d as any).deliveryTime;
   if ((d as any).companySelection !== undefined) updateData.companySelection = (d as any).companySelection;
+  if ((d as any).bankDetails !== undefined) updateData.bankDetails = (d as any).bankDetails;
+  if ((d as any).additionalInfo !== undefined) updateData.additionalInfo = (d as any).additionalInfo;
 
   const [updated] = await db
     .update(dealsTable)
