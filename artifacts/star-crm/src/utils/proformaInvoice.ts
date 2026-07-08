@@ -1,6 +1,6 @@
 import tnHeaderBanner from "@assets/image_1782552446892.png";
 import tnFooterBanner from "@assets/image_1782553154223.png";
-import starGlobalTechHeader from "@assets/image_1783078148368.png";
+import starGlobalTechHeader from "@assets/AC76EED3-C9E5-4086-805F-F4CA7179A00C_4_5005_c_1783513200582.jpeg";
 import starGlobalTechFooter from "@assets/image_1783078365006.png";
 
 export interface ProformaInvoiceItem {
