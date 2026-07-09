@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import {
   MapPin, Plus, Loader2, Navigation, CheckCircle2, Eye, X, Search,
-  Filter, Map, List, ChevronDown, Check, Users, Layers,
+  Filter, Map, List, ChevronDown, Check, Users, Layers, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -732,6 +742,8 @@ export default function MyActivities() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [viewActivity, setViewActivity] = useState<Activity | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // List tab filters
   const [filterDateFrom, setFilterDateFrom] = usePersistedState<string>("activities:filterDateFrom", "");
@@ -773,6 +785,25 @@ export default function MyActivities() {
       toast({ title: "Failed to load activities", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteActivity() {
+    if (deleteId === null) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${BASE}/api/activities/${deleteId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed");
+      setActivities((prev) => prev.filter((a) => a.id !== deleteId));
+      toast({ title: "Activity deleted" });
+    } catch {
+      toast({ title: "Failed to delete activity", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDeleteId(null);
     }
   }
 
@@ -962,12 +993,13 @@ export default function MyActivities() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Company</th>
                     {isOwner && <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Salesperson</th>}
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">View</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Delete</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={isOwner ? 9 : 8} className="py-16 text-center">
+                      <td colSpan={isOwner ? 10 : 9} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-2 text-muted-foreground">
                           <Loader2 className="w-6 h-6 animate-spin" />
                           <span className="text-sm">Loading activities…</span>
@@ -976,7 +1008,7 @@ export default function MyActivities() {
                     </tr>
                   ) : listFiltered.length === 0 ? (
                     <tr>
-                      <td colSpan={isOwner ? 9 : 8} className="py-16 text-center">
+                      <td colSpan={isOwner ? 10 : 9} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
                             <MapPin className="w-6 h-6 opacity-40" />
@@ -1036,6 +1068,17 @@ export default function MyActivities() {
                           >
                             <Eye className="w-3.5 h-3.5" />
                             View
+                          </Button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteId(act.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
                           </Button>
                         </td>
                       </tr>
@@ -1189,6 +1232,27 @@ export default function MyActivities() {
         onClose={() => setViewActivity(null)}
         salespersonName={viewActivity && isOwner ? usersMap[viewActivity.salespersonId] : undefined}
       />
+
+      <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete activity?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this activity. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteActivity}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -70,4 +70,35 @@ router.post("/activities", requireAuth, async (req, res): Promise<void> => {
   }
 });
 
+router.delete("/activities/:id", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as any).user;
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid activity id" });
+    return;
+  }
+  try {
+    const [existing] = await db
+      .select()
+      .from(activitiesTable)
+      .where(eq(activitiesTable.id, id));
+
+    if (!existing) {
+      res.status(404).json({ error: "Activity not found" });
+      return;
+    }
+
+    if (user.role !== "owner" && existing.salespersonId !== user.id) {
+      res.status(403).json({ error: "Not authorized to delete this activity" });
+      return;
+    }
+
+    await db.delete(activitiesTable).where(eq(activitiesTable.id, id));
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete activity" });
+  }
+});
+
 export default router;
