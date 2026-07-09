@@ -123,10 +123,10 @@ const CREDIT_TERMS = [
 ];
 
 const ADDITIONAL_INFO_ITEMS = [
-  "Machine inspected and tested before shipment",
-  "Spare parts kit included",
-  "Operator training to be provided",
-  "Warranty documentation to be issued",
+  "SGS certificate, COC, ECTN, shipment inspection or any other certificate required by importing country authorities - expenses to buyers account",
+  "Technician visits during installation & warranty, buyer to arrange or bear cost of visa, hotel accommodation, food & local expenses.",
+  "Jebel Ali shipping charges shared is estimated cost based on current rates. Actual cost at the time of shipping will be informed before shipment and will be applicable.",
+  "Warranty: 12 months covering breakdowns resulting from a malfunction originating from manufacturing defect. The warranty does not cover replacement parts, periodic maintenance or failure resulting from misuse. \n\nValidity: 02 Weeks",
 ];
 
 const VAT_BY_COUNTRY: Record<string, number> = {
