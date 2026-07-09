@@ -41,7 +41,7 @@ export function OwnerControlsBar() {
   const { user } = useAuth();
 
   const isSalesperson = user?.role === "salesperson";
-  const isTunisian = user?.country === "Tunisia";
+  const isTunisian = user?.country === "TN";
   const visibleCurrencies = isTunisian
     ? CURRENCIES.filter((c) => c.code === "EUR")
     : CURRENCIES;

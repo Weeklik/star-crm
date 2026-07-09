@@ -28,7 +28,7 @@ export function getDateBounds(range: DateRange, year: number): { startDate: stri
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
   "KSA": "SAR", "UAE": "AED", "Nigeria": "NGN",
-  "Tunisia": "TND", "Egypt": "EGP", "Kenya": "KES", "Ethiopia": "ETB",
+  "TN": "TND", "Egypt": "EGP", "Kenya": "KES", "Ethiopia": "ETB",
 };
 
 export const CURRENCIES: { code: string; name: string }[] = [
@@ -157,7 +157,7 @@ function fmt(n: number, currency: string): string {
 
 export function OwnerControlsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const baseCurrency = user?.country === "Tunisia" ? "EUR" : (user?.currency ?? "USD");
+  const baseCurrency = user?.country === "TN" ? "EUR" : (user?.currency ?? "USD");
 
   const [selectedRegion, setSelectedRegionState] = useState("all");
   const [regions, setRegions] = useState<RegionOption[]>([]);

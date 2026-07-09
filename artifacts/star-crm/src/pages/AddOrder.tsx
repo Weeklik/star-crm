@@ -134,7 +134,7 @@ const VAT_BY_COUNTRY: Record<string, number> = {
   KSA:      15,
   Kenya:    16,
   Nigeria:  7.5,
-  Tunisia:  19,
+  TN:       19,
   Ethiopia: 15,
   Egypt:    14,
   Ghana:    15,
@@ -255,7 +255,7 @@ function getEffectiveVat(
   company: string,
 ): number {
   if (company === "STAR GLOBAL TECH FZCO") return 0;
-  if (country === "Tunisia") return 0;
+  if (country === "TN") return 0;
   return getCountryVat(country);
 }
 

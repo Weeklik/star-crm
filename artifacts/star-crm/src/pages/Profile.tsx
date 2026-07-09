@@ -14,7 +14,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
   { code: "KSA",      name: "KSA (SAR)",      currency: "SAR" },
   { code: "UAE",      name: "UAE (AED)",       currency: "AED" },
   { code: "Nigeria",  name: "Nigeria (NGN)",   currency: "NGN" },
-  { code: "Tunisia",  name: "Tunisia (TND)",   currency: "TND" },
+  { code: "TN",       name: "Tunisia (TND)",   currency: "TND" },
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },
   { code: "Kenya",    name: "Kenya (KES)",     currency: "KES" },
   { code: "Ethiopia", name: "Ethiopia (ETB)",  currency: "ETB" },

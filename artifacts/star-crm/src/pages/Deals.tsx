@@ -643,6 +643,13 @@ export default function Deals() {
     if (region) setSelectedRegion(region);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Orders screen has no "All Regions" option — default to the first region once loaded
+  useEffect(() => {
+    if (isOwner && selectedRegion === "all" && regions.length > 0) {
+      setSelectedRegion(regions[0].country);
+    }
+  }, [isOwner, selectedRegion, regions]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const { startDate: orderStart, endDate: orderEnd } = (() => {
     if (orderFromMonth > 0 || orderToMonth > 0) {
       const pad = (n: number) => String(n).padStart(2, "0");
@@ -757,7 +764,7 @@ export default function Deals() {
     "NG":  "NGN",
     "TN":  "TND",
   };
-  const receivedCurrency = (me?.country === "Tunisia" || selectedRegion === "TN" || REGION_CURRENCY_MAP[selectedRegion] === "TND") ? "EUR" : (REGION_CURRENCY_MAP[selectedRegion] ?? "AED");
+  const receivedCurrency = (me?.country === "TN" || selectedRegion === "TN" || REGION_CURRENCY_MAP[selectedRegion] === "TND") ? "EUR" : (REGION_CURRENCY_MAP[selectedRegion] ?? "AED");
   const fmtReceived = (n: number) => {
     try {
       return new Intl.NumberFormat("en-US", { style: "currency", currency: receivedCurrency, maximumFractionDigits: 0 }).format(n);
@@ -783,7 +790,7 @@ export default function Deals() {
     // Tunisia: show € symbol without converting the value.
     // Check both me?.country (once loaded) and whether the deal is TND with EUR display
     // currency (covers existing TND-stored deals before me loads).
-    if (dealCurrency === "TND" || me?.country === "Tunisia" || dealCurrency === "EUR") {
+    if (dealCurrency === "TND" || me?.country === "TN" || dealCurrency === "EUR") {
       try {
         return new Intl.NumberFormat("en-US", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
       } catch {
@@ -1252,7 +1259,6 @@ export default function Deals() {
             onChange={(e) => { setSelectedRegion(e.target.value); setPage(1); }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
-            <option value="all">{t("ownerControls.allRegions")}</option>
             {regions.map((r) => (
               <option key={r.country} value={r.country}>{r.country}</option>
             ))}
