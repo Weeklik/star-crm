@@ -46,6 +46,7 @@ export interface ProformaInvoiceData {
   bankDetails?: string | null;
   additionalInfo?: boolean[] | null;
   sgtInvoiceSeq?: number | null;
+  ssmtInvoiceSeq?: number | null;
 }
 
 interface RegionConfig {
@@ -278,7 +279,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const yr = new Date().getFullYear().toString().slice(-2);
   const invoiceNo = data.companySelection === "STAR GLOBAL TECH FZCO"
     ? `SGT/PI-${yr}/${String(data.sgtInvoiceSeq ?? data.id).padStart(4, "0")}`
-    : `SSMT/PI-${yr}/${String(data.id).padStart(3, "0")}`;
+    : `SSMT/PI-${yr}/${String(data.ssmtInvoiceSeq ?? data.id).padStart(4, "0")}`;
   const dateStr = fmtDate(data.dealStartDate);
   const baseAmt = data.agreedAmount ?? 0;
   const vatAmt = data.vatApplicable ? Math.round(baseAmt * (cfg.vatRate / 100) * 100) / 100 : 0;
