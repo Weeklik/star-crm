@@ -625,7 +625,7 @@ export default function AddOrder() {
                 </Select>
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-muted-foreground w-32 shrink-0">Customer Name</label>
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Customer Type</label>
                 <Select
                   value={orderType || "__none__"}
                   onValueChange={(v) => setOrderType(v === "__none__" ? "" : v)}
