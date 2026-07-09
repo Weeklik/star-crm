@@ -869,6 +869,8 @@ export default function Deals() {
         companySelection: (fresh as any).companySelection ?? undefined,
         delayReason: (fresh as any).delayReason ?? undefined,
         sgtInvoiceSeq: (fresh as any).sgtInvoiceSeq ?? undefined,
+        bankDetails: (fresh as any).bankDetails ?? undefined,
+        additionalInfo: (fresh as any).additionalInfo ?? undefined,
       });
     } catch {
       toast({ title: "Failed to load invoice data", variant: "destructive" });

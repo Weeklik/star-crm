@@ -301,7 +301,31 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const vatLabel       = cfg.vatLabel       ?? `VAT @ ${cfg.vatRate}%`;
   const acceptedLabel  = cfg.acceptedLabel  ?? "Accepted &amp; Confirmed";
   const sigCompanyLabel= cfg.sigCompanyLabel?? "STAR.S.M.TRADING LLC";
-  const bankRowsHtml = cfg.bank
+  // Override bank rows for USD / EURO selections
+  const resolvedBank: { key: string; value: string }[] =
+    data.bankDetails === "USD"
+      ? [
+          { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+          { key: "Account Number:", value: "0511006864305" },
+          { key: "IBAN (23 Chars):", value: "AE050260000511006864305" },
+          { key: "Currency:", value: "US Dollar" },
+          { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+          { key: "Swift:", value: "EBILAEAD" },
+          { key: "Branch:", value: "Main Branch Dubai-UAE" },
+        ]
+      : data.bankDetails === "EURO"
+      ? [
+          { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+          { key: "Account Number:", value: "0511006864308" },
+          { key: "IBAN (23 Chars):", value: "AE210260000511006864308" },
+          { key: "Currency:", value: "EURO" },
+          { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+          { key: "Swift:", value: "EBILAEAD" },
+          { key: "Branch:", value: "Main Branch Dubai-UAE" },
+        ]
+      : cfg.bank;
+
+  const bankRowsHtml = resolvedBank
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
     .join("\n    ");
 
@@ -716,7 +740,6 @@ ${cfg.headerVariant === "wave" ? `
         ? `<div>${cfg.attentionLabel} : ${escHtml(data.contactName)}</div>`
         : `<div>MR : ${escHtml(data.contactName)}</div>`
       : ""}
-    ${data.orderType ? `<div style="margin-top:4px;font-size:11px"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.3px">Order Type :</span> ${escHtml(data.orderType)}</div>` : ""}
   </div>
   <div class="date-block">${dateStr}</div>
 </div>
