@@ -8,8 +8,16 @@ import { useState, useEffect } from "react";
 export function usePersistedState<T>(
   key: string,
   init: T | (() => T),
+  /**
+   * When provided (not undefined), this value wins over whatever is already
+   * persisted in sessionStorage for `key`. Use this to let an explicit
+   * incoming value (e.g. URL query params from another page) override a
+   * stale filter left over from a previous visit.
+   */
+  override?: T,
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
+    if (override !== undefined) return override;
     try {
       const raw = sessionStorage.getItem(key);
       if (raw !== null) return JSON.parse(raw) as T;

@@ -583,32 +583,43 @@ export default function Deals() {
 
   const [pdfLoadingId, setPdfLoadingId] = useState<number | null>(null);
 
+  // When the Dashboard links here with filter params (KPI card click), those
+  // params must win over whatever was previously persisted in sessionStorage —
+  // otherwise stale filters silently override the incoming navigation.
+  const incomingParams = new URLSearchParams(window.location.search);
+  const hasIncomingFilters = ["salespersonId", "dateRange", "year", "fromMonth", "toMonth", "stage"].some(
+    (k) => incomingParams.has(k)
+  );
+
   const [filterSpId, setFilterSpId] = usePersistedState<string>("deals:filterSpId", () => {
     const p = new URLSearchParams(window.location.search);
     return p.get("salespersonId") ?? "all";
-  });
+  }, hasIncomingFilters ? incomingParams.get("salespersonId") ?? "all" : undefined);
   const [search, setSearch] = usePersistedState<string>("deals:search", "");
   const [orderDateRange, setOrderDateRange] = usePersistedState<DateRange>("deals:orderDateRange", () => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("dateRange") as DateRange) ?? "fullyear";
-  });
+  }, hasIncomingFilters ? ((incomingParams.get("dateRange") as DateRange) ?? "fullyear") : undefined);
   const [orderYear, setOrderYear] = usePersistedState<number>("deals:orderYear", () => {
     const p = new URLSearchParams(window.location.search);
     const y = parseInt(p.get("year") ?? "");
     return isNaN(y) ? new Date().getFullYear() : y;
-  });
+  }, hasIncomingFilters ? (() => {
+    const y = parseInt(incomingParams.get("year") ?? "");
+    return isNaN(y) ? new Date().getFullYear() : y;
+  })() : undefined);
   const [orderFromMonth, setOrderFromMonth] = usePersistedState<number>("deals:orderFromMonth", () => {
     const p = new URLSearchParams(window.location.search);
     return parseInt(p.get("fromMonth") ?? "0") || 0;
-  });
+  }, hasIncomingFilters ? (parseInt(incomingParams.get("fromMonth") ?? "0") || 0) : undefined);
   const [orderToMonth, setOrderToMonth] = usePersistedState<number>("deals:orderToMonth", () => {
     const p = new URLSearchParams(window.location.search);
     return parseInt(p.get("toMonth") ?? "0") || 0;
-  });
+  }, hasIncomingFilters ? (parseInt(incomingParams.get("toMonth") ?? "0") || 0) : undefined);
   const [stageFilter, setStageFilter] = usePersistedState<Stage | "">("deals:stageFilter", () => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("stage") as Stage) ?? "";
-  });
+  }, hasIncomingFilters ? ((incomingParams.get("stage") as Stage) ?? "") : undefined);
   const [dealTypeFilter, setDealTypeFilter] = usePersistedState<string>("deals:dealTypeFilter", "");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
