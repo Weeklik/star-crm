@@ -88,7 +88,7 @@ router.delete("/activities/:id", requireAuth, async (req, res): Promise<void> =>
       return;
     }
 
-    if (user.role !== "owner" && existing.salespersonId !== user.id) {
+    if (user.role !== "owner") {
       res.status(403).json({ error: "Not authorized to delete this activity" });
       return;
     }

@@ -993,7 +993,7 @@ export default function MyActivities() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Company</th>
                     {isOwner && <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Salesperson</th>}
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">View</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Delete</th>
+                    {isOwner && <th className="text-left px-4 py-3 font-semibold text-muted-foreground whitespace-nowrap">Delete</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1070,17 +1070,19 @@ export default function MyActivities() {
                             View
                           </Button>
                         </td>
-                        <td className="px-4 py-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setDeleteId(act.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Delete
-                          </Button>
-                        </td>
+                        {isOwner && (
+                          <td className="px-4 py-3">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteId(act.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete
+                            </Button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
