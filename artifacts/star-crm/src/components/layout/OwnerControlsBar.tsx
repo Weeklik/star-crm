@@ -9,24 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { useOwnerControls, CURRENCIES, type RegionOption } from "@/contexts/OwnerControlsContext";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { countryLabel } from "@/utils/countryNames";
 
 const YEAR_OPTIONS = [2024, 2025, 2026, 2027, 2028];
-
-const COUNTRY_NAMES: Record<string, string> = {
-  AE: "United Arab Emirates", UAE: "United Arab Emirates",
-  SA: "Saudi Arabia", KSA: "Saudi Arabia",
-  NG: "Nigeria", KE: "Kenya", TN: "Tunisia",
-  EG: "Egypt", ET: "Ethiopia", QA: "Qatar",
-  PK: "Pakistan", IN: "India", GB: "United Kingdom",
-  US: "United States", DE: "Germany", FR: "France",
-  CN: "China", JP: "Japan", AU: "Australia",
-  CA: "Canada", ZA: "South Africa", BH: "Bahrain",
-  KW: "Kuwait", OM: "Oman",
-};
-
-function countryLabel(code: string): string {
-  return COUNTRY_NAMES[code] ?? code;
-}
 
 export function OwnerControlsBar() {
   const {

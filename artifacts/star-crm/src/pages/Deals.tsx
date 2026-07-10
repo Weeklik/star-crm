@@ -18,6 +18,7 @@ import {
   Handshake, Clock4, TrendingUp, CalendarRange, FileDown,
 } from "lucide-react";
 import { openProformaInvoice } from "@/utils/proformaInvoice";
+import { countryLabel } from "@/utils/countryNames";
 import starLogo    from "@assets/Star-Logo_1782471527362.webp";
 import starLogoKSA from "@assets/image_1782548029206.png";
 import * as XLSX from "xlsx";
@@ -1272,7 +1273,7 @@ export default function Deals() {
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
             {regions.map((r) => (
-              <option key={r.country} value={r.country}>{r.country}</option>
+              <option key={r.country} value={r.country}>{countryLabel(r.country)}</option>
             ))}
           </select>
         )}

@@ -11,8 +11,8 @@ import { Loader2, Camera, User } from "lucide-react";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const COUNTRIES: { code: string; name: string; currency: string }[] = [
-  { code: "KSA",      name: "KSA (SAR)",      currency: "SAR" },
-  { code: "UAE",      name: "UAE (AED)",       currency: "AED" },
+  { code: "KSA",      name: "Saudi Arabia (SAR)",      currency: "SAR" },
+  { code: "UAE",      name: "United Arab Emirates (AED)", currency: "AED" },
   { code: "Nigeria",  name: "Nigeria (NGN)",   currency: "NGN" },
   { code: "TN",       name: "Tunisia (TND)",   currency: "TND" },
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },

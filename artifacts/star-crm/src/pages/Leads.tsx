@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { COUNTRY_CODES } from "@/data/countryCodes";
+import { countryLabel } from "@/utils/countryNames";
 
 interface Lead {
   id: number;
@@ -622,7 +623,7 @@ export default function Leads() {
               <Label>Regions/Country <span className="text-destructive">*</span></Label>
               <select value={form.region} onChange={(e) => sf("region", e.target.value)} className={selClass}>
                 <option value="">Select region / country</option>
-                {regions.map((r) => <option key={r.country} value={r.country}>{r.country}</option>)}
+                {regions.map((r) => <option key={r.country} value={r.country}>{countryLabel(r.country)}</option>)}
                 <option value="Other">Other</option>
               </select>
               {form.region === "Other" && (

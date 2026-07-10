@@ -16,10 +16,11 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { countryLabel } from "@/utils/countryNames";
 
 const COUNTRIES: { code: string; name: string; currency: string }[] = [
-  { code: "KSA",      name: "KSA (SAR)",      currency: "SAR" },
-  { code: "UAE",      name: "UAE (AED)",       currency: "AED" },
+  { code: "KSA",      name: "Saudi Arabia (SAR)",      currency: "SAR" },
+  { code: "UAE",      name: "United Arab Emirates (AED)", currency: "AED" },
   { code: "Nigeria",  name: "Nigeria (NGN)",   currency: "NGN" },
   { code: "TN",       name: "Tunisia (TND)",   currency: "TND" },
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },
@@ -203,8 +204,7 @@ export default function Users() {
       </div>
     );
 
-  const countryName = (code: string | null | undefined) =>
-    code ? (COUNTRIES.find((c) => c.code === code)?.name ?? code) : "—";
+  const countryName = (code: string | null | undefined) => countryLabel(code);
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
