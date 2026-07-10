@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { COUNTRY_CODES } from "@/data/countryCodes";
 
 interface Lead {
   id: number;
@@ -71,19 +72,6 @@ const LEAD_STATUSES = ["New Lead", "Dealer Lead", "Existing Lead", "Other"];
 const CLOSURE_OPTIONS = [
   "Immediately", "Within 1 Month", "1-3 Months",
   "3-6 Months", "6-12 Months", "More than 1 Year", "Other",
-];
-const COUNTRY_CODES = [
-  { code: "+971", flag: "🇦🇪", label: "UAE" },
-  { code: "+966", flag: "🇸🇦", label: "Saudi" },
-  { code: "+974", flag: "🇶🇦", label: "Qatar" },
-  { code: "+965", flag: "🇰🇼", label: "Kuwait" },
-  { code: "+973", flag: "🇧🇭", label: "Bahrain" },
-  { code: "+968", flag: "🇴🇲", label: "Oman" },
-  { code: "+20",  flag: "🇪🇬", label: "Egypt" },
-  { code: "+216", flag: "🇹🇳", label: "Tunisia" },
-  { code: "+33",  flag: "🇫🇷", label: "France" },
-  { code: "+44",  flag: "🇬🇧", label: "UK" },
-  { code: "+1",   flag: "🇺🇸", label: "USA" },
 ];
 const STATUS_COLORS: Record<string, string> = {
   "New Lead":      "bg-blue-500/15 text-blue-400",
