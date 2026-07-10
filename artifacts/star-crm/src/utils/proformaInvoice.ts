@@ -2,6 +2,8 @@ import tnHeaderBanner from "@assets/image_1782552446892.png";
 import tnFooterBanner from "@assets/image_1782553154223.png";
 import starGlobalTechHeader from "@assets/AC76EED3-C9E5-4086-805F-F4CA7179A00C_4_5005_c_1783513200582.jpeg";
 import starGlobalTechFooter from "@assets/image_1783078365006.png";
+import modernSewingHeader from "@assets/image_1783680408784.png";
+import modernSewingFooter from "@assets/image_1783680434799.png";
 
 export interface ProformaInvoiceItem {
   brand: string;
@@ -719,6 +721,13 @@ ${cfg.headerVariant === "wave" ? `
   <span style="font-size:17px;font-weight:900;letter-spacing:3px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:3px;">PROFORMA INVOICE</span>
 </div>
 <div style="text-align:center;font-size:11px;font-weight:600;margin-top:8px;letter-spacing:0.5px;margin-bottom:14px;">${invoiceNo}</div>
+` : data.companySelection === "MODREN SEWING MACHINE TRADING" ? `
+<!-- ── MSMT FULL-WIDTH HEADER ── -->
+<img src="${modernSewingHeader}" alt="MODERN SEWING MACHINE TRDG. CO. L.L.C." style="display:block;width:calc(100% + 72px);margin:-20px -36px 0;height:auto;" />
+<div style="text-align:center;margin-top:18px;">
+  <span style="font-size:17px;font-weight:900;letter-spacing:3px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:3px;">PROFORMA INVOICE</span>
+</div>
+<div style="text-align:center;font-size:11px;font-weight:600;margin-top:8px;letter-spacing:0.5px;margin-bottom:14px;">${invoiceNo}</div>
 ` : `
 <!-- ── LETTERHEAD (standard) ── -->
 <div class="letterhead">
@@ -862,7 +871,9 @@ ${cfg.headerVariant === "wave"
   ? `<img src="${tnFooterBanner}" alt="Star North Africa Footer" class="footer-banner-img" />`
   : data.companySelection === "STAR GLOBAL TECH FZCO"
     ? `<img src="${starGlobalTechFooter}" alt="STAR GLOBAL TECH FZCO Footer" style="display:block;width:calc(100% + 72px);margin:28px -36px -32px;height:auto;" />`
-    : `<div class="address-footer">
+    : data.companySelection === "MODREN SEWING MACHINE TRADING"
+      ? `<img src="${modernSewingFooter}" alt="MODERN SEWING MACHINE TRDG. CO. L.L.C. Footer" style="display:block;width:calc(100% + 72px);margin:28px -36px -32px;height:auto;" />`
+      : `<div class="address-footer">
   <div class="af-line1">${cfg.footerLine1}</div>
   <div class="af-line2">${cfg.footerLine2}</div>
 </div>`
