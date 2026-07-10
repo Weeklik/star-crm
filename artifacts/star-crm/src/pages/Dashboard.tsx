@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useGetMe } from "@workspace/api-client-react";
 import { useOwnerControls, DateRange, getDateBounds, MONTHS } from "@/contexts/OwnerControlsContext";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,7 +172,7 @@ export default function Dashboard() {
 
   const isOwner = me?.role === "owner";
 
-  const [selectedSpId, setSelectedSpId] = useState<string>("all");
+  const [selectedSpId, setSelectedSpId] = usePersistedState<string>("dashboard.selectedSpId", "all");
   const [users, setUsers] = useState<UserOption[]>([]);
 
   const [summary, setSummary] = useState<SummaryData | null>(null);
