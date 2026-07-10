@@ -23,6 +23,7 @@ import {
   useListDeals,
   getListDealsQueryKey,
   useGetMe,
+  useListUsers,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -284,7 +285,14 @@ export default function AddOrder() {
   const { toast } = useToast();
 
   const { data: me } = useGetMe();
-  const defaultVat = getCountryVat(me?.country);
+  const isOwner = me?.role === "owner";
+  const { data: allUsers } = useListUsers({ query: { enabled: isOwner } } as any);
+  const [orderOwnerCountry, setOrderOwnerCountry] = useState<string | null | undefined>(undefined);
+  // VAT must follow the country of the order's own salesperson, not the
+  // logged-in owner's country — otherwise switching regions on Orders and
+  // opening a different-region order would show the wrong VAT rate.
+  const effectiveCountry = editId !== null ? orderOwnerCountry : me?.country;
+  const defaultVat = getCountryVat(effectiveCountry);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id); }, []);
@@ -316,10 +324,10 @@ export default function AddOrder() {
 
   // Enforce VAT on all items — 0 if company is STAR GLOBAL TECH FZCO or salesperson is from Tunisia
   useEffect(() => {
-    if (!me?.country) return;
-    const vat = getEffectiveVat(me.country, companySelection);
+    if (!effectiveCountry) return;
+    const vat = getEffectiveVat(effectiveCountry, companySelection);
     setItems((prev) => prev.map((it) => ({ ...it, vatPct: vat })));
-  }, [me?.country, companySelection, loaded]);
+  }, [effectiveCountry, companySelection, loaded]);
 
   // Catalog state: brand → products
   const [catalogByBrand, setCatalogByBrand] = useState<
@@ -333,6 +341,16 @@ export default function AddOrder() {
     if (!editId || !dealsData || loaded) return;
     const deal = (dealsData as any[]).find((d: any) => d.id === editId);
     if (!deal) return;
+
+    // Resolve the order's own salesperson's country so VAT reflects that
+    // salesperson's region, not the viewing owner's own country.
+    if (isOwner) {
+      const owningUser = (allUsers as any[] | undefined)?.find((u) => u.id === deal.salespersonId);
+      if (!owningUser) return; // wait for users list to load before proceeding
+      setOrderOwnerCountry(owningUser.country ?? null);
+    } else {
+      setOrderOwnerCountry(me?.country ?? null);
+    }
 
     setCustomerName(deal.name ?? "");
     setCompanyName(deal.companyName ?? "");
@@ -362,6 +380,9 @@ export default function AddOrder() {
         dealItems.map((it: any) => ({ ...it, id: uuidv4() }))
       );
     } else {
+      const fallbackCountry = isOwner
+        ? (allUsers as any[] | undefined)?.find((u) => u.id === deal.salespersonId)?.country
+        : me?.country;
       setItems([
         {
           id: uuidv4(),
@@ -371,12 +392,12 @@ export default function AddOrder() {
           qty: deal.quantity ?? 1,
           unitPrice: deal.agreedAmount ?? 0,
           discountPct: 0,
-          vatPct: deal.vatApplicable ? 5 : 0,
+          vatPct: deal.vatApplicable ? getEffectiveVat(fallbackCountry, (deal as any).companySelection ?? "") : 0,
         },
       ]);
     }
     setLoaded(true);
-  }, [editId, dealsData, loaded]);
+  }, [editId, dealsData, loaded, isOwner, allUsers, me?.country]);
 
   // Fetch catalog models for a brand
   const fetchCatalogForBrand = useCallback(
