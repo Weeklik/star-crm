@@ -278,6 +278,8 @@ function fmt(n: number, curr: string): string {
   return `${n.toLocaleString("en-AE", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
+let lastInvoiceWindow: Window | null = null;
+
 function fmtDate(dateStr?: string | null): string {
   if (!dateStr) return new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   const d = new Date(dateStr.split("T")[0] + "T00:00:00");
@@ -915,11 +917,16 @@ ${cfg.headerVariant === "wave"
 </body>
 </html>`;
 
+  if (lastInvoiceWindow && !lastInvoiceWindow.closed) {
+    lastInvoiceWindow.close();
+  }
+
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
     alert("Please allow popups for this site to download the invoice.");
     return;
   }
+  lastInvoiceWindow = win;
   win.document.write(html);
   win.document.close();
 }
