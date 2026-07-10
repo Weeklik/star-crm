@@ -317,9 +317,39 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const vatLabel       = cfg.vatLabel       ?? `VAT @ ${cfg.vatRate}%`;
   const acceptedLabel  = cfg.acceptedLabel  ?? "Accepted &amp; Confirmed";
   const sigCompanyLabel= cfg.sigCompanyLabel?? "STAR.S.M.TRADING LLC";
+  // STAR GLOBAL TECH FZCO has its own dedicated bank accounts per currency
+  const SGT_BANK: Record<string, { key: string; value: string }[]> = {
+    AED: [
+      { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+      { key: "Bank Address:", value: "Main Branch, Dubai - U.A.E" },
+      { key: "A/C Title:", value: "Star Global Tech FZCO" },
+      { key: "Account No.:", value: "1015903733801" },
+      { key: "IBAN No.:", value: "AE700260001015903733801" },
+      { key: "Swift Code:", value: "EBILAEADXXX" },
+    ],
+    USD: [
+      { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+      { key: "Bank Address:", value: "Main Branch, Dubai - U.A.E" },
+      { key: "A/C Title:", value: "Star Global Tech FZCO" },
+      { key: "Account No.:", value: "1025903733802" },
+      { key: "IBAN No.:", value: "AE780260001025903733802" },
+      { key: "Swift Code:", value: "EBILAEADXXX" },
+    ],
+    EURO: [
+      { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+      { key: "Bank Address:", value: "Main Branch, Dubai - U.A.E" },
+      { key: "A/C Title:", value: "Star Global Tech FZCO" },
+      { key: "Account No.:", value: "1025903733803" },
+      { key: "IBAN No.:", value: "AE510260001025903733803" },
+      { key: "Swift Code:", value: "EBILAEADXXX" },
+    ],
+  };
+
   // Override bank rows for USD / EURO selections
   const resolvedBank: { key: string; value: string }[] =
-    data.bankDetails === "USD"
+    data.companySelection === "STAR GLOBAL TECH FZCO"
+      ? SGT_BANK[data.bankDetails === "USD" ? "USD" : data.bankDetails === "EURO" ? "EURO" : "AED"]
+      : data.bankDetails === "USD"
       ? [
           { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
           { key: "Account Number:", value: "0511006864305" },
