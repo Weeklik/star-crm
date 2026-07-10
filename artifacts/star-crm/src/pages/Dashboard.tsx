@@ -107,6 +107,7 @@ interface UserOption {
   id: number;
   name: string | null;
   email: string;
+  country?: string | null;
 }
 
 interface RegionStageRow {
@@ -190,6 +191,15 @@ export default function Dashboard() {
         .catch(() => {});
     }
   }, [isOwner]);
+
+  // Reset the selected salesperson when it's not part of the newly chosen region
+  useEffect(() => {
+    if (selectedSpId === "all" || selectedRegion === "all") return;
+    const stillVisible = users.some(
+      (u) => String(u.id) === selectedSpId && u.country === selectedRegion
+    );
+    if (!stillVisible) setSelectedSpId("all");
+  }, [selectedRegion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const buildQs = useCallback(() => {
     const { startDate, endDate } = getActiveDateBounds();
@@ -652,6 +662,7 @@ export default function Dashboard() {
                   <SelectItem value="all">{t("dashboard.allSalespersons")}</SelectItem>
                   {users
                     .filter((u) => u.id !== me.id)
+                    .filter((u) => selectedRegion === "all" || u.country === selectedRegion)
                     .map((u) => (
                       <SelectItem key={u.id} value={String(u.id)}>
                         {u.name || u.email}
