@@ -120,15 +120,24 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
 
   const data = parsed.data;
 
-  // Compute next SGT invoice sequence number if this is an SGT order
-  let sgtInvoiceSeq: number | null = null;
-  let ssmtInvoiceSeq: number | null = null;
-  if ((data as any).companySelection === "STAR GLOBAL TECH FZCO") {
-    const [row] = await db.select({ maxSeq: max(dealsTable.sgtInvoiceSeq) }).from(dealsTable);
-    sgtInvoiceSeq = ((row?.maxSeq as number | null) ?? 0) + 1;
-  } else {
-    const [row] = await db.select({ maxSeq: max(dealsTable.ssmtInvoiceSeq) }).from(dealsTable);
-    ssmtInvoiceSeq = ((row?.maxSeq as number | null) ?? 0) + 1;
+  // Shared proforma invoice sequence — every company selection draws from the
+  // same running counter so numbers increment consecutively across all companies
+  // (e.g. SSMT #0001, next order for any company is #0002, etc).
+  let invoiceSeq: number | null = null;
+  if ((data as any).companySelection) {
+    const [row] = await db
+      .select({
+        maxSgt: max(dealsTable.sgtInvoiceSeq),
+        maxSsmt: max(dealsTable.ssmtInvoiceSeq),
+        maxShared: max(dealsTable.invoiceSeq),
+      })
+      .from(dealsTable);
+    const highest = Math.max(
+      (row?.maxSgt as number | null) ?? 0,
+      (row?.maxSsmt as number | null) ?? 0,
+      (row?.maxShared as number | null) ?? 0,
+    );
+    invoiceSeq = highest + 1;
   }
 
   const [deal] = await db
@@ -169,8 +178,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       companySelection: (data as any).companySelection ?? null,
       bankDetails: (data as any).bankDetails ?? null,
       additionalInfo: (data as any).additionalInfo ?? null,
-      sgtInvoiceSeq,
-      ssmtInvoiceSeq,
+      invoiceSeq,
     })
     .returning();
 

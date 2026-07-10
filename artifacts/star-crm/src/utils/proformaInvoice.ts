@@ -47,7 +47,18 @@ export interface ProformaInvoiceData {
   additionalInfo?: boolean[] | null;
   sgtInvoiceSeq?: number | null;
   ssmtInvoiceSeq?: number | null;
+  invoiceSeq?: number | null;
 }
+
+// Every company selection shares a single running invoice sequence.
+// Each company just gets its own prefix label on that shared number.
+const COMPANY_INVOICE_PREFIX: Record<string, string> = {
+  "STAR GLOBAL TECH FZCO": "SGT",
+  "STAR SEWING MACHINES TRADING L.L.C": "SSMT",
+  "STAR SEWING MACHINES TRADING L.L.C BR": "SSMT-BR",
+  "MODREN SEWING MACHINE TRADING": "MSMT",
+  "DUBAI SEWING MACHINE": "DSM",
+};
 
 interface RegionConfig {
   currency: string;
@@ -277,9 +288,11 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const curr = _rawCurr === "TND" ? "EUR" : _rawCurr;
   const currDisp = cfg.currencySymbol ?? curr;
   const yr = new Date().getFullYear().toString().slice(-2);
-  const invoiceNo = data.companySelection === "STAR GLOBAL TECH FZCO"
-    ? `SGT/PI-${yr}/${String(data.sgtInvoiceSeq ?? data.id).padStart(4, "0")}`
-    : `SSMT/PI-${yr}/${String(data.ssmtInvoiceSeq ?? data.id).padStart(4, "0")}`;
+  const invoicePrefix = (data.companySelection && COMPANY_INVOICE_PREFIX[data.companySelection]) || "SSMT";
+  // All companies draw from one shared, ever-increasing sequence number.
+  const legacySeq = data.companySelection === "STAR GLOBAL TECH FZCO" ? data.sgtInvoiceSeq : data.ssmtInvoiceSeq;
+  const invoiceSeqValue = data.invoiceSeq ?? legacySeq ?? data.id;
+  const invoiceNo = `${invoicePrefix}/PI-${yr}/${String(invoiceSeqValue).padStart(4, "0")}`;
   const dateStr = fmtDate(data.dealStartDate);
   const baseAmt = data.agreedAmount ?? 0;
   const vatAmt = data.vatApplicable ? Math.round(baseAmt * (cfg.vatRate / 100) * 100) / 100 : 0;

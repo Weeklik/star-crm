@@ -1,1 +1,2 @@
 - [Two DB connections: NEON_DATABASE_URL vs DATABASE_URL](neon-vs-database-url.md) — server uses NEON_DATABASE_URL; always run migrations against it, not DATABASE_URL
+- [Proforma invoice numbering is shared across all companies](invoice-seq-shared.md) — one `invoiceSeq` counter on `deals`, not per-company; each company only differs by its prefix label

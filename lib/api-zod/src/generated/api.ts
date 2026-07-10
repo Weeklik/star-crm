@@ -92,6 +92,7 @@ export const ListDealsResponseItem = zod.object({
   additionalInfo: zod.array(zod.boolean()).nullish(),
   sgtInvoiceSeq: zod.number().nullish(),
   ssmtInvoiceSeq: zod.number().nullish(),
+  invoiceSeq: zod.number().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -231,6 +232,7 @@ export const GetDealResponse = zod.object({
   additionalInfo: zod.array(zod.boolean()).nullish(),
   sgtInvoiceSeq: zod.number().nullish(),
   ssmtInvoiceSeq: zod.number().nullish(),
+  invoiceSeq: zod.number().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -368,6 +370,7 @@ export const UpdateDealResponse = zod.object({
   additionalInfo: zod.array(zod.boolean()).nullish(),
   sgtInvoiceSeq: zod.number().nullish(),
   ssmtInvoiceSeq: zod.number().nullish(),
+  invoiceSeq: zod.number().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

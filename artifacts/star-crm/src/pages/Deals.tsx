@@ -877,6 +877,7 @@ export default function Deals() {
         delayReason: (fresh as any).delayReason ?? undefined,
         sgtInvoiceSeq: (fresh as any).sgtInvoiceSeq ?? undefined,
         ssmtInvoiceSeq: (fresh as any).ssmtInvoiceSeq ?? undefined,
+        invoiceSeq: (fresh as any).invoiceSeq ?? undefined,
         bankDetails: (fresh as any).bankDetails ?? undefined,
         additionalInfo: (fresh as any).additionalInfo ?? undefined,
       });
