@@ -319,7 +319,7 @@ export default function SummarySalesReport() {
     setExpandedKey(key);
     setWeekLoading(true);
     setWeekRows([]);
-    const params = new URLSearchParams({ weekStart: monthStart, weekEnd: monthEnd, salespersonId: String(spId) });
+    const params = new URLSearchParams({ startDate: monthStart, endDate: monthEnd, salespersonId: String(spId) });
     fetch(`/api/reports/sales-breakdown?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setWeekRows(Array.isArray(d) ? d : []))
@@ -558,10 +558,21 @@ export default function SummarySalesReport() {
                               )}
                             </td>
                             <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-8 bg-card">
-                              {row.name}
-                              {!rowIsSame && (
-                                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency === "TND" ? "€" : rowCurrency})</span>
-                              )}
+                              <span className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleMonthCellClick(row.salespersonId, row.name, expandedMonthIdx ?? currentMonth)}
+                                  title={rowExpandedKey ? "Collapse weekly view" : "Expand to weekly view"}
+                                  className="shrink-0 text-muted-foreground/50 hover:text-primary transition-colors"
+                                >
+                                  {rowExpandedKey
+                                    ? <ChevronDown className="w-3.5 h-3.5" />
+                                    : <ChevronRight className="w-3.5 h-3.5" />}
+                                </button>
+                                {row.name}
+                                {!rowIsSame && (
+                                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">({rowCurrency === "TND" ? "€" : rowCurrency})</span>
+                                )}
+                              </span>
                             </td>
                             <td className="px-3 py-2 text-right">{fmtAmt(Math.round(row.avgMonthlySales), rowRate)}</td>
                             <td className="px-3 py-2 text-right font-medium">{fmtAmt(row.totalSales, rowRate)}</td>
@@ -570,22 +581,15 @@ export default function SummarySalesReport() {
                               const val      = row.monthly[mIdx] ?? 0;
                               const isCurCol = mIdx === currentMonth;
                               const cellRate = isAllRegions ? rowRate : getRate(yr, mIdx);
-                              const isThisExpanded = expandedMonthIdx === mIdx;
                               return (
                                 <td
                                   key={mIdx}
-                                  onClick={() => val > 0 && handleMonthCellClick(row.salespersonId, row.name, mIdx)}
+                                  onClick={() => val > 0 && openMonthModal(row.salespersonId, row.name, mIdx)}
                                   className={`px-3 py-2 text-right tabular-nums transition-colors select-none
                                     ${val > 0 ? "cursor-pointer hover:bg-primary/10 hover:text-foreground" : ""}
-                                    ${isCurCol ? "bg-primary/5 text-muted-foreground" : "text-muted-foreground"}
-                                    ${isThisExpanded ? "bg-primary/15 font-semibold" : ""}`}
+                                    ${isCurCol ? "bg-primary/5 text-muted-foreground" : "text-muted-foreground"}`}
                                 >
-                                  <span className="inline-flex items-center justify-end gap-1">
-                                    {val ? fmtAmt(val, cellRate) : "-"}
-                                    {val > 0 && (isThisExpanded
-                                      ? <ChevronDown className="w-3 h-3 shrink-0 opacity-60" />
-                                      : <ChevronRight className="w-3 h-3 shrink-0 opacity-30" />)}
-                                  </span>
+                                  {val ? fmtAmt(val, cellRate) : "-"}
                                 </td>
                               );
                             })}
