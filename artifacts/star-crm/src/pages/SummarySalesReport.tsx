@@ -4,9 +4,9 @@ import { useTranslation } from "@/i18n/LanguageContext";
 import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { useHistoricalRates } from "@/hooks/useHistoricalRates";
 import { MonthRateCell } from "@/components/MonthRateCell";
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { ChevronDown, ChevronRight, Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -217,10 +217,6 @@ export default function SummarySalesReport() {
 
   const [drillDown, setDrillDown] = useState<DrillDownState | null>(null);
 
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [weekRows, setWeekRows]       = useState<WeekRow[]>([]);
-  const [weekLoading, setWeekLoading] = useState(false);
-
   const {
     selectedRegion,
     conversionRate, sourceCurrency, selectedCurrency,
@@ -306,31 +302,6 @@ export default function SummarySalesReport() {
     setDrillDown({ salespersonId: spId, monthStart: summaryStart, monthEnd: summaryEnd, label, stage });
   }
 
-  function handleExpandToggle(spId: number, spName: string) {
-    const key = `${spId}-year`;
-    if (expandedKey === key) {
-      setExpandedKey(null);
-      setWeekRows([]);
-      return;
-    }
-    const yearStart = `${yr}-01-01`;
-    const yearEnd   = `${yr}-12-31`;
-    setExpandedKey(key);
-    setWeekLoading(true);
-    setWeekRows([]);
-    const params = new URLSearchParams({ startDate: yearStart, endDate: yearEnd, salespersonId: String(spId) });
-    fetch(`/api/reports/sales-breakdown?${params}`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setWeekRows(Array.isArray(d) ? d : []))
-      .catch(() => setWeekRows([]))
-      .finally(() => setWeekLoading(false));
-  }
-
-  function openWeekModal(w: WeekRow, spId: number, spName: string, stage?: string) {
-    const weekLabel = `${spName} — ${w.monthName} ${w.weekOrdinal} Week${stage ? ` (${stage})` : ""}`;
-    setDrillDown({ salespersonId: spId, monthStart: w.weekStart, monthEnd: w.weekEnd, label: weekLabel, stage });
-  }
-
   const currentMonth = new Date().getMonth() + 1; // 1-indexed
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
@@ -380,10 +351,6 @@ export default function SummarySalesReport() {
     : "Summary Period";
 
   const totalCols = 3 + 12 + (hasSummary ? 3 : 0);
-
-  const thW = "border border-border text-center text-[11px] font-semibold px-2 py-1.5 whitespace-nowrap bg-muted/60";
-  const tdW = "border border-border text-center text-[11px] px-2 py-1.5 whitespace-nowrap tabular-nums";
-  const clickableW = "cursor-pointer hover:brightness-90 active:brightness-75 transition-all select-none";
 
 
   const handleExportCSV = () => {
@@ -537,11 +504,9 @@ export default function SummarySalesReport() {
                       const rowRate     = getRateFor(rowCurrency);
                       const rowIsSame   = rowCurrency === selectedCurrency;
 
-                      const rowExpandedKey = expandedKey === `${row.salespersonId}-year` ? expandedKey : null;
-
                       return (
-                        <React.Fragment key={`row-${row.salespersonId}`}>
                         <tr
+                          key={`row-${row.salespersonId}`}
                           className={`border-b border-border/50 ${i % 2 === 0 ? "" : "bg-muted/10"}`}
                         >
                             <td className="px-2 py-2 text-center text-[11px] font-bold text-muted-foreground whitespace-nowrap sticky left-0 bg-card w-8">
@@ -556,21 +521,10 @@ export default function SummarySalesReport() {
                               )}
                             </td>
                             <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-8 bg-card">
-                              <span className="flex items-center gap-1.5">
-                                <button
-                                  onClick={() => handleExpandToggle(row.salespersonId, row.name)}
-                                  title={rowExpandedKey ? "Collapse weekly view" : "Expand to weekly view"}
-                                  className="shrink-0 text-muted-foreground/50 hover:text-primary transition-colors"
-                                >
-                                  {rowExpandedKey
-                                    ? <ChevronDown className="w-3.5 h-3.5" />
-                                    : <ChevronRight className="w-3.5 h-3.5" />}
-                                </button>
-                                {row.name}
-                                {!rowIsSame && (
-                                  <span className="ml-1 text-[10px] text-muted-foreground font-normal">({rowCurrency === "TND" ? "€" : rowCurrency})</span>
-                                )}
-                              </span>
+                              {row.name}
+                              {!rowIsSame && (
+                                <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">({rowCurrency === "TND" ? "€" : rowCurrency})</span>
+                              )}
                             </td>
                             <td className="px-3 py-2 text-right">{fmtAmt(Math.round(row.avgMonthlySales), rowRate)}</td>
                             <td className="px-3 py-2 text-right font-medium">{fmtAmt(row.totalSales, rowRate)}</td>
@@ -608,144 +562,6 @@ export default function SummarySalesReport() {
                               </>
                             )}
                         </tr>
-
-                        {/* Weekly expand row */}
-                        {rowExpandedKey && (
-                          <tr>
-                            <td colSpan={totalCols} className="p-0 bg-muted/5">
-                              <div className="overflow-x-auto border-t border-border/50">
-                                {weekLoading ? (
-                                  <div className="flex items-center justify-center py-6">
-                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                  </div>
-                                ) : weekRows.length === 0 ? (
-                                  <div className="text-center py-6 text-muted-foreground text-xs">No weekly data.</div>
-                                ) : (
-                                  <table className="w-full border-collapse text-[11px] min-w-[800px]">
-                                    <thead>
-                                      <tr>
-                                        <th className={`${thW} text-left`}>Week</th>
-                                        <th colSpan={4} className={`${thW} bg-green-700/20 text-green-800 dark:text-green-300`}>Payment Receipt</th>
-                                        <th className="border border-border bg-muted/10 w-3" />
-                                        <th colSpan={2} className={`${thW} bg-yellow-500/20 text-yellow-800 dark:text-yellow-300`}>Quotation Sent</th>
-                                        <th colSpan={2} className={`${thW} bg-blue-600/20 text-blue-800 dark:text-blue-400`}>Order Confirmed</th>
-                                        <th className={`${thW} bg-yellow-500/10`}>Total SIP</th>
-                                      </tr>
-                                      <tr>
-                                        <th className={`${thW} text-left`} />
-                                        <th className={`${thW} bg-green-700/10`}># Orders</th>
-                                        <th className={`${thW} bg-green-700/10`}>Amount</th>
-                                        <th className={`${thW} bg-green-700/10`}>Down Payment</th>
-                                        <th className={`${thW} bg-green-700/10`}>Total</th>
-                                        <th className="border border-border bg-muted/10" />
-                                        <th className={`${thW} bg-yellow-600/10`}># Quotations</th>
-                                        <th className={`${thW} bg-yellow-600/10`}>Amount</th>
-                                        <th className={`${thW} bg-blue-600/10`}># Orders</th>
-                                        <th className={`${thW} bg-blue-600/10`}>Amount</th>
-                                        <th className={`${thW} bg-yellow-600/10`}>Amount</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {weekRows.map((w, wi) => (
-                                        <tr key={w.weekStart} className={wi % 2 === 0 ? "bg-background" : "bg-muted/10"}>
-                                          <td className={`${tdW} text-left font-medium`}>{w.monthName} {w.weekOrdinal} Week</td>
-                                          <td className={`${tdW} bg-green-900/5 ${w.orderClosedCount ? clickableW : ""}`}
-                                            onClick={() => w.orderClosedCount && openWeekModal(w, row.salespersonId, row.name, "Order Closed")}
-                                            title={w.orderClosedCount ? "Click to view orders" : undefined}>
-                                            {w.orderClosedCount || ""}
-                                          </td>
-                                          <td className={`${tdW} bg-green-900/5 ${w.orderClosedAmount ? clickableW : ""}`}
-                                            onClick={() => w.orderClosedAmount && openWeekModal(w, row.salespersonId, row.name, "Order Closed")}
-                                            title={w.orderClosedAmount ? "Click to view orders" : undefined}>
-                                            {w.orderClosedAmount ? fmtAmt(w.orderClosedAmount, rowRate) : ""}
-                                          </td>
-                                          <td className={`${tdW} bg-green-900/5 ${w.downPayment ? clickableW : ""}`}
-                                            onClick={() => w.downPayment && openWeekModal(w, row.salespersonId, row.name, "Order Closed")}
-                                            title={w.downPayment ? "Click to view orders" : undefined}>
-                                            {w.downPayment ? fmtAmt(w.downPayment, rowRate) : ""}
-                                          </td>
-                                          <td className={`${tdW} bg-green-900/5 font-medium ${w.totalPaymentReceipt ? clickableW : ""}`}
-                                            onClick={() => w.totalPaymentReceipt && openWeekModal(w, row.salespersonId, row.name, "Order Closed")}
-                                            title={w.totalPaymentReceipt ? "Click to view orders" : undefined}>
-                                            {w.totalPaymentReceipt ? fmtAmt(w.totalPaymentReceipt, rowRate) : ""}
-                                          </td>
-                                          <td className="border border-border bg-muted/10" />
-                                          <td className={`${tdW} bg-yellow-900/5 ${w.quotationSentCount ? clickableW : ""}`}
-                                            onClick={() => w.quotationSentCount && openWeekModal(w, row.salespersonId, row.name, "Quotation Sent")}
-                                            title={w.quotationSentCount ? "Click to view orders" : undefined}>
-                                            {w.quotationSentCount || ""}
-                                          </td>
-                                          <td className={`${tdW} bg-yellow-900/5 ${w.quotationSentAmount ? clickableW : ""}`}
-                                            onClick={() => w.quotationSentAmount && openWeekModal(w, row.salespersonId, row.name, "Quotation Sent")}
-                                            title={w.quotationSentAmount ? "Click to view orders" : undefined}>
-                                            {w.quotationSentAmount ? fmtAmt(w.quotationSentAmount, rowRate) : ""}
-                                          </td>
-                                          <td className={`${tdW} bg-blue-900/5 ${w.orderConfirmedCount ? clickableW : ""}`}
-                                            onClick={() => w.orderConfirmedCount && openWeekModal(w, row.salespersonId, row.name, "Order Confirmed")}
-                                            title={w.orderConfirmedCount ? "Click to view orders" : undefined}>
-                                            {w.orderConfirmedCount || ""}
-                                          </td>
-                                          <td className={`${tdW} bg-blue-900/5 ${w.orderConfirmedAmount ? clickableW : ""}`}
-                                            onClick={() => w.orderConfirmedAmount && openWeekModal(w, row.salespersonId, row.name, "Order Confirmed")}
-                                            title={w.orderConfirmedAmount ? "Click to view orders" : undefined}>
-                                            {w.orderConfirmedAmount ? fmtAmt(w.orderConfirmedAmount, rowRate) : ""}
-                                          </td>
-                                          <td className={`${tdW} bg-yellow-900/5 font-medium ${w.totalSalesInProcess ? clickableW : ""}`}
-                                            onClick={() => w.totalSalesInProcess && openWeekModal(w, row.salespersonId, row.name)}
-                                            title={w.totalSalesInProcess ? "Click to view orders" : undefined}>
-                                            {w.totalSalesInProcess ? fmtAmt(w.totalSalesInProcess, rowRate) : ""}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                    <tfoot>
-                                      {(() => {
-                                        const yearStart = `${yr}-01-01`;
-                                        const yearEnd   = `${yr}-12-31`;
-                                        const openYearModal = (stage?: string) =>
-                                          setDrillDown({ salespersonId: row.salespersonId, monthStart: yearStart, monthEnd: yearEnd, label: `${row.name} — ${year}${stage ? ` (${stage})` : ""}`, stage });
-                                        return (
-                                          <tr className="bg-muted/40 font-semibold border-t-2 border-border">
-                                            <td className={`${tdW} text-left`}>Total {year}</td>
-                                            <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderClosedCount, 0) || ""}</td>
-                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.orderClosedAmount, 0) ? clickableW : ""}`}
-                                              onClick={() => weekRows.reduce((s, w) => s + w.orderClosedAmount, 0) && openYearModal("Order Closed")}>
-                                              {fmtAmt(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0), rowRate)}
-                                            </td>
-                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.downPayment, 0) ? clickableW : ""}`}
-                                              onClick={() => weekRows.reduce((s, w) => s + w.downPayment, 0) && openYearModal("Order Closed")}>
-                                              {fmtAmt(weekRows.reduce((s, w) => s + w.downPayment, 0), rowRate)}
-                                            </td>
-                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0) ? clickableW : ""}`}
-                                              onClick={() => weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0) && openYearModal("Order Closed")}>
-                                              {fmtAmt(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0), rowRate)}
-                                            </td>
-                                            <td className="border border-border bg-muted/10" />
-                                            <td className={tdW}>{weekRows.reduce((s, w) => s + w.quotationSentCount, 0) || ""}</td>
-                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.quotationSentAmount, 0) ? clickableW : ""}`}
-                                              onClick={() => weekRows.reduce((s, w) => s + w.quotationSentAmount, 0) && openYearModal("Quotation Sent")}>
-                                              {fmtAmt(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0), rowRate)}
-                                            </td>
-                                            <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderConfirmedCount, 0) || ""}</td>
-                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0) ? clickableW : ""}`}
-                                              onClick={() => weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0) && openYearModal("Order Confirmed")}>
-                                              {fmtAmt(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0), rowRate)}
-                                            </td>
-                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0) ? clickableW : ""}`}
-                                              onClick={() => weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0) && openYearModal()}>
-                                              {fmtAmt(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0), rowRate)}
-                                            </td>
-                                          </tr>
-                                        );
-                                      })()}
-                                    </tfoot>
-                                  </table>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                        </React.Fragment>
                       );
                     })
                   )}
