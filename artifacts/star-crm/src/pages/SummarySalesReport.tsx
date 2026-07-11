@@ -561,6 +561,7 @@ export default function SummarySalesReport() {
                                 >{fmtAmt(row.summaryOrderConfirmed, rowRate)}</td>
                               </>
                             )}
+                        </tr>
                       );
                     })
                   )}
