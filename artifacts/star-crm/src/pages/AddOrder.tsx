@@ -260,6 +260,33 @@ function getEffectiveVat(
   return getCountryVat(country);
 }
 
+const BANK_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  "STAR SEWING MACHINES TRADING L.L.C": [
+    { value: "AED",     label: "AED (National Bank of Fujairah)" },
+    { value: "USD",     label: "USD (Emirates NBD)" },
+    { value: "EURO",    label: "EUR (Emirates NBD)" },
+    { value: "JPY",     label: "JPY (Emirates NBD)" },
+    { value: "USD-NBF", label: "USD (National Bank of Fujairah)" },
+    { value: "EUR-NBF", label: "EUR (National Bank of Fujairah)" },
+    { value: "JPY-NBF", label: "JPY (National Bank of Fujairah)" },
+  ],
+  "STAR GLOBAL TECH FZCO": [
+    { value: "AED",     label: "AED (Emirates NBD)" },
+    { value: "USD",     label: "USD (Emirates NBD)" },
+    { value: "EURO",    label: "EUR (Emirates NBD)" },
+    { value: "AED-NBF", label: "AED (National Bank of Fujairah)" },
+  ],
+  "STAR SEWING MACHINES TRADING L.L.C BR": [
+    { value: "AED", label: "AED (Habib Bank AG Zurich)" },
+  ],
+  "MODREN SEWING MACHINE TRADING": [
+    { value: "AED", label: "AED (United Arab Bank)" },
+  ],
+  "DUBAI SEWING MACHINE": [
+    { value: "AED", label: "AED (Emirates NBD)" },
+  ],
+};
+
 function newItem(vatPct = 0): OrderItem {
   return {
     id: uuidv4(),
@@ -328,6 +355,12 @@ export default function AddOrder() {
     const vat = getEffectiveVat(effectiveCountry, companySelection);
     setItems((prev) => prev.map((it) => ({ ...it, vatPct: vat })));
   }, [effectiveCountry, companySelection, loaded]);
+
+  // Reset bankDetails to AED when the user switches company (not on initial load)
+  useEffect(() => {
+    if (!loaded) return;
+    setBankDetails("AED");
+  }, [companySelection]);
 
   // Catalog state: brand → products
   const [catalogByBrand, setCatalogByBrand] = useState<
@@ -1097,13 +1130,13 @@ export default function AddOrder() {
               <div className="flex items-center gap-3 sm:col-span-2">
                 <label className="text-sm text-muted-foreground w-32 shrink-0">Bank Details</label>
                 <Select value={bankDetails} onValueChange={setBankDetails}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-64">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AED">AED</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EURO">EURO</SelectItem>
+                    {(BANK_OPTIONS[companySelection] ?? BANK_OPTIONS["STAR SEWING MACHINES TRADING L.L.C"]).map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

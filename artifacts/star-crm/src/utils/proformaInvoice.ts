@@ -319,8 +319,77 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const vatLabel       = cfg.vatLabel       ?? `VAT @ ${cfg.vatRate}%`;
   const acceptedLabel  = cfg.acceptedLabel  ?? "Accepted &amp; Confirmed";
   const sigCompanyLabel= cfg.sigCompanyLabel?? "STAR.S.M.TRADING LLC";
-  // STAR GLOBAL TECH FZCO has its own dedicated bank accounts per currency
-  const SGT_BANK: Record<string, { key: string; value: string }[]> = {
+  type BankRow = { key: string; value: string };
+
+  // ── STAR SEWING MACHINES TRADING L.L.C ─────────────────────────────────────
+  const SSMT_BANKS: Record<string, BankRow[]> = {
+    AED: [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "012000045177" },
+      { key: "IBAN (23 Chars):", value: "AE240380000012000045177" },
+      { key: "Currency:", value: "AED" },
+      { key: "Bank Name:", value: "National Bank Of Fujairah" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "NBFUAEAFDXB" },
+    ],
+    USD: [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "0511006864305" },
+      { key: "IBAN (23 Chars):", value: "AE050260000511006864305" },
+      { key: "Currency:", value: "US Dollar" },
+      { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "EBILAEAD" },
+    ],
+    EURO: [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "0511006864308" },
+      { key: "IBAN (23 Chars):", value: "AE210260000511006864308" },
+      { key: "Currency:", value: "EURO" },
+      { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "EBILAEAD" },
+    ],
+    JPY: [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "0511006864303" },
+      { key: "IBAN (23 Chars):", value: "AE590260000511006864303" },
+      { key: "Currency:", value: "Japanese Yen" },
+      { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "EBILAEAD" },
+    ],
+    "USD-NBF": [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "012000786746" },
+      { key: "IBAN (23 Chars):", value: "AE130380000012000786746" },
+      { key: "Currency:", value: "US Dollar" },
+      { key: "Bank Name:", value: "National Bank Of Fujairah" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "NBFUAEAFDXB" },
+    ],
+    "EUR-NBF": [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "012000045158" },
+      { key: "IBAN (23 Chars):", value: "AE520380000012000045158" },
+      { key: "Currency:", value: "EURO" },
+      { key: "Bank Name:", value: "National Bank Of Fujairah" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "NBFUAEAFDXB" },
+    ],
+    "JPY-NBF": [
+      { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
+      { key: "Account Number:", value: "012000045193" },
+      { key: "IBAN (23 Chars):", value: "AE770380000012000045193" },
+      { key: "Currency:", value: "Japanese Yen" },
+      { key: "Bank Name:", value: "National Bank Of Fujairah" },
+      { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+      { key: "Swift:", value: "NBFUAEAFDXB" },
+    ],
+  };
+
+  // ── STAR GLOBAL TECH FZCO ──────────────────────────────────────────────────
+  const SGT_BANKS: Record<string, BankRow[]> = {
     AED: [
       { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
       { key: "Bank Address:", value: "Main Branch, Dubai - U.A.E" },
@@ -345,33 +414,60 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
       { key: "IBAN No.:", value: "AE510260001025903733803" },
       { key: "Swift Code:", value: "EBILAEADXXX" },
     ],
+    "AED-NBF": [
+      { key: "Bank Name:", value: "National Bank Of Fujairah" },
+      { key: "Bank Address:", value: "JAFZA Branch Dubai - U.A.E" },
+      { key: "A/C Title:", value: "Star Global Tech FZCO" },
+      { key: "Account No.:", value: "012001938906" },
+      { key: "IBAN No.:", value: "AE780380000012001938906" },
+      { key: "Swift Code:", value: "NBFUAEAFDXB" },
+    ],
   };
 
-  // Override bank rows for USD / EURO selections
-  const resolvedBank: { key: string; value: string }[] =
-    data.companySelection === "STAR GLOBAL TECH FZCO"
-      ? SGT_BANK[data.bankDetails === "USD" ? "USD" : data.bankDetails === "EURO" ? "EURO" : "AED"]
-      : data.bankDetails === "USD"
-      ? [
-          { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
-          { key: "Account Number:", value: "0511006864305" },
-          { key: "IBAN (23 Chars):", value: "AE050260000511006864305" },
-          { key: "Currency:", value: "US Dollar" },
-          { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
-          { key: "Swift:", value: "EBILAEAD" },
-          { key: "Branch:", value: "Main Branch Dubai-UAE" },
-        ]
-      : data.bankDetails === "EURO"
-      ? [
-          { key: "Beneficiary Account Name:", value: "Star Sewing Machines Trading LLC" },
-          { key: "Account Number:", value: "0511006864308" },
-          { key: "IBAN (23 Chars):", value: "AE210260000511006864308" },
-          { key: "Currency:", value: "EURO" },
-          { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
-          { key: "Swift:", value: "EBILAEAD" },
-          { key: "Branch:", value: "Main Branch Dubai-UAE" },
-        ]
-      : cfg.bank;
+  // ── Other companies ────────────────────────────────────────────────────────
+  const SSMT_BR_BANK: BankRow[] = [
+    { key: "Beneficiary Account Name:", value: "Star Sewing Machine Trading LLC BR" },
+    { key: "Account Number:", value: "21120311105354900" },
+    { key: "IBAN (23 Chars):", value: "AE340290120311105354996" },
+    { key: "Currency:", value: "AED" },
+    { key: "Bank Name:", value: "Habib Bank AG Zurich" },
+    { key: "Branch:", value: "Main Branch Dubai - U.A.E" },
+    { key: "Swift:", value: "HBZUAEAD" },
+  ];
+
+  const MODERN_SEWING_BANK: BankRow[] = [
+    { key: "Beneficiary Account Name:", value: "Modern Sewing Machine Trading LLC" },
+    { key: "Account Number:", value: "00710113990001" },
+    { key: "IBAN (23 Chars):", value: "AE840460000071013990001" },
+    { key: "Currency:", value: "AED" },
+    { key: "Bank Name:", value: "United Arab Bank" },
+    { key: "Branch:", value: "Ajman Branch - U.A.E" },
+    { key: "Swift:", value: "UARBAEAA" },
+  ];
+
+  const DUBAI_SEWING_BANK: BankRow[] = [
+    { key: "Beneficiary Account Name:", value: "Dubai Sewing Machines Industry LLC" },
+    { key: "Account Number:", value: "1014440328701" },
+    { key: "IBAN (23 Chars):", value: "AE620260001014440328701" },
+    { key: "Currency:", value: "AED" },
+    { key: "Bank Name:", value: "Emirates NBD Bank PJSC" },
+    { key: "Branch:", value: "Deira Branch Dubai - U.A.E" },
+    { key: "Swift:", value: "EBILAEAD" },
+  ];
+
+  // ── Resolve the bank rows to display ──────────────────────────────────────
+  const _company = data.companySelection ?? "";
+  const _bank    = data.bankDetails ?? "AED";
+  const resolvedBank: BankRow[] =
+    _company === "STAR GLOBAL TECH FZCO"
+      ? (SGT_BANKS[_bank] ?? SGT_BANKS["AED"])
+      : _company === "STAR SEWING MACHINES TRADING L.L.C BR"
+      ? SSMT_BR_BANK
+      : _company === "MODREN SEWING MACHINE TRADING"
+      ? MODERN_SEWING_BANK
+      : _company === "DUBAI SEWING MACHINE"
+      ? DUBAI_SEWING_BANK
+      : (SSMT_BANKS[_bank] ?? SSMT_BANKS["AED"]);
 
   const bankRowsHtml = resolvedBank
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
