@@ -5,7 +5,7 @@ import { OwnerControlsBar } from "@/components/layout/OwnerControlsBar";
 import { useHistoricalRates } from "@/hooks/useHistoricalRates";
 import { MonthRateCell } from "@/components/MonthRateCell";
 import { useState, useEffect, useMemo } from "react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 interface SalespersonRow {
   salespersonId: number;
@@ -57,6 +65,135 @@ interface WeekRow {
 }
 
 
+interface DealDetail {
+  id: number;
+  name: string;
+  companyName: string;
+  productItem: string;
+  stage: string;
+  agreedAmount: string | null;
+  receivedAmount: string | null;
+  outstandingAmount: string | null;
+  dealStartDate: string;
+}
+
+interface DrillDownState {
+  monthStart: string;
+  monthEnd: string;
+  salespersonId: number | null;
+  label: string;
+  stage?: string;
+}
+
+function MonthDrillDownModal({
+  drillDown,
+  onClose,
+}: {
+  drillDown: DrillDownState | null;
+  onClose: () => void;
+}) {
+  const [deals, setDeals] = useState<DealDetail[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { formatAmount } = useCurrency();
+
+  const fmtAmt = (s: string | null | undefined) => {
+    const n = parseFloat(s ?? "0") || 0;
+    return n ? formatAmount(n) : "—";
+  };
+
+  useEffect(() => {
+    if (!drillDown) return;
+    setLoading(true);
+    const params = new URLSearchParams({
+      weekStart: drillDown.monthStart,
+      weekEnd: drillDown.monthEnd,
+    });
+    if (drillDown.salespersonId !== null) params.set("salespersonId", String(drillDown.salespersonId));
+    if (drillDown.stage) params.set("stage", drillDown.stage);
+    fetch(`/api/reports/sales-breakdown-deals?${params}`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => setDeals(Array.isArray(d) ? d : []))
+      .catch(() => setDeals([]))
+      .finally(() => setLoading(false));
+  }, [drillDown]);
+
+  const totalAgreed      = deals.reduce((s, d) => s + (parseFloat(d.agreedAmount ?? "0") || 0), 0);
+  const totalReceived    = deals.reduce((s, d) => s + (parseFloat(d.receivedAmount ?? "0") || 0), 0);
+  const totalOutstanding = deals.reduce((s, d) => s + (parseFloat(d.outstandingAmount ?? "0") || 0), 0);
+
+  return (
+    <Dialog open={!!drillDown} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="text-base font-bold">{drillDown?.label}</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-auto min-h-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : deals.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">No orders found for this period.</div>
+          ) : (
+            <table className="w-full border-collapse text-sm min-w-[700px]">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-muted/60">
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">#</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs whitespace-nowrap">Date</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Order Name</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Company</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Product</th>
+                  <th className="border border-border px-3 py-2 text-left font-semibold text-xs">Stage</th>
+                  <th className="border border-border px-3 py-2 text-right font-semibold text-xs">Agreed</th>
+                  <th className="border border-border px-3 py-2 text-right font-semibold text-xs">Received</th>
+                  <th className="border border-border px-3 py-2 text-right font-semibold text-xs">Outstanding</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deals.map((deal, i) => (
+                  <tr key={deal.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                    <td className="border border-border px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      {deal.dealStartDate
+                        ? new Date(deal.dealStartDate.split("T")[0] + "T00:00:00")
+                            .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                        : "—"}
+                    </td>
+                    <td className="border border-border px-3 py-2 text-xs font-medium whitespace-nowrap">{deal.name}</td>
+                    <td className="border border-border px-3 py-2 text-xs whitespace-nowrap">{deal.companyName}</td>
+                    <td className="border border-border px-3 py-2 text-xs whitespace-nowrap text-muted-foreground">{deal.productItem}</td>
+                    <td className="border border-border px-3 py-2 text-xs">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap ${
+                        deal.stage === "Order Closed"    ? "bg-green-500/20 text-green-700 dark:text-green-400" :
+                        deal.stage === "Order Confirmed" ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" :
+                        deal.stage === "Quotation Sent"  ? "bg-blue-500/20 text-blue-700 dark:text-blue-400" :
+                        "bg-red-500/20 text-red-700 dark:text-red-400"
+                      }`}>{deal.stage}</span>
+                    </td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.agreedAmount)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.receivedAmount)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.outstandingAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 font-semibold border-t-2 border-border">
+                  <td className="border border-border px-3 py-2 text-xs text-muted-foreground" colSpan={6}>
+                    Total ({deals.length} order{deals.length !== 1 ? "s" : ""})
+                  </td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{formatAmount(totalAgreed)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{formatAmount(totalReceived)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{formatAmount(totalOutstanding)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function fmtCurrency(n: number, currency: string, rate: number): string {
   if (!n) return "";
   try {
@@ -78,6 +215,7 @@ export default function SummarySalesReport() {
   const [rows, setRows]               = useState<SalespersonRow[]>([]);
   const [loading, setLoading]         = useState(false);
   const [users, setUsers]             = useState<UserOption[]>([]);
+  const [drillDown, setDrillDown]     = useState<DrillDownState | null>(null);
 
   const {
     selectedRegion,
@@ -135,6 +273,22 @@ export default function SummarySalesReport() {
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
   }, [me, year, summaryStart, summaryEnd, filterSpId, selectedRegion]);
+
+  function openMonthModal(
+    spId: number | null,
+    spName: string,
+    monthIdx: number,
+    stage?: string,
+  ) {
+    const d0 = new Date(yr, monthIdx - 1, 1);
+    const monthStart = format(startOfMonth(d0), "yyyy-MM-dd");
+    const monthEnd   = format(endOfMonth(d0),   "yyyy-MM-dd");
+    const monthLabel = MONTHS_FULL[monthIdx - 1];
+    const label = spId !== null
+      ? `${spName} — ${monthLabel} ${year}`
+      : `All — ${monthLabel} ${year}`;
+    setDrillDown({ salespersonId: spId, monthStart, monthEnd, label, stage });
+  }
 
   const currentMonth = new Date().getMonth() + 1; // 1-indexed
 
@@ -370,7 +524,10 @@ export default function SummarySalesReport() {
                               return (
                                 <td
                                   key={mIdx}
-                                  className={`px-3 py-2 text-right tabular-nums ${isCurCol ? "bg-primary/5 text-muted-foreground" : "text-muted-foreground"}`}
+                                  onClick={() => val > 0 && openMonthModal(row.salespersonId, row.name, mIdx)}
+                                  className={`px-3 py-2 text-right tabular-nums transition-colors select-none
+                                    ${val > 0 ? "cursor-pointer hover:bg-primary/10 hover:text-foreground" : ""}
+                                    ${isCurCol ? "bg-primary/5 text-muted-foreground" : "text-muted-foreground"}`}
                                 >
                                   {val ? fmtAmt(val, cellRate) : "-"}
                                 </td>
@@ -404,7 +561,11 @@ export default function SummarySalesReport() {
                         const mIdx = idx + 1;
                         const totVal = convertedTotals?.monthTotals[mIdx] ?? 0;
                         return (
-                          <td key={mIdx} className="px-3 py-2 text-right">
+                          <td
+                            key={mIdx}
+                            onClick={() => totVal > 0 && openMonthModal(null, "All", mIdx)}
+                            className={`px-3 py-2 text-right transition-colors ${totVal > 0 ? "cursor-pointer hover:bg-primary/10" : ""}`}
+                          >
                             {fmtAmt(totVal, 1)}
                           </td>
                         );
@@ -431,6 +592,7 @@ export default function SummarySalesReport() {
         </CardContent>
       </Card>
     </div>
+    <MonthDrillDownModal drillDown={drillDown} onClose={() => setDrillDown(null)} />
     </div>
   );
 }
