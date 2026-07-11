@@ -306,20 +306,19 @@ export default function SummarySalesReport() {
     setDrillDown({ salespersonId: spId, monthStart: summaryStart, monthEnd: summaryEnd, label, stage });
   }
 
-  function handleMonthCellClick(spId: number, spName: string, monthIdx: number) {
-    const key = `${spId}-${monthIdx}`;
+  function handleExpandToggle(spId: number, spName: string) {
+    const key = `${spId}-year`;
     if (expandedKey === key) {
       setExpandedKey(null);
       setWeekRows([]);
       return;
     }
-    const d0         = new Date(yr, monthIdx - 1, 1);
-    const monthStart = format(startOfMonth(d0), "yyyy-MM-dd");
-    const monthEnd   = format(endOfMonth(d0),   "yyyy-MM-dd");
+    const yearStart = `${yr}-01-01`;
+    const yearEnd   = `${yr}-12-31`;
     setExpandedKey(key);
     setWeekLoading(true);
     setWeekRows([]);
-    const params = new URLSearchParams({ startDate: monthStart, endDate: monthEnd, salespersonId: String(spId) });
+    const params = new URLSearchParams({ startDate: yearStart, endDate: yearEnd, salespersonId: String(spId) });
     fetch(`/api/reports/sales-breakdown?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setWeekRows(Array.isArray(d) ? d : []))
@@ -538,8 +537,7 @@ export default function SummarySalesReport() {
                       const rowRate     = getRateFor(rowCurrency);
                       const rowIsSame   = rowCurrency === selectedCurrency;
 
-                      const rowExpandedKey = expandedKey?.startsWith(`${row.salespersonId}-`) ? expandedKey : null;
-                      const expandedMonthIdx = rowExpandedKey ? parseInt(rowExpandedKey.split("-")[1]) : null;
+                      const rowExpandedKey = expandedKey === `${row.salespersonId}-year` ? expandedKey : null;
 
                       return (
                         <React.Fragment key={`row-${row.salespersonId}`}>
@@ -560,7 +558,7 @@ export default function SummarySalesReport() {
                             <td className="px-3 py-2 font-medium whitespace-nowrap sticky left-8 bg-card">
                               <span className="flex items-center gap-1.5">
                                 <button
-                                  onClick={() => handleMonthCellClick(row.salespersonId, row.name, expandedMonthIdx ?? currentMonth)}
+                                  onClick={() => handleExpandToggle(row.salespersonId, row.name)}
                                   title={rowExpandedKey ? "Collapse weekly view" : "Expand to weekly view"}
                                   className="shrink-0 text-muted-foreground/50 hover:text-primary transition-colors"
                                 >
@@ -701,55 +699,45 @@ export default function SummarySalesReport() {
                                       ))}
                                     </tbody>
                                     <tfoot>
-                                      <tr className="bg-muted/40 font-semibold border-t-2 border-border">
-                                        <td className={`${tdW} text-left`}>Total {MONTHS_FULL[expandedMonthIdx! - 1]}</td>
-                                        <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderClosedCount, 0) || ""}</td>
-                                        <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.orderClosedAmount, 0) ? clickableW : ""}`}
-                                          onClick={() => {
-                                            const tot = weekRows.reduce((s, w) => s + w.orderClosedAmount, 0);
-                                            tot && openMonthModal(row.salespersonId, row.name, expandedMonthIdx!, "Order Closed");
-                                          }}>
-                                          {fmtAmt(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0), rowRate)}
-                                        </td>
-                                        <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.downPayment, 0) ? clickableW : ""}`}
-                                          onClick={() => {
-                                            const tot = weekRows.reduce((s, w) => s + w.downPayment, 0);
-                                            tot && openMonthModal(row.salespersonId, row.name, expandedMonthIdx!, "Order Closed");
-                                          }}>
-                                          {fmtAmt(weekRows.reduce((s, w) => s + w.downPayment, 0), rowRate)}
-                                        </td>
-                                        <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0) ? clickableW : ""}`}
-                                          onClick={() => {
-                                            const tot = weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0);
-                                            tot && openMonthModal(row.salespersonId, row.name, expandedMonthIdx!, "Order Closed");
-                                          }}>
-                                          {fmtAmt(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0), rowRate)}
-                                        </td>
-                                        <td className="border border-border bg-muted/10" />
-                                        <td className={tdW}>{weekRows.reduce((s, w) => s + w.quotationSentCount, 0) || ""}</td>
-                                        <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.quotationSentAmount, 0) ? clickableW : ""}`}
-                                          onClick={() => {
-                                            const tot = weekRows.reduce((s, w) => s + w.quotationSentAmount, 0);
-                                            tot && openMonthModal(row.salespersonId, row.name, expandedMonthIdx!, "Quotation Sent");
-                                          }}>
-                                          {fmtAmt(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0), rowRate)}
-                                        </td>
-                                        <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderConfirmedCount, 0) || ""}</td>
-                                        <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0) ? clickableW : ""}`}
-                                          onClick={() => {
-                                            const tot = weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0);
-                                            tot && openMonthModal(row.salespersonId, row.name, expandedMonthIdx!, "Order Confirmed");
-                                          }}>
-                                          {fmtAmt(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0), rowRate)}
-                                        </td>
-                                        <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0) ? clickableW : ""}`}
-                                          onClick={() => {
-                                            const tot = weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0);
-                                            tot && openMonthModal(row.salespersonId, row.name, expandedMonthIdx!);
-                                          }}>
-                                          {fmtAmt(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0), rowRate)}
-                                        </td>
-                                      </tr>
+                                      {(() => {
+                                        const yearStart = `${yr}-01-01`;
+                                        const yearEnd   = `${yr}-12-31`;
+                                        const openYearModal = (stage?: string) =>
+                                          setDrillDown({ salespersonId: row.salespersonId, monthStart: yearStart, monthEnd: yearEnd, label: `${row.name} — ${year}${stage ? ` (${stage})` : ""}`, stage });
+                                        return (
+                                          <tr className="bg-muted/40 font-semibold border-t-2 border-border">
+                                            <td className={`${tdW} text-left`}>Total {year}</td>
+                                            <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderClosedCount, 0) || ""}</td>
+                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.orderClosedAmount, 0) ? clickableW : ""}`}
+                                              onClick={() => weekRows.reduce((s, w) => s + w.orderClosedAmount, 0) && openYearModal("Order Closed")}>
+                                              {fmtAmt(weekRows.reduce((s, w) => s + w.orderClosedAmount, 0), rowRate)}
+                                            </td>
+                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.downPayment, 0) ? clickableW : ""}`}
+                                              onClick={() => weekRows.reduce((s, w) => s + w.downPayment, 0) && openYearModal("Order Closed")}>
+                                              {fmtAmt(weekRows.reduce((s, w) => s + w.downPayment, 0), rowRate)}
+                                            </td>
+                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0) ? clickableW : ""}`}
+                                              onClick={() => weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0) && openYearModal("Order Closed")}>
+                                              {fmtAmt(weekRows.reduce((s, w) => s + w.totalPaymentReceipt, 0), rowRate)}
+                                            </td>
+                                            <td className="border border-border bg-muted/10" />
+                                            <td className={tdW}>{weekRows.reduce((s, w) => s + w.quotationSentCount, 0) || ""}</td>
+                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.quotationSentAmount, 0) ? clickableW : ""}`}
+                                              onClick={() => weekRows.reduce((s, w) => s + w.quotationSentAmount, 0) && openYearModal("Quotation Sent")}>
+                                              {fmtAmt(weekRows.reduce((s, w) => s + w.quotationSentAmount, 0), rowRate)}
+                                            </td>
+                                            <td className={tdW}>{weekRows.reduce((s, w) => s + w.orderConfirmedCount, 0) || ""}</td>
+                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0) ? clickableW : ""}`}
+                                              onClick={() => weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0) && openYearModal("Order Confirmed")}>
+                                              {fmtAmt(weekRows.reduce((s, w) => s + w.orderConfirmedAmount, 0), rowRate)}
+                                            </td>
+                                            <td className={`${tdW} ${weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0) ? clickableW : ""}`}
+                                              onClick={() => weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0) && openYearModal()}>
+                                              {fmtAmt(weekRows.reduce((s, w) => s + w.totalSalesInProcess, 0), rowRate)}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })()}
                                     </tfoot>
                                   </table>
                                 )}
