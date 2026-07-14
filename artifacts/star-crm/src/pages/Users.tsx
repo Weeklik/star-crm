@@ -3,7 +3,7 @@ import { useListUsers, useUpdateUserRole, getListUsersQueryKey, getGetMeQueryKey
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetMe } from "@workspace/api-client-react";
 import {
-  Loader2, Shield, Trash2, Pencil, Globe, DollarSign, AlertTriangle, UserPlus, Eye, EyeOff,
+  Loader2, Shield, Trash2, Pencil, Globe, DollarSign, AlertTriangle, UserPlus, Eye, EyeOff, KeyRound,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -44,6 +44,7 @@ interface UserRow {
   createdAt: string;
   country?: string | null;
   currency?: string | null;
+  passwordPlain?: string | null;
 }
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -112,6 +113,43 @@ export default function Users() {
 
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [shownPasswords, setShownPasswords] = useState<Set<number>>(new Set());
+  function togglePasswordVisibility(id: number) {
+    setShownPasswords((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  const [pwTarget, setPwTarget] = useState<UserRow | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  async function handleChangePassword() {
+    if (!pwTarget || newPassword.length < 6) return;
+    setPwSaving(true);
+    try {
+      const res = await fetch(`${BASE}/api/users/${pwTarget.id}/password`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Failed to change password");
+      queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      toast({ title: "Password updated", description: `Password for ${pwTarget.name || pwTarget.email} has been changed.` });
+      setPwTarget(null);
+      setNewPassword("");
+    } catch (e: any) {
+      toast({ title: "Failed to change password", description: e.message, variant: "destructive" });
+    } finally {
+      setPwSaving(false);
+    }
+  }
 
   useEffect(() => {
     if (editTarget) {
@@ -225,19 +263,40 @@ export default function Users() {
             <TableRow className="bg-secondary/50">
               <TableHead>{t("users.user")}</TableHead>
               <TableHead>{t("common.email")}</TableHead>
+              <TableHead>Password</TableHead>
               <TableHead>{t("users.joined")}</TableHead>
               <TableHead>{t("users.regionCurrency")}</TableHead>
               <TableHead className="w-40">{t("common.role")}</TableHead>
-              <TableHead className="w-24 text-right">{t("common.actions")}</TableHead>
+              <TableHead className="w-28 text-right">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {(users as UserRow[] | undefined)?.map((user) => {
               const isSelf = user.id === me?.id;
+              const pwVisible = shownPasswords.has(user.id);
               return (
                 <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                   <TableCell className="font-medium">{user.name || t("common.unknown")}</TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                  <TableCell>
+                    {user.passwordPlain ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-sm">
+                          {pwVisible ? user.passwordPlain : "••••••••"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordVisibility(user.id)}
+                          className="text-muted-foreground hover:text-foreground"
+                          title={pwVisible ? "Hide password" : "Show password"}
+                        >
+                          {pwVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">not stored</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {format(new Date(user.createdAt), "MMM d, yyyy")}
                   </TableCell>
@@ -277,6 +336,16 @@ export default function Users() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        title="Change password"
+                        onClick={() => { setPwTarget(user); setNewPassword(""); setShowNewPw(false); }}
+                        disabled={isSelf}
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         title={t("users.editRegionCurrencyTitle")}
                         onClick={() => setEditTarget(user)}
                         disabled={isSelf}
@@ -300,7 +369,7 @@ export default function Users() {
             })}
             {users?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   {t("users.noUsersFound")}
                 </TableCell>
               </TableRow>
@@ -486,6 +555,61 @@ export default function Users() {
             </Button>
             <Button onClick={handleSaveProfile} disabled={editSaving}>
               {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("users.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Change Password Dialog ── */}
+      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setNewPassword(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Change Password
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for{" "}
+              <span className="font-semibold text-foreground">{pwTarget?.name || pwTarget?.email}</span>.
+              The new password will be stored and visible in the users table.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPw ? "text" : "password"}
+                  placeholder="Minimum 6 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={pwSaving}
+                  className="pr-10"
+                  autoComplete="new-password"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPw((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {newPassword.length > 0 && newPassword.length < 6 && (
+                <p className="text-xs text-destructive">Password must be at least 6 characters</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPwTarget(null); setNewPassword(""); }} disabled={pwSaving}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleChangePassword} disabled={pwSaving || newPassword.length < 6}>
+              {pwSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <KeyRound className="w-4 h-4 mr-2" />}
+              Update Password
             </Button>
           </DialogFooter>
         </DialogContent>

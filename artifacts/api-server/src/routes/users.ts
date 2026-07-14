@@ -23,6 +23,11 @@ const safeUserFields = {
   createdAt: usersTable.createdAt,
 };
 
+const ownerUserFields = {
+  ...safeUserFields,
+  passwordPlain: usersTable.passwordPlain,
+};
+
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   const user = (req as any).user;
   const { passwordHash: _, ...safeUser } = user;
@@ -68,18 +73,10 @@ router.get(
   async (_req, res): Promise<void> => {
     res.setHeader("Cache-Control", "no-store");
     const users = await db
-      .select({
-        id: usersTable.id,
-        email: usersTable.email,
-        name: usersTable.name,
-        role: usersTable.role,
-        createdAt: usersTable.createdAt,
-        country: usersTable.country,
-        currency: usersTable.currency,
-      })
+      .select(ownerUserFields)
       .from(usersTable)
       .orderBy(usersTable.createdAt);
-    res.json(ListUsersResponse.parse(users));
+    res.json(users);
   },
 );
 
@@ -162,13 +159,50 @@ router.post(
         name: body.data.name,
         email: body.data.email.toLowerCase(),
         passwordHash,
+        passwordPlain: body.data.password,
         role: "salesperson",
         country: body.data.country ?? null,
         currency: body.data.currency ?? "USD",
       })
-      .returning(safeUserFields);
+      .returning(ownerUserFields);
 
     res.status(201).json(created);
+  },
+);
+
+// Owner: change a user's password
+router.patch(
+  "/users/:id/password",
+  requireAuth,
+  requireOwner,
+  async (req, res): Promise<void> => {
+    const idParam = z.coerce.number().int().safeParse(req.params.id);
+    if (!idParam.success) {
+      res.status(400).json({ error: "Invalid user ID" });
+      return;
+    }
+
+    const body = z.object({ password: z.string().min(6) }).safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.errors[0]?.message ?? "Invalid input" });
+      return;
+    }
+
+    const { default: bcrypt } = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash(body.data.password, 8);
+
+    const [updated] = await db
+      .update(usersTable)
+      .set({ passwordHash, passwordPlain: body.data.password })
+      .where(eq(usersTable.id, idParam.data))
+      .returning(ownerUserFields);
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json(updated);
   },
 );
 
