@@ -178,6 +178,10 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       companySelection: (data as any).companySelection ?? null,
       bankDetails: (data as any).bankDetails ?? null,
       additionalInfo: (data as any).additionalInfo ?? null,
+      customerAddress: (data as any).customerAddress ?? null,
+      customerPhone: (data as any).customerPhone ?? null,
+      customerEmail: (data as any).customerEmail ?? null,
+      customerTrn: (data as any).customerTrn ?? null,
       invoiceSeq,
     })
     .returning();
@@ -286,6 +290,10 @@ router.patch("/deals/:id", requireAuth, async (req, res): Promise<void> => {
   if ((d as any).companySelection !== undefined) updateData.companySelection = (d as any).companySelection;
   if ((d as any).bankDetails !== undefined) updateData.bankDetails = (d as any).bankDetails;
   if ((d as any).additionalInfo !== undefined) updateData.additionalInfo = (d as any).additionalInfo;
+  if ((d as any).customerAddress !== undefined) updateData.customerAddress = (d as any).customerAddress;
+  if ((d as any).customerPhone !== undefined) updateData.customerPhone = (d as any).customerPhone;
+  if ((d as any).customerEmail !== undefined) updateData.customerEmail = (d as any).customerEmail;
+  if ((d as any).customerTrn !== undefined) updateData.customerTrn = (d as any).customerTrn;
 
   const [updated] = await db
     .update(dealsTable)

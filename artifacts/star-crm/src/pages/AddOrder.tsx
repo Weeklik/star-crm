@@ -87,7 +87,15 @@ const WARRANTY_OPTIONS = [
   "No Warranty",
   "Other",
 ];
-const DELIVERY_TERMS = ["FOB Dubai", "CIF", "EXW", "DDP", "DAP", "CFR", "Other"];
+const DELIVERY_TERMS = [
+  "Free On Board Dubai",
+  "Cost, Insurance & Freight",
+  "Ex-Works",
+  "Delivered Duty Paid",
+  "Delivered At Place",
+  "Cost and Freight",
+  "Other",
+];
 const DELIVERY_TIME_OPTIONS = [
   "3 Days",
   "7 Days",
@@ -100,6 +108,7 @@ const DELIVERY_TIME_OPTIONS = [
   "180 Days",
   "Upon Availability",
   "To Be Confirmed",
+  "Ex stock (subject to prior sale).",
   "Other",
 ];
 const REGIONS = [
@@ -111,7 +120,13 @@ const REGIONS = [
   "Ras Al Khaimah",
   "Fujairah",
   "Qatar",
-  "Other Country",
+  "Egypt",
+  "Ethiopia",
+  "Ghana",
+  "Kenya",
+  "Saudi Arabia",
+  "Nigeria",
+  "Tunisia",
 ];
 
 const CREDIT_TERMS = [
@@ -126,7 +141,7 @@ const CREDIT_TERMS = [
 const ADDITIONAL_INFO_ITEMS = [
   "SGS certificate, COC, ECTN, shipment inspection or any other certificate required by importing country authorities - expenses to buyers account",
   "Technician visits during installation & warranty, buyer to arrange or bear cost of visa, hotel accommodation, food & local expenses.",
-  "Jebel Ali shipping charges shared is estimated cost based on current rates. Actual cost at the time of shipping will be informed before shipment and will be applicable.",
+  "Shipping charges shared is estimated cost based on current rates. Actual cost at the time of shipping will be informed before shipment and will be applicable.",
   "Warranty: 12 months covering breakdowns resulting from a malfunction originating from manufacturing defect. The warranty does not cover replacement parts, periodic maintenance or failure resulting from misuse. \n\nValidity: 02 Weeks",
 ];
 
@@ -304,6 +319,11 @@ function fmt(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function getCurrencyCode(bankKey: string): string {
+  const base = bankKey.split("-")[0];
+  return base === "EURO" ? "EUR" : (base || "AED");
+}
+
 export default function AddOrder() {
   const [, navigate] = useLocation();
   const [matchEdit, paramsEdit] = useRoute("/orders/:id/edit");
@@ -339,8 +359,13 @@ export default function AddOrder() {
   const [warranty, setWarranty] = useState("");
   const [pdc, setPdc] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
+  const [deliveryTermsCustom, setDeliveryTermsCustom] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerTrn, setCustomerTrn] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
   const [companySelection, setCompanySelection] = useState("STAR SEWING MACHINES TRADING L.L.C");
   const [bankDetails, setBankDetails] = useState("AED");
@@ -348,6 +373,8 @@ export default function AddOrder() {
   const [addInfoOpen, setAddInfoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Ref: skip bankDetails reset when loading an existing deal
+  const editLoadedRef = useRef(false);
 
   // Enforce VAT on all items — 0 if company is STAR GLOBAL TECH FZCO or salesperson is from Tunisia
   useEffect(() => {
@@ -359,6 +386,11 @@ export default function AddOrder() {
   // Reset bankDetails to AED when the user switches company (not on initial load)
   useEffect(() => {
     if (!loaded) return;
+    // Skip reset when this change came from loading an existing deal
+    if (editLoadedRef.current) {
+      editLoadedRef.current = false;
+      return;
+    }
     setBankDetails("AED");
   }, [companySelection]);
 
@@ -399,13 +431,26 @@ export default function AddOrder() {
     setPaymentTerms(deal.paymentTerms ?? "");
     setWarranty(deal.warranty ?? "");
     setPdc((deal as any).pdc ?? "");
-    setDeliveryTerms(deal.deliveryTerms ?? "");
+    // Delivery terms — detect if stored value was a free-text "Other"
+    const storedDt = deal.deliveryTerms ?? "";
+    if (storedDt && !DELIVERY_TERMS.includes(storedDt)) {
+      setDeliveryTerms("Other");
+      setDeliveryTermsCustom(storedDt);
+    } else {
+      setDeliveryTerms(storedDt);
+    }
     setDeliveryTime((deal as any).deliveryTime ?? "");
+    // Mark that the next companySelection change comes from this load, not user action
+    editLoadedRef.current = true;
     setCompanySelection((deal as any).companySelection ?? "");
     setBankDetails((deal as any).bankDetails ?? "AED");
     const ai = (deal as any).additionalInfo;
     if (Array.isArray(ai)) setAdditionalInfo([ai[0] ?? false, ai[1] ?? false, ai[2] ?? false, ai[3] ?? false]);
     setNotes(deal.notes ?? "");
+    setCustomerAddress((deal as any).customerAddress ?? "");
+    setCustomerPhone((deal as any).customerPhone ?? "");
+    setCustomerEmail((deal as any).customerEmail ?? "");
+    setCustomerTrn((deal as any).customerTrn ?? "");
 
     const dealItems = deal.items;
     if (Array.isArray(dealItems) && dealItems.length > 0) {
@@ -471,8 +516,13 @@ export default function AddOrder() {
     return base * (1 + it.vatPct / 100);
   }
 
+  // Display currency: derive from bank details selection for UAE, or user's native currency
+  const displayCurrency = me?.country === "UAE"
+    ? getCurrencyCode(bankDetails)
+    : (me?.currency ?? "");
+
   // Item mutations
-  const addItem = () => setItems((prev) => [...prev, newItem(defaultVat)]);
+  const addItem = () => setItems((prev) => [...prev, newItem(getEffectiveVat(effectiveCountry, companySelection))]);
   const removeItem = (id: string) =>
     setItems((prev) => prev.filter((it) => it.id !== id));
 
@@ -548,11 +598,15 @@ export default function AddOrder() {
         paymentTerms: paymentTerms || null,
         warranty: warranty || null,
         pdc: pdc || null,
-        deliveryTerms: deliveryTerms || null,
+        deliveryTerms: deliveryTerms === "Other" ? (deliveryTermsCustom.trim() || null) : (deliveryTerms || null),
         deliveryTime: deliveryTime || null,
         companySelection: companySelection || null,
         bankDetails: bankDetails || null,
         additionalInfo,
+        customerAddress: customerAddress || null,
+        customerPhone: customerPhone || null,
+        customerEmail: customerEmail || null,
+        customerTrn: customerTrn || null,
       } as any;
 
       if (editId !== null) {
@@ -695,6 +749,44 @@ export default function AddOrder() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-start gap-3">
+                <label className="text-sm text-muted-foreground w-32 shrink-0 pt-2">Address</label>
+                <textarea
+                  rows={2}
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  placeholder="Customer address"
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Phone Number</label>
+                <Input
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Phone number"
+                  className="flex-1"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Email</label>
+                <Input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="flex-1"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">TRN Number</label>
+                <Input
+                  value={customerTrn}
+                  onChange={(e) => setCustomerTrn(e.target.value)}
+                  placeholder="TRN number"
+                  className="flex-1"
+                />
+              </div>
             </div>
           </div>
 
@@ -796,7 +888,9 @@ export default function AddOrder() {
                 />
               </div>
               <div className="border-t border-border pt-3 flex justify-between items-center">
-                <span className="text-blue-600 dark:text-blue-400 font-bold text-sm uppercase">Grand Total</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold text-sm uppercase">
+                  Grand Total{displayCurrency ? ` (${displayCurrency})` : ""}
+                </span>
                 <span className="text-blue-600 dark:text-blue-400 font-bold text-xl tabular-nums">
                   {fmt(grandTotal)}
                 </span>
@@ -965,17 +1059,15 @@ export default function AddOrder() {
                         {fmt(total)}
                       </td>
                       <td className="px-3 py-1.5 text-center">
-                        {me?.role === "owner" && (
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.id)}
-                            disabled={items.length === 1}
-                            className="text-red-500 hover:text-red-700 disabled:opacity-30 transition-colors"
-                            title="Remove item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.id)}
+                          disabled={items.length === 1}
+                          className="text-red-500 hover:text-red-700 disabled:opacity-30 transition-colors"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -1086,24 +1178,35 @@ export default function AddOrder() {
             </div>
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Terms</label>
-              <Select
-                value={deliveryTerms || "__none__"}
-                onValueChange={(v) =>
-                  setDeliveryTerms(v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Select —</SelectItem>
-                  {DELIVERY_TERMS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1 flex flex-col gap-2">
+                <Select
+                  value={deliveryTerms || "__none__"}
+                  onValueChange={(v) =>
+                    setDeliveryTerms(v === "__none__" ? "" : v)
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Select —</SelectItem>
+                    {DELIVERY_TERMS.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {deliveryTerms === "Other" && (
+                  <Input
+                    value={deliveryTermsCustom}
+                    onChange={(e) => setDeliveryTermsCustom(e.target.value.slice(0, 50))}
+                    placeholder="Specify delivery terms (max 50 chars)"
+                    className="w-full"
+                    maxLength={50}
+                  />
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Time</label>
