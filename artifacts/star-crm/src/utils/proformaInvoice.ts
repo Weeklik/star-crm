@@ -50,6 +50,10 @@ export interface ProformaInvoiceData {
   sgtInvoiceSeq?: number | null;
   ssmtInvoiceSeq?: number | null;
   invoiceSeq?: number | null;
+  customerAddress?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  customerTrn?: string | null;
 }
 
 // Every company selection shares a single running invoice sequence.
@@ -895,6 +899,10 @@ ${cfg.headerVariant === "wave" ? `
         ? `<div>${cfg.attentionLabel} : ${escHtml(data.contactName)}</div>`
         : `<div>MR : ${escHtml(data.contactName)}</div>`
       : ""}
+    ${data.customerAddress ? `<div>${escHtml(data.customerAddress).replace(/\n/g, "<br>")}</div>` : ""}
+    ${data.customerPhone ? `<div>Tel: ${escHtml(data.customerPhone)}</div>` : ""}
+    ${data.customerEmail ? `<div>Email: ${escHtml(data.customerEmail)}</div>` : ""}
+    ${data.customerTrn ? `<div>TRN: ${escHtml(data.customerTrn)}</div>` : ""}
   </div>
   <div class="date-block">${dateStr}</div>
 </div>

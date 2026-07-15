@@ -892,6 +892,10 @@ export default function Deals() {
         invoiceSeq: (fresh as any).invoiceSeq ?? undefined,
         bankDetails: (fresh as any).bankDetails ?? undefined,
         additionalInfo: (fresh as any).additionalInfo ?? undefined,
+        customerAddress: (fresh as any).customerAddress ?? undefined,
+        customerPhone: (fresh as any).customerPhone ?? undefined,
+        customerEmail: (fresh as any).customerEmail ?? undefined,
+        customerTrn: (fresh as any).customerTrn ?? undefined,
       });
     } catch {
       toast({ title: "Failed to load invoice data", variant: "destructive" });

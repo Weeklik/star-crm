@@ -651,8 +651,8 @@ export default function AddOrder() {
         </button>
       </div>
 
-      {/* ── Company Selection (UAE only) ── */}
-      {me?.country === "UAE" && (
+      {/* ── Company Selection (UAE only, and only for UAE/Qatar regions) ── */}
+      {me?.country === "UAE" && !["Egypt","Ethiopia","Ghana","Kenya","Saudi Arabia","Nigeria","Tunisia"].includes(region) && (
         <div className="flex items-center gap-4 px-6 py-3 border-b border-border bg-muted/40">
           <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
             Choose Your Company
@@ -718,21 +718,6 @@ export default function AddOrder() {
                 />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm text-muted-foreground w-32 shrink-0">Region / Country</label>
-                <Select value={region} onValueChange={setRegion}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REGIONS.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-3">
                 <label className="text-sm text-muted-foreground w-32 shrink-0">Customer Type</label>
                 <Select
                   value={orderType || "__none__"}
@@ -786,6 +771,21 @@ export default function AddOrder() {
                   placeholder="TRN number"
                   className="flex-1"
                 />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Region / Country</label>
+                <Select value={region} onValueChange={setRegion}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REGIONS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
