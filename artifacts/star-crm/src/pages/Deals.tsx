@@ -795,10 +795,24 @@ export default function Deals() {
   };
 
   // Format an amount using the deal's own stored currency for table rows.
+  function bankDetailsCurrency(bankKey: string): string {
+    const base = bankKey.split("-")[0];
+    return base === "EURO" ? "EUR" : (base || "AED");
+  }
+
   // If the stored currency is USD (the legacy default), derive the correct
   // native currency from the salesperson's country instead.
   // Tunisian salespersons always see amounts in EUR (same value, € symbol only).
-  function fmtDealAmt(dealCurrency: string | null | undefined, amount: number, salespersonId?: number | null): string {
+  function fmtDealAmt(dealCurrency: string | null | undefined, amount: number, salespersonId?: number | null, bankDetails?: string | null): string {
+    // bankDetails is the most accurate source of currency for UAE/company orders
+    if (bankDetails) {
+      const cur = bankDetailsCurrency(bankDetails);
+      try {
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: cur, maximumFractionDigits: 0 }).format(amount);
+      } catch {
+        return formatAmount(amount);
+      }
+    }
     // Tunisia: show € symbol without converting the value.
     // Check both me?.country (once loaded) and whether the deal is TND with EUR display
     // currency (covers existing TND-stored deals before me loads).
@@ -1404,7 +1418,7 @@ export default function Deals() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {fmtDealAmt((deal as any).currency, deal.agreedAmount, deal.salespersonId)}
+                    {fmtDealAmt((deal as any).currency, deal.agreedAmount, deal.salespersonId, (deal as any).bankDetails)}
                   </TableCell>
                   <TableCell className="text-right">
                     {(() => {

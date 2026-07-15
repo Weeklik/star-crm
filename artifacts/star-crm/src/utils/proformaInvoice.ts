@@ -294,7 +294,13 @@ function fmtDate(dateStr?: string | null): string {
 
 export function openProformaInvoice(data: ProformaInvoiceData): void {
   const cfg = getRegionConfig(data.region);
-  const _rawCurr = data.currency || cfg.currency;
+  // Derive currency from bankDetails first (most explicit), then stored currency, then region default
+  function _bankDetailsCurrency(bankKey: string): string {
+    const base = bankKey.split("-")[0];
+    return base === "EURO" ? "EUR" : (base || "AED");
+  }
+  const _bankCurr = data.bankDetails ? _bankDetailsCurrency(data.bankDetails) : null;
+  const _rawCurr = _bankCurr || data.currency || cfg.currency;
   const curr = _rawCurr === "TND" ? "EUR" : _rawCurr;
   const currDisp = cfg.currencySymbol ?? curr;
   const yr = new Date().getFullYear().toString().slice(-2);

@@ -602,6 +602,7 @@ export default function AddOrder() {
         deliveryTime: deliveryTime || null,
         companySelection: companySelection || null,
         bankDetails: bankDetails || null,
+        currency: getCurrencyCode(bankDetails),
         additionalInfo,
         customerAddress: customerAddress || null,
         customerPhone: customerPhone || null,
