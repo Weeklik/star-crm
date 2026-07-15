@@ -163,11 +163,13 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     letterheadContact:
       "Ash Sharafiyah Dist. Jeddah 23217 &ndash; 6192, Saudi Arabia<br>C.R : 4030287042",
     bank: [
-      { key: "Account Name",    value: "Yousef Amer Baqurayn Alhadhrami Trading Est" },
-      { key: "Account Number",  value: "1861423539940" },
-      { key: "IBAN (24 Chars)", value: "SA6520000001861423539940" },
-      { key: "Currency",        value: "SAR" },
-      { key: "Bank Name",       value: "Riyad Bank" },
+      { key: "Beneficiary Account Name:", value: "مؤسسة يوسف عامر باقرين الحضرمي للتجارة" },
+      { key: "Account Number:",            value: "1861423539940" },
+      { key: "IBAN (24 Chars):",           value: "SA6520000001861423539940" },
+      { key: "Currency:",                  value: "SAR (Saudi Riyal)" },
+      { key: "Bank Name:",                 value: "Riyad Bank" },
+      { key: "Branch:",                    value: "Heraa Street Branch (186, Heraa Street)" },
+      { key: "Swift:",                     value: "RIBLSARI" },
     ],
     paymentText: "100% Advance",
     noteText:
@@ -467,7 +469,9 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
       ? MODERN_SEWING_BANK
       : _company === "DUBAI SEWING MACHINE"
       ? DUBAI_SEWING_BANK
-      : (SSMT_BANKS[_bank] ?? SSMT_BANKS["AED"]);
+      : _company === "STAR SEWING MACHINES TRADING L.L.C"
+      ? (SSMT_BANKS[_bank] ?? SSMT_BANKS["AED"])
+      : cfg.bank;
 
   const bankRowsHtml = resolvedBank
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)
