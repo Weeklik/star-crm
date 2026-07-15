@@ -898,17 +898,19 @@ ${cfg.headerVariant === "wave" ? `
 <!-- ── CUSTOMER HEADER ── -->
 <div class="header">
   <div class="customer-block">
-    ${cfg.customerLabel ? `<div><strong>${cfg.customerLabel} :</strong></div>` : ""}
+    <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#555;margin-bottom:3px;">${cfg.customerLabel ? escHtml(cfg.customerLabel) : "BILL TO"}</div>
     <div class="company-name">${escHtml(data.companyName)}</div>
     ${data.contactName
       ? cfg.attentionLabel
         ? `<div>${cfg.attentionLabel} : ${escHtml(data.contactName)}</div>`
         : `<div>MR : ${escHtml(data.contactName)}</div>`
       : ""}
-    ${data.customerAddress ? `<div>${escHtml(data.customerAddress).replace(/\n/g, "<br>")}</div>` : ""}
-    ${data.customerPhone ? `<div>Tel: ${escHtml(data.customerPhone)}</div>` : ""}
-    ${data.customerEmail ? `<div>Email: ${escHtml(data.customerEmail)}</div>` : ""}
-    ${data.customerTrn ? `<div>TRN: ${escHtml(data.customerTrn)}</div>` : ""}
+    <div style="margin-top:4px;line-height:1.8;">
+      <div><span style="color:#555;">Address :</span> ${data.customerAddress ? escHtml(data.customerAddress).replace(/\n/g, ", ") : ""}</div>
+      <div><span style="color:#555;">Phone &nbsp;&nbsp;:</span> ${data.customerPhone ? escHtml(data.customerPhone) : ""}</div>
+      <div><span style="color:#555;">Email &nbsp;&nbsp;:</span> ${data.customerEmail ? escHtml(data.customerEmail) : ""}</div>
+      <div><span style="color:#555;">TRN &nbsp;&nbsp;&nbsp;&nbsp;:</span> ${data.customerTrn ? escHtml(data.customerTrn) : ""}</div>
+    </div>
   </div>
   <div class="date-block">${dateStr}</div>
 </div>
