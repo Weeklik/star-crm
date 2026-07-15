@@ -652,8 +652,8 @@ export default function AddOrder() {
         </button>
       </div>
 
-      {/* ── Company Selection (UAE only, and only for UAE/Qatar regions) ── */}
-      {me?.country === "UAE" && !["Egypt","Ethiopia","Ghana","Kenya","Saudi Arabia","Nigeria","Tunisia"].includes(region) && (
+      {/* ── Company Selection (UAE only) ── */}
+      {me?.country === "UAE" && (
         <div className="flex items-center gap-4 px-6 py-3 border-b border-border bg-muted/40">
           <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
             Choose Your Company
