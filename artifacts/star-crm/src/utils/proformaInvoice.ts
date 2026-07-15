@@ -167,13 +167,13 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     letterheadContact:
       "Ash Sharafiyah Dist. Jeddah 23217 &ndash; 6192, Saudi Arabia<br>C.R : 4030287042",
     bank: [
-      { key: "Beneficiary Account Name:", value: "مؤسسة يوسف عامر باقرين الحضرمي للتجارة" },
-      { key: "Account Number:",            value: "1861423539940" },
-      { key: "IBAN (24 Chars):",           value: "SA6520000001861423539940" },
-      { key: "Currency:",                  value: "SAR (Saudi Riyal)" },
-      { key: "Bank Name:",                 value: "Riyad Bank" },
-      { key: "Branch:",                    value: "Heraa Street Branch (186, Heraa Street)" },
-      { key: "Swift:",                     value: "RIBLSARI" },
+      { key: "Beneficiary Account Name:", value: "مؤسسة يوسف عامر باقرين الحضرمي للتجار" },
+      { key: "Account Number:",           value: "1861423539940" },
+      { key: "IBAN:",                     value: "SA6520000001861423539940" },
+      { key: "Currency:",                 value: "SAR" },
+      { key: "Bank Name:",                value: "Riyad Bank" },
+      { key: "Branch:",                   value: "Heraa Street Branch 186, Heraa Street" },
+      { key: "SWIFT/BIC:",               value: "RIBLSARI" },
     ],
     paymentText: "100% Advance",
     noteText:
