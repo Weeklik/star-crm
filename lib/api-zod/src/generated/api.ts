@@ -97,6 +97,7 @@ export const ListDealsResponseItem = zod.object({
   customerPhone: zod.string().nullish(),
   customerEmail: zod.string().nullish(),
   customerTrn: zod.string().nullish(),
+  fromLead: zod.boolean().optional(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -245,6 +246,7 @@ export const GetDealResponse = zod.object({
   customerPhone: zod.string().nullish(),
   customerEmail: zod.string().nullish(),
   customerTrn: zod.string().nullish(),
+  fromLead: zod.boolean().optional(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
