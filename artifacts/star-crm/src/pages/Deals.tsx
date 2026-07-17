@@ -1405,7 +1405,7 @@ export default function Deals() {
                       : "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {(deal as any).leadSource ?? "N/A"}
+                    {(deal as any).fromLead ? ((deal as any).leadSource ?? "—") : "—"}
                   </TableCell>
                   <TableCell className="font-medium">{deal.companyName}</TableCell>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
