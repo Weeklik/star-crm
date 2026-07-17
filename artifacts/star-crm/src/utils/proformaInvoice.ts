@@ -558,7 +558,19 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
 
   // ── Resolve the bank rows to display ──────────────────────────────────────
   const _company = data.companySelection ?? "";
-  const _bank    = data.bankDetails ?? "AED";
+  // For older orders with no explicit bankDetails, infer a default bank key
+  // from the salesperson's country (data.region = spCountry).
+  const REGION_DEFAULT_BANK: Record<string, string> = {
+    "TN":      "TN-EUR-ATB",
+    "Kenya":   "KEN-KES",
+    "Nigeria": "NIG-NGN",
+    "KSA":     "KSA-SAR",
+    "Ghana":   "GHA-GHS",
+  };
+  const _bank =
+    data.bankDetails ??
+    (data.region ? REGION_DEFAULT_BANK[data.region] : undefined) ??
+    "AED";
   // Country-specific keys (e.g. "TN-EUR-ATB") take priority over company lookup
   // so that UAE companies selecting a country-specific bank also render correctly.
   const _isCountryBank = /^(TN|KEN|NIG|GHA|KSA)-/.test(_bank);
