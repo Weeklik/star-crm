@@ -708,6 +708,7 @@ export function generateProformaInvoiceHtml(data: ProformaInvoiceData): string {
 <html>
 <head>
 <meta charset="UTF-8">
+<base href="${typeof window !== "undefined" ? window.location.origin + "/" : "/"}">
 <title>Proforma Invoice ${invoiceNo}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }

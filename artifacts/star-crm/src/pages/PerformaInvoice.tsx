@@ -108,7 +108,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       displayName: "Star West Africa Machinery Ltd.",
       region: "Ghana",
       bankDetails: "GHA-GHS",
-      logo: ghanaHeader,
+      logo: starLogo,
     },
   ],
   Egypt: [],
