@@ -427,15 +427,17 @@ export default function AddOrder() {
     setBankDetails("AED");
   }, [companySelection]);
 
-  // For non-UAE countries, set default bankDetails to the first option once me loads (new orders only)
+  // When region changes to one that has country-specific bank options, reset bankDetails to first option
   useEffect(() => {
-    if (editId || !me?.country) return;
-    const countryOpts = COUNTRY_BANK_OPTIONS[me.country];
+    if (!loaded) return;
+    const countryOpts = COUNTRY_BANK_OPTIONS[region];
     if (countryOpts?.length) {
       setBankDetails(countryOpts[0].value);
+    } else if (effectiveCountry === "UAE") {
+      setBankDetails("AED");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.country]);
+  }, [region]);
 
   // Catalog state: brand → products
   const [catalogByBrand, setCatalogByBrand] = useState<
@@ -577,8 +579,8 @@ export default function AddOrder() {
     return base * (1 + it.vatPct / 100);
   }
 
-  // Display currency: derive from bank details for UAE and other countries with bank options
-  const _hasCountryBanks = !!(effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry]);
+  // Display currency: derive from bank details when a bank dropdown is shown
+  const _hasCountryBanks = !!(region && COUNTRY_BANK_OPTIONS[region]);
   const displayCurrency = (effectiveCountry === "UAE" || _hasCountryBanks)
     ? getCurrencyCode(bankDetails)
     : (me?.currency ?? "");
