@@ -248,6 +248,7 @@ export default function Leads() {
     if (orderType) params.set("orderType", orderType);
     if (lead.brand) params.set("brand", lead.brand);
     if (lead.model) params.set("model", lead.model);
+    if (lead.leadSource) params.set("leadSource", lead.leadSource);
     navigate(`/orders/new?${params.toString()}`);
   };
 

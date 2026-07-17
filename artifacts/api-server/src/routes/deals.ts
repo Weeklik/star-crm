@@ -183,6 +183,7 @@ router.post("/deals", requireAuth, async (req, res): Promise<void> => {
       customerEmail: (data as any).customerEmail ?? null,
       customerTrn: (data as any).customerTrn ?? null,
       fromLead: (data as any).fromLead ?? false,
+      leadSource: (data as any).leadSource ?? null,
       invoiceSeq,
     })
     .returning();

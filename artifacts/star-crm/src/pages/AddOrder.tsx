@@ -414,6 +414,7 @@ export default function AddOrder() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerTrn, setCustomerTrn] = useState("");
+  const [leadSource, setLeadSource] = useState("");
   const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
   const [companySelection, setCompanySelection] = useState("STAR SEWING MACHINES TRADING L.L.C");
   const [bankDetails, setBankDetails] = useState("AED");
@@ -436,6 +437,7 @@ export default function AddOrder() {
     if (v("email"))        setCustomerEmail(v("email"));
     if (v("region"))       setRegion(v("region"));
     if (v("orderType"))    setOrderType(v("orderType"));
+    if (v("leadSource"))   setLeadSource(v("leadSource"));
     if (v("brand") || v("model")) {
       setItems((prev) => {
         const first = { ...prev[0], brand: v("brand") || prev[0].brand, model: v("model") || prev[0].model };
@@ -707,6 +709,7 @@ export default function AddOrder() {
         customerEmail: customerEmail || null,
         customerTrn: customerTrn || null,
         fromLead: leadParams !== null && editId === null,
+        leadSource: leadParams !== null && editId === null ? (leadSource || null) : null,
       } as any;
 
       if (editId !== null) {
@@ -717,7 +720,7 @@ export default function AddOrder() {
         toast({ title: "Order created successfully" });
       }
       void queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
-      navigate(leadParams !== null && editId === null ? "/deals?view=leads" : "/deals");
+      navigate("/deals");
     } catch (err: any) {
       toast({
         title: "Failed to save order",
@@ -872,6 +875,17 @@ export default function AddOrder() {
                   className="flex-1"
                 />
               </div>
+              {leadParams !== null && (
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-muted-foreground w-32 shrink-0">Lead Source (Means) <span className="text-destructive">*</span></label>
+                  <Input
+                    value={leadSource}
+                    readOnly
+                    className="flex-1 bg-muted/50 cursor-default"
+                    placeholder="—"
+                  />
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 <label className="text-sm text-muted-foreground w-32 shrink-0">Region / Country</label>
                 <Select value={region} onValueChange={setRegion}>
