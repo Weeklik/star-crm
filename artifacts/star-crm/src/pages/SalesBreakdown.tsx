@@ -485,43 +485,31 @@ export default function SalesBreakdown() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th colSpan={11} className="border border-border py-3 text-center text-base font-bold tracking-wide uppercase bg-muted/30">
+                    <th colSpan={5} className="border border-border py-3 text-center text-base font-bold tracking-wide uppercase bg-muted/30">
                       SUMMARY REPORT
                     </th>
                   </tr>
                   <tr>
                     <th rowSpan={3} className={`${thBase} bg-muted/40 text-left min-w-[180px]`}>Months</th>
                     <th colSpan={4} className={`${thBase} bg-green-700/30 text-green-800 dark:text-green-300`}>Payment Receipt</th>
-                    <th className="border border-border w-4 bg-muted/10" />
-                    <th colSpan={5} className={`${thBase} bg-yellow-500/20 text-yellow-800 dark:text-yellow-300`}>Sales in Process</th>
                   </tr>
                   <tr>
                     <th colSpan={2} className={`${thBase} bg-green-700/20 text-green-800 dark:text-green-400 italic`}>Order Closed ✓</th>
                     <th className={`${thBase} bg-green-700/10 text-green-900 dark:text-foreground`}>Down Payment Amount</th>
                     <th className={`${thBase} bg-green-700/10 text-green-900 dark:text-foreground`}>Total Amount</th>
-                    <th className="border border-border bg-muted/10" />
-                    <th colSpan={2} className={`${thBase} bg-yellow-500/20 text-yellow-800 dark:text-yellow-400 italic`}>Quotation Sent</th>
-                    <th colSpan={2} className={`${thBase} bg-blue-600/20 text-blue-800 dark:text-blue-400`}>Order Confirmed</th>
-                    <th className={`${thBase} bg-yellow-500/10 text-yellow-900 dark:text-foreground`}>Total Amount</th>
                   </tr>
                   <tr>
                     <th className={`${thBase} bg-green-700/10`}>Total Orders</th>
                     <th className={`${thBase} bg-green-700/10`}>Amount</th>
                     <th className={`${thBase} bg-green-700/10`}>Amount</th>
                     <th className={`${thBase} bg-green-700/10`}>Amount</th>
-                    <th className="border border-border bg-muted/10" />
-                    <th className={`${thBase} bg-yellow-600/10`}>Total Quotations</th>
-                    <th className={`${thBase} bg-yellow-600/10`}>Amount</th>
-                    <th className={`${thBase} bg-blue-600/10`}>Total Orders</th>
-                    <th className={`${thBase} bg-blue-600/10`}>Amount</th>
-                    <th className={`${thBase} bg-yellow-600/10`}>Amount</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {groups.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="text-center py-10 text-muted-foreground text-sm">
+                      <td colSpan={5} className="text-center py-10 text-muted-foreground text-sm">
                         No data for this period.
                       </td>
                     </tr>
@@ -545,7 +533,7 @@ export default function SalesBreakdown() {
                         <>
                           {/* Month header row with conversion rate */}
                           <tr key={`month-${monthKey}`} className="bg-muted/30">
-                            <td colSpan={11} className="border border-border px-3 py-1.5">
+                            <td colSpan={5} className="border border-border px-3 py-1.5">
                               <div className="flex items-center justify-between gap-4">
                                 <span className="font-bold text-sm">{monthLabel}</span>
                                 {!isSameCurrency && (
@@ -590,37 +578,11 @@ export default function SalesBreakdown() {
                                 title={w.totalPaymentReceipt ? "Click to view deals" : undefined}>
                                 {fmtM(w.totalPaymentReceipt)}
                               </td>
-                              <td className="border border-border bg-muted/10" />
-                              <td className={`${tdBase} bg-yellow-900/10 ${w.quotationSentCount ? clickable : ""}`}
-                                onClick={() => w.quotationSentCount && openDrill(w, "Quotation Sent", "Quotation Sent — No. of Quotations")}
-                                title={w.quotationSentCount ? "Click to view deals" : undefined}>
-                                {fmtCount(w.quotationSentCount)}
-                              </td>
-                              <td className={`${tdBase} bg-yellow-900/10 ${w.quotationSentAmount ? clickable : ""}`}
-                                onClick={() => w.quotationSentAmount && openDrill(w, "Quotation Sent", "Quotation Sent — Amount")}
-                                title={w.quotationSentAmount ? "Click to view deals" : undefined}>
-                                {fmtM(w.quotationSentAmount)}
-                              </td>
-                              <td className={`${tdBase} bg-blue-900/10 ${w.orderConfirmedCount ? clickable : ""}`}
-                                onClick={() => w.orderConfirmedCount && openDrill(w, "Order Confirmed", "Order Confirmed — No. of Orders")}
-                                title={w.orderConfirmedCount ? "Click to view deals" : undefined}>
-                                {fmtCount(w.orderConfirmedCount)}
-                              </td>
-                              <td className={`${tdBase} bg-blue-900/10 ${w.orderConfirmedAmount ? clickable : ""}`}
-                                onClick={() => w.orderConfirmedAmount && openDrill(w, "Order Confirmed", "Order Confirmed — Amount")}
-                                title={w.orderConfirmedAmount ? "Click to view deals" : undefined}>
-                                {fmtM(w.orderConfirmedAmount)}
-                              </td>
-                              <td className={`${tdBase} bg-yellow-900/5 font-medium ${w.totalSalesInProcess ? clickable : ""}`}
-                                onClick={() => w.totalSalesInProcess && openDrill(w, "Sales in Process", "Sales in Process — Total")}
-                                title={w.totalSalesInProcess ? "Click to view deals" : undefined}>
-                                {fmtM(w.totalSalesInProcess)}
-                              </td>
                             </tr>
                             {/* Customer type sub-row */}
                             {(w.newCustomerCount > 0 || w.existingCustomerCount > 0 || w.dealerCustomerCount > 0) && (
                               <tr className={wi % 2 === 0 ? "bg-muted/0" : "bg-muted/5"}>
-                                <td colSpan={11} className="border border-border px-3 py-1">
+                                <td colSpan={5} className="border border-border px-3 py-1">
                                   <div className="flex items-center gap-3 flex-wrap">
                                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mr-1">Customer Type:</span>
                                     {w.newCustomerCount > 0 && (
@@ -655,12 +617,6 @@ export default function SalesBreakdown() {
                             <td className={`${tdBase} bg-green-700/25 font-bold`}>{fmtM(mOCA)}</td>
                             <td className={`${tdBase} bg-green-700/15 font-bold`}>{fmtM(mDP)}</td>
                             <td className={`${tdBase} bg-green-700/15 font-bold`}>{fmtM(mPR)}</td>
-                            <td className="border border-border bg-muted/10" />
-                            <td className={`${tdBase} bg-yellow-600/20 font-bold`}>{fmtCount(mQC)}</td>
-                            <td className={`${tdBase} bg-yellow-600/20 font-bold`}>{fmtM(mQA)}</td>
-                            <td className={`${tdBase} bg-blue-600/20 font-bold`}>{fmtCount(mCC)}</td>
-                            <td className={`${tdBase} bg-blue-600/20 font-bold`}>{fmtM(mCA)}</td>
-                            <td className={`${tdBase} bg-yellow-600/15 font-bold`}>{fmtM(mSIP)}</td>
                           </tr>
                         </>
                       );
@@ -677,12 +633,6 @@ export default function SalesBreakdown() {
                       <td className={`${tdBase} bg-green-900/20`}>{fmt(totOCA)}</td>
                       <td className={`${tdBase} bg-green-900/10`}>{fmt(totDP)}</td>
                       <td className={`${tdBase} bg-green-900/10`}>{fmt(totPR)}</td>
-                      <td className="border border-border bg-muted/10" />
-                      <td className={`${tdBase} bg-yellow-900/20`}>{fmtCount(totQC)}</td>
-                      <td className={`${tdBase} bg-yellow-900/20`}>{fmt(totQA)}</td>
-                      <td className={`${tdBase} bg-blue-900/20`}>{fmtCount(totCC)}</td>
-                      <td className={`${tdBase} bg-blue-900/20`}>{fmt(totCA)}</td>
-                      <td className={`${tdBase} bg-yellow-900/10`}>{fmt(totSIP)}</td>
                     </tr>
                   </tfoot>
                 )}
