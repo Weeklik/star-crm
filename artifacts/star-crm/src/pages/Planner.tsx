@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Trash2, CalendarDays, Target, Plus, Check, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, CalendarDays, Target, Plus, Check, User, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -516,7 +516,72 @@ interface MeetingModalProps {
 function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDelete, saving, deleting, isOwner }: MeetingModalProps) {
   const [form, setForm] = useState({ companyName: "", productName: "", meetingTime: "", location: "", notes: "" });
   const { t } = useTranslation();
+  const { toast } = useToast();
   const prevOpen = useRef(false);
+
+  const [geoState, setGeoState]     = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [geoSaving, setGeoSaving]   = useState(false);
+
+  // Reset geo state when modal closes
+  useEffect(() => { if (!open) { setGeoState("idle"); setGeoSaving(false); } }, [open]);
+
+  async function handleGetMyLocation() {
+    if (!navigator.geolocation) {
+      toast({ title: "Geolocation not supported by your browser", variant: "destructive" });
+      return;
+    }
+    setGeoState("loading");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const now  = new Date();
+        const actDate = now.toISOString().split("T")[0];
+        const actTime = now.toTimeString().slice(0, 5);
+
+        let locationName = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        try {
+          const geo = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+            { headers: { "Accept-Language": "en" } },
+          );
+          const geoData = await geo.json();
+          if (geoData.display_name) locationName = geoData.display_name;
+        } catch { /* keep coordinate fallback */ }
+
+        setGeoSaving(true);
+        try {
+          const res = await fetch(`${BASE}/api/activities`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              date: actDate,
+              time: actTime,
+              latitude: lat,
+              longitude: lng,
+              locationName,
+              company:  form.companyName.trim() || undefined,
+              product:  form.productName.trim()  || undefined,
+            }),
+          });
+          if (!res.ok) throw new Error("Failed");
+          setGeoState("done");
+          toast({ title: "Location saved to My Activities" });
+        } catch {
+          setGeoState("error");
+          toast({ title: "Failed to save activity", variant: "destructive" });
+        } finally {
+          setGeoSaving(false);
+        }
+      },
+      () => {
+        setGeoState("error");
+        toast({ title: "Could not get your location. Please allow location access.", variant: "destructive" });
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  }
 
   if (open !== prevOpen.current) {
     prevOpen.current = open;
@@ -581,6 +646,27 @@ function MeetingModal({ open, onClose, date, meeting, onCreate, onUpdate, onDele
             <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Any extra details…" rows={3} />
           </div>
         </div>
+        {meeting && (
+          <div className="pt-1 pb-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleGetMyLocation}
+              disabled={geoState === "loading" || geoSaving}
+              className={`w-full flex items-center gap-2 ${geoState === "done" ? "border-green-500 text-green-600" : ""}`}
+            >
+              {geoState === "loading" || geoSaving
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <MapPin className="w-4 h-4" />}
+              {geoState === "loading" ? "Getting location…"
+                : geoSaving ? "Saving…"
+                : geoState === "done" ? "✓ Location saved to My Activities"
+                : geoState === "error" ? "Retry Get My Location"
+                : "Get My Location"}
+            </Button>
+          </div>
+        )}
         <DialogFooter className="gap-2 sm:gap-0">
           {meeting && isOwner && (
             <Button variant="destructive" size="sm" onClick={() => onDelete(meeting.id)} disabled={deleting} className="mr-auto">
