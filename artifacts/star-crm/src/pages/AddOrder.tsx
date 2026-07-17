@@ -415,6 +415,7 @@ export default function AddOrder() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerTrn, setCustomerTrn] = useState("");
   const [leadSource, setLeadSource] = useState("");
+  const [isLeadOrder, setIsLeadOrder] = useState(false);
   const [items, setItems] = useState<OrderItem[]>([newItem(0)]);
   const [companySelection, setCompanySelection] = useState("STAR SEWING MACHINES TRADING L.L.C");
   const [bankDetails, setBankDetails] = useState("AED");
@@ -549,6 +550,10 @@ export default function AddOrder() {
     setCustomerPhone((deal as any).customerPhone ?? "");
     setCustomerEmail((deal as any).customerEmail ?? "");
     setCustomerTrn((deal as any).customerTrn ?? "");
+    if ((deal as any).fromLead) {
+      setIsLeadOrder(true);
+      setLeadSource((deal as any).leadSource ?? "");
+    }
 
     const dealItems = deal.items;
     if (Array.isArray(dealItems) && dealItems.length > 0) {
@@ -708,8 +713,8 @@ export default function AddOrder() {
         customerPhone: customerPhone || null,
         customerEmail: customerEmail || null,
         customerTrn: customerTrn || null,
-        fromLead: leadParams !== null && editId === null,
-        leadSource: leadParams !== null && editId === null ? (leadSource || null) : null,
+        fromLead: editId !== null ? isLeadOrder : (leadParams !== null),
+        leadSource: (leadParams !== null || isLeadOrder) ? (leadSource || null) : null,
       } as any;
 
       if (editId !== null) {
@@ -875,7 +880,7 @@ export default function AddOrder() {
                   className="flex-1"
                 />
               </div>
-              {leadParams !== null && (
+              {(leadParams !== null || isLeadOrder) && (
                 <div className="flex items-center gap-3">
                   <label className="text-sm text-muted-foreground w-32 shrink-0">Lead Source (Means) <span className="text-destructive">*</span></label>
                   <Input
