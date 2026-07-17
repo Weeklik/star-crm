@@ -275,10 +275,10 @@ function getEffectiveVat(
   return getCountryVat(country);
 }
 
-// ── Bank options for non-UAE country salespersons ──────────────────────────
-// Keys are prefixed (e.g. "TN-EUR-ATB") to avoid clashes between countries.
+// ── Bank options keyed by the country CODE stored in users.country ──────────
+// Bank detail values use prefixed keys (e.g. "TN-EUR-ATB") to avoid clashes.
 const COUNTRY_BANK_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  "Tunisia": [
+  "TN": [
     { value: "TN-EUR-ATB", label: "EUR (ARAB TUNISIAN BANK)" },
     { value: "TN-EUR-UIB", label: "EUR (UNION INTERNATIONALE DE BANQUES)" },
     { value: "TN-EUR-TIB", label: "EUR (TUNIS INTERNATIONAL BANK)" },
@@ -291,12 +291,21 @@ const COUNTRY_BANK_OPTIONS: Record<string, { value: string; label: string }[]> =
     { value: "NIG-NGN", label: "NGN" },
     { value: "NIG-USD", label: "USD" },
   ],
-  "Saudi Arabia": [
+  "KSA": [
     { value: "KSA-SAR", label: "SAR" },
   ],
   "Ghana": [
     { value: "GHA-GHS", label: "GHS" },
   ],
+};
+
+// Map region display names → country codes used in COUNTRY_BANK_OPTIONS
+const REGION_TO_COUNTRY_CODE: Record<string, string> = {
+  "Tunisia":      "TN",
+  "Kenya":        "Kenya",
+  "Nigeria":      "Nigeria",
+  "Saudi Arabia": "KSA",
+  "Ghana":        "Ghana",
 };
 
 const BANK_OPTIONS: Record<string, { value: string; label: string }[]> = {
@@ -430,7 +439,8 @@ export default function AddOrder() {
   // When region changes to one that has country-specific bank options, reset bankDetails to first option
   useEffect(() => {
     if (!loaded) return;
-    const countryOpts = COUNTRY_BANK_OPTIONS[region];
+    const code = REGION_TO_COUNTRY_CODE[region];
+    const countryOpts = code ? COUNTRY_BANK_OPTIONS[code] : undefined;
     if (countryOpts?.length) {
       setBankDetails(countryOpts[0].value);
     } else if (effectiveCountry === "UAE") {
@@ -580,7 +590,11 @@ export default function AddOrder() {
   }
 
   // Display currency: derive from bank details when a bank dropdown is shown
-  const _hasCountryBanks = !!(region && COUNTRY_BANK_OPTIONS[region]);
+  const _regionCode = REGION_TO_COUNTRY_CODE[region] ?? region;
+  const _hasCountryBanks = !!(
+    (effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry]) ||
+    (region && COUNTRY_BANK_OPTIONS[_regionCode])
+  );
   const displayCurrency = (effectiveCountry === "UAE" || _hasCountryBanks)
     ? getCurrencyCode(bankDetails)
     : (me?.currency ?? "");
@@ -1340,21 +1354,29 @@ export default function AddOrder() {
                 </Select>
               </div>
             )}
-            {effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry] && (
-              <div className="flex items-center gap-3 sm:col-span-2">
-                <label className="text-sm text-muted-foreground w-32 shrink-0">Bank Details</label>
-                <Select value={bankDetails} onValueChange={setBankDetails}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRY_BANK_OPTIONS[effectiveCountry].map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {(() => {
+              // Show country bank options: prefer region-based options, fall back to salesperson's country
+              const _code = (region && COUNTRY_BANK_OPTIONS[REGION_TO_COUNTRY_CODE[region] ?? ""])
+                ? (REGION_TO_COUNTRY_CODE[region])
+                : (effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry] ? effectiveCountry : null);
+              const _opts = _code ? COUNTRY_BANK_OPTIONS[_code] : null;
+              if (!_opts) return null;
+              return (
+                <div className="flex items-center gap-3 sm:col-span-2">
+                  <label className="text-sm text-muted-foreground w-32 shrink-0">Bank Details</label>
+                  <Select value={bankDetails} onValueChange={setBankDetails}>
+                    <SelectTrigger className="w-64">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {_opts.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
