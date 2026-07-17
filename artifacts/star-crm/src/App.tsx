@@ -25,6 +25,7 @@ import Planner from "./pages/Planner";
 import Products from "./pages/Products";
 import MyActivities from "./pages/MyActivities";
 import Leads from "./pages/Leads";
+import PerformaInvoice from "./pages/PerformaInvoice";
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -104,6 +105,9 @@ function AppRoutes() {
         </Route>
         <Route path="/leads">
           <ProtectedRoute component={Leads} />
+        </Route>
+        <Route path="/performa-invoice">
+          <ProtectedRoute component={PerformaInvoice} />
         </Route>
         <Route path="/profile">
           <ProtectedRoute component={Profile} />

@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   LayoutDashboard, Briefcase, BarChart3, Users, LogOut, Loader2,
   ChevronDown, TableProperties, TrendingUp, Sun, Moon, CalendarDays, Package, MapPin,
-  PanelLeftClose, PanelLeftOpen, ArrowLeft, Target,
+  PanelLeftClose, PanelLeftOpen, ArrowLeft, Target, FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -31,7 +31,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/deals",      label: t("nav.orders"),      icon: Briefcase },
     { href: "/planner",    label: t("nav.planner"),     icon: CalendarDays },
     { href: "/activities", label: "My Activities",      icon: MapPin },
-    { href: "/leads",      label: t("nav.leads"),       icon: Target },
+    { href: "/leads",             label: t("nav.leads"),             icon: Target },
+    { href: "/performa-invoice",  label: "Performa Invoice",         icon: FileText },
   ];
 
   const reportsChildren = [

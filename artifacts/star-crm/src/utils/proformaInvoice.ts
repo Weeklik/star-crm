@@ -292,7 +292,7 @@ function fmtDate(dateStr?: string | null): string {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-export function openProformaInvoice(data: ProformaInvoiceData): void {
+export function generateProformaInvoiceHtml(data: ProformaInvoiceData): string {
   const cfg = getRegionConfig(data.region);
   // Derive currency from bankDetails first (most explicit), then stored currency, then region default
   function _bankDetailsCurrency(bankKey: string): string {
@@ -1140,10 +1140,14 @@ ${cfg.headerVariant === "wave"
 </body>
 </html>`;
 
+  return html;
+}
+
+export function openProformaInvoice(data: ProformaInvoiceData): void {
+  const html = generateProformaInvoiceHtml(data);
   if (lastInvoiceWindow && !lastInvoiceWindow.closed) {
     lastInvoiceWindow.close();
   }
-
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
     alert("Please allow popups for this site to download the invoice.");
