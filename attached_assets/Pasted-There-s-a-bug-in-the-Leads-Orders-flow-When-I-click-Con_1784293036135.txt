@@ -1,0 +1,11 @@
+There's a bug in the Leads → Orders flow. When I click "Connect to order" on a lead, it opens the Add Order modal and pre-fills some fields (customer name, company, phone), but two things are broken:
+
+The order isn't tagged as coming from a lead. After clicking "Create Order," the new order appears in the All Orders tab but does NOT appear in the Lead Orders tab — the Lead Orders tab shows "Showing 0 orders" even though an order was just created from a lead. This means fromLead (or whatever field marks lead-origin) is not being set to true when the order is created via this specific flow, OR the Lead Orders tab query isn't matching on it correctly.
+Product/item data isn't carrying over from the lead. The created order shows "N/A" in the Product column, meaning the lead's product/item info isn't being mapped into the order's line items when the modal pre-fills.
+
+Please investigate and fix both, in this order:
+Step 1 — Trace the "Connect to order" handler: Find the button's onClick handler on the Lead card/page. Show me exactly what data it passes when navigating to/opening the Add Order modal — does it include a fromLead: true flag and the lead's product/item data? If not, that's the first gap.
+Step 2 — Trace the Create Order submit handler: Find where the Add Order modal's "Create Order" button submits data. Confirm whether fromLead is included in the payload sent to the API, and whether it's actually true when the order originated from a lead (vs. defaulting to false).
+Step 3 — Trace the Lead Orders tab query: Show me the exact filter/query used to populate the Lead Orders tab. Confirm it's filtering on the same field (fromLead) that Step 2 sets, with matching types (e.g. not comparing true to "true" as a string).
+Step 4 — Trace item/product mapping: Find where the lead's product/item data should map into the order's line items when the modal opens pre-filled. Show me why it's currently resulting in "N/A."
+Show me the code/findings from all 4 steps before making changes, so we can confirm the root cause together instead of guessing again.

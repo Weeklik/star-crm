@@ -436,6 +436,12 @@ export default function AddOrder() {
     if (v("email"))        setCustomerEmail(v("email"));
     if (v("region"))       setRegion(v("region"));
     if (v("orderType"))    setOrderType(v("orderType"));
+    if (v("brand") || v("model")) {
+      setItems((prev) => {
+        const first = { ...prev[0], brand: v("brand") || prev[0].brand, model: v("model") || prev[0].model };
+        return [first, ...prev.slice(1)];
+      });
+    }
     setLoaded(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

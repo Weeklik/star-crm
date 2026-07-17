@@ -246,6 +246,8 @@ export default function Leads() {
     if (lead.region) params.set("region", lead.region);
     const orderType = leadStatusToOrderType[lead.leadStatus] ?? "";
     if (orderType) params.set("orderType", orderType);
+    if (lead.brand) params.set("brand", lead.brand);
+    if (lead.model) params.set("model", lead.model);
     navigate(`/orders/new?${params.toString()}`);
   };
 
