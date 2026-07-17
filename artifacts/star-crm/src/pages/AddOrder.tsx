@@ -436,14 +436,10 @@ export default function AddOrder() {
     setBankDetails("AED");
   }, [companySelection]);
 
-  // When region changes to one that has country-specific bank options, reset bankDetails to first option
+  // When region changes for UAE salespersons, reset bankDetails to first option
   useEffect(() => {
     if (!loaded) return;
-    const code = REGION_TO_COUNTRY_CODE[region];
-    const countryOpts = code ? COUNTRY_BANK_OPTIONS[code] : undefined;
-    if (countryOpts?.length) {
-      setBankDetails(countryOpts[0].value);
-    } else if (effectiveCountry === "UAE") {
+    if (effectiveCountry === "UAE") {
       setBankDetails("AED");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -590,11 +586,8 @@ export default function AddOrder() {
   }
 
   // Display currency: derive from bank details when a bank dropdown is shown
-  const _regionCode = REGION_TO_COUNTRY_CODE[region] ?? region;
-  const _hasCountryBanks = !!(
-    (effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry]) ||
-    (region && COUNTRY_BANK_OPTIONS[_regionCode])
-  );
+  // Bank options are always tied to the salesperson's own country, never the customer region.
+  const _hasCountryBanks = !!(effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry]);
   const displayCurrency = (effectiveCountry === "UAE" || _hasCountryBanks)
     ? getCurrencyCode(bankDetails)
     : (me?.currency ?? "");
@@ -1355,10 +1348,8 @@ export default function AddOrder() {
               </div>
             )}
             {(() => {
-              // Show country bank options: prefer region-based options, fall back to salesperson's country
-              const _code = (region && COUNTRY_BANK_OPTIONS[REGION_TO_COUNTRY_CODE[region] ?? ""])
-                ? (REGION_TO_COUNTRY_CODE[region])
-                : (effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry] ? effectiveCountry : null);
+              // Bank options are always tied to the salesperson's own country, never the customer region.
+              const _code = (effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry]) ? effectiveCountry : null;
               const _opts = _code ? COUNTRY_BANK_OPTIONS[_code] : null;
               if (!_opts) return null;
               return (
