@@ -711,7 +711,7 @@ export default function AddOrder() {
         toast({ title: "Order created successfully" });
       }
       void queryClient.invalidateQueries({ queryKey: getListDealsQueryKey() });
-      navigate("/deals");
+      navigate(leadParams !== null && editId === null ? "/deals?view=leads" : "/deals");
     } catch (err: any) {
       toast({
         title: "Failed to save order",

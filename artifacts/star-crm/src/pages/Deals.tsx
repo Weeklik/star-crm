@@ -622,7 +622,10 @@ export default function Deals() {
     return (p.get("stage") as Stage) ?? "";
   }, hasIncomingFilters ? ((incomingParams.get("stage") as Stage) ?? "") : undefined);
   const [dealTypeFilter, setDealTypeFilter] = usePersistedState<string>("deals:dealTypeFilter", "");
-  const [viewMode, setViewMode] = useState<"all" | "leads">("all");
+  const [viewMode, setViewMode] = useState<"all" | "leads">(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("view") === "leads" ? "leads" : "all";
+  });
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<DealFormState>(emptyForm());
