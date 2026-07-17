@@ -559,8 +559,13 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   // ── Resolve the bank rows to display ──────────────────────────────────────
   const _company = data.companySelection ?? "";
   const _bank    = data.bankDetails ?? "AED";
+  // Country-specific keys (e.g. "TN-EUR-ATB") take priority over company lookup
+  // so that UAE companies selecting a country-specific bank also render correctly.
+  const _isCountryBank = /^(TN|KEN|NIG|GHA|KSA)-/.test(_bank);
   const resolvedBank: BankRow[] =
-    _company === "STAR GLOBAL TECH FZCO"
+    _isCountryBank
+      ? (COUNTRY_SPECIFIC_BANKS[_bank] ?? cfg.bank)
+      : _company === "STAR GLOBAL TECH FZCO"
       ? (SGT_BANKS[_bank] ?? SGT_BANKS["AED"])
       : _company === "STAR SEWING MACHINES TRADING L.L.C BR"
       ? SSMT_BR_BANK
@@ -570,7 +575,7 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
       ? DUBAI_SEWING_BANK
       : _company === "STAR SEWING MACHINES TRADING L.L.C"
       ? (SSMT_BANKS[_bank] ?? SSMT_BANKS["AED"])
-      : COUNTRY_SPECIFIC_BANKS[_bank]   // non-UAE country-specific bank
+      : COUNTRY_SPECIFIC_BANKS[_bank]
       ?? cfg.bank;
 
   const bankRowsHtml = resolvedBank
