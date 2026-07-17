@@ -70,15 +70,16 @@ const LEAD_SOURCES = [
   "Walk-in", "Phone Call", "Email", "Social Media", "Referral",
   "Website", "Exhibition", "Cold Call", "WhatsApp", "Other",
 ];
-const LEAD_STATUSES = ["New Lead", "Dealer Lead", "Existing Lead", "Other"];
+const LEAD_STATUSES = ["Quotation Sent", "Confirmed Orders", "Closed Orders", "Lost Orders", "Other"];
 const CLOSURE_OPTIONS = [
   "Immediately", "Within 1 Month", "1-3 Months",
   "3-6 Months", "6-12 Months", "More than 1 Year", "Other",
 ];
 const STATUS_COLORS: Record<string, string> = {
-  "New Lead":      "bg-blue-500/15 text-blue-400",
-  "Dealer Lead":   "bg-violet-500/15 text-violet-400",
-  "Existing Lead": "bg-emerald-500/15 text-emerald-400",
+  "Quotation Sent":    "bg-blue-500/15 text-blue-400",
+  "Confirmed Orders":  "bg-violet-500/15 text-violet-400",
+  "Closed Orders":     "bg-emerald-500/15 text-emerald-400",
+  "Lost Orders":       "bg-red-500/15 text-red-400",
   "Other":         "bg-secondary text-muted-foreground",
 };
 
@@ -96,7 +97,7 @@ const emptyForm = (): LeadForm => ({
   closure: "",
   notes: "",
   assignedToId: "",
-  leadStatus: "New Lead",
+  leadStatus: "Quotation Sent",
   nextFollowUpDate: "",
   followUpRemarks: "",
 });
@@ -232,9 +233,10 @@ export default function Leads() {
 
   const connectToOrder = (lead: Lead) => {
     const leadStatusToOrderType: Record<string, string> = {
-      "New Lead": "New",
-      "Dealer Lead": "Dealer",
-      "Existing Lead": "Existing",
+      "Quotation Sent":   "New",
+      "Confirmed Orders": "New",
+      "Closed Orders":    "New",
+      "Lost Orders":      "New",
     };
     const params = new URLSearchParams();
     params.set("fromLead", "1");
