@@ -107,9 +107,9 @@ function MonthDrillDownModal({
     const params = new URLSearchParams({
       weekStart: drillDown.monthStart,
       weekEnd: drillDown.monthEnd,
+      stage: "Order Closed",
     });
     if (drillDown.salespersonId !== null) params.set("salespersonId", String(drillDown.salespersonId));
-    if (drillDown.stage) params.set("stage", drillDown.stage);
     fetch(`/api/reports/sales-breakdown-deals?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setDeals(Array.isArray(d) ? d : []))
@@ -338,19 +338,19 @@ export default function SummarySalesReport() {
     ? `${format(new Date(summaryStart), "d MMM")} – ${format(new Date(summaryEnd), "d MMM")}`
     : "Summary Period";
 
-  const totalCols = 3 + 12 + (hasSummary ? 3 : 0);
+  const totalCols = 3 + 12 + (hasSummary ? 1 : 0);
 
 
   const handleExportCSV = () => {
     let csv = "Monthly Report\n";
     csv += `Name,Total Sales ${year},Avg Monthly Sales`;
     for (const m of MONTHS) csv += `,${m} ${year}`;
-    if (hasSummary) csv += `,${summaryLabel} Sales,${summaryLabel} Quotation,${summaryLabel} Order Confirmed`;
+    if (hasSummary) csv += `,${summaryLabel} Order Closed`;
     csv += "\n";
     for (const r of rows) {
       csv += `${r.name},${r.totalSales},${Math.round(r.avgMonthlySales)}`;
       for (let m = 1; m <= 12; m++) csv += `,${r.monthly[m] ?? 0}`;
-      if (hasSummary) csv += `,${r.summaryTotal},${r.summaryQuotation},${r.summaryOrderConfirmed}`;
+      if (hasSummary) csv += `,${r.summaryTotal}`;
       csv += "\n";
     }
     const blob = new Blob([csv], { type: "text/csv" });
@@ -460,23 +460,11 @@ export default function SummarySalesReport() {
                       );
                     })}
                     {hasSummary && (
-                      <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap bg-blue-500/10 border-l border-border" colSpan={3}>
-                        Summary {summaryLabel}
+                      <th className="px-3 py-2.5 text-right font-semibold whitespace-nowrap bg-green-500/10 border-l border-border" colSpan={1}>
+                        Order Closed {summaryLabel}
                       </th>
                     )}
                   </tr>
-                  {hasSummary && (
-                    <tr className="bg-muted/30 border-b border-border text-xs">
-                      <th className="px-2 py-1 sticky left-0 bg-muted/30" />
-                      <th className="px-3 py-1 sticky left-8 bg-muted/30" />
-                      <th className="px-3 py-1" />
-                      <th className="px-3 py-1" />
-                      {MONTHS.map((m) => <th key={m} className="px-3 py-1" />)}
-                      <th className="px-3 py-1 text-right font-medium bg-blue-500/10 border-l border-border">Sales</th>
-                      <th className="px-3 py-1 text-right font-medium bg-blue-500/10">Quotation</th>
-                      <th className="px-3 py-1 text-right font-medium bg-blue-500/10">Order Confirmed</th>
-                    </tr>
-                  )}
                 </thead>
 
                 <tbody>
@@ -534,11 +522,7 @@ export default function SummarySalesReport() {
                               );
                             })}
                             {hasSummary && (
-                              <>
-                                <td className="px-3 py-2 text-right bg-blue-500/5 border-l border-border">{fmtAmt(row.summaryTotal, rowRate)}</td>
-                                <td className="px-3 py-2 text-right bg-blue-500/5">{fmtAmt(row.summaryQuotation, rowRate)}</td>
-                                <td className="px-3 py-2 text-right bg-blue-500/5">{fmtAmt(row.summaryOrderConfirmed, rowRate)}</td>
-                              </>
+                              <td className="px-3 py-2 text-right bg-green-500/5 border-l border-border">{fmtAmt(row.summaryTotal, rowRate)}</td>
                             )}
                         </tr>
                       );
@@ -571,17 +555,9 @@ export default function SummarySalesReport() {
                         );
                       })}
                       {hasSummary && (
-                        <>
-                          <td className="px-3 py-2 text-right bg-blue-500/10 border-l border-border">
-                            {fmtAmt(convertedTotals?.summaryTotal ?? 0, 1)}
-                          </td>
-                          <td className="px-3 py-2 text-right bg-blue-500/10">
-                            {fmtAmt(convertedTotals?.summaryQuotation ?? 0, 1)}
-                          </td>
-                          <td className="px-3 py-2 text-right bg-blue-500/10">
-                            {fmtAmt(convertedTotals?.summaryOrderConfirmed ?? 0, 1)}
-                          </td>
-                        </>
+                        <td className="px-3 py-2 text-right bg-green-500/10 border-l border-border">
+                          {fmtAmt(convertedTotals?.summaryTotal ?? 0, 1)}
+                        </td>
                       )}
                     </tr>
                   </tfoot>
