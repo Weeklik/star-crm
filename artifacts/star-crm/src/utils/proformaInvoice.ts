@@ -4,6 +4,7 @@ import starGlobalTechHeader from "@assets/AC76EED3-C9E5-4086-805F-F4CA7179A00C_4
 import starGlobalTechFooter from "@assets/image_1783078365006.png";
 import modernSewingHeader from "@assets/image_1783680408784.png";
 import modernSewingFooter from "@assets/image_1783680434799.png";
+import ghanaHeader from "@assets/image_1784287814585.png";
 
 export interface ProformaInvoiceItem {
   brand: string;
@@ -108,6 +109,8 @@ interface RegionConfig {
   // wave header variant (Tunisia / North Africa style)
   headerVariant?: "wave";
   waveCompanyName?: string;    // text shown in the white wave area (e.g. "STAR NORTH AFRICA")
+  // full-width image header (e.g. Ghana, SGT, MSMT)
+  headerImage?: string;        // imported asset URL used as a full-bleed letterhead image
   // styling overrides
   companyNameColor?: string;   // CSS color for the company name in the letterhead
   addressUnderline?: boolean;  // underline the contact/address line
@@ -230,6 +233,30 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
     outstandingLabel:"Montant restant dû",
     currencySymbol:  "€",
   },
+  GHA: {
+    currency: "GHS",
+    vatRate: 0,
+    totalLabel: "Total",
+    companyName: "Star West Africa Machinery Ltd.",
+    companySubTitle: "Freezone Enterprises",
+    letterheadContact:
+      "GL-049-5378, 17, Ferrar Avenue, Arsylum Down &ndash; Accra, Ghana &nbsp; P.O. Box: CT3681<br>MOB: +233 20248 6661 &nbsp;|&nbsp; E-mail: star@starsew.com &nbsp;|&nbsp; Website: starsew.com",
+    bank: [
+      { key: "Bank Name:",       value: "Zenith Bank" },
+      { key: "Account Title:",   value: "Star Global Machinery" },
+      { key: "Account Number:",  value: "6010625726" },
+      { key: "SWIFT Code:",      value: "ZEBLGHAC" },
+      { key: "Currency:",        value: "GHS" },
+    ],
+    paymentText: "100% Advance",
+    noteText:
+      "Customer must provide local expenses including delivery and off-loading charges.",
+    footerLine1:
+      "GL-049-5378, 17, Ferrar Avenue, Arsylum Down &ndash; Accra, Ghana &nbsp; P.O. Box: CT3681",
+    footerLine2:
+      "MOB: +233 20248 6661 &nbsp;&nbsp; E-mail: star@starsew.com &nbsp;&nbsp; Website: starsew.com",
+    headerImage: ghanaHeader,
+  },
   NG: {
     currency: "NGN",
     vatRate: 7.5,
@@ -261,6 +288,8 @@ const REGION_CONFIGS: Record<string, RegionConfig> = {
 const REGION_ALIASES: Record<string, string> = {
   "NIGERIA":      "NG",
   "NIGER":        "NG",
+  "GHANA":        "GHA",
+  "GHA":          "GHA",
   "TUNISIA":      "TN",
   "TUNISIE":      "TN",
   "SAUDI ARABIA": "KSA",
@@ -959,7 +988,14 @@ export function generateProformaInvoiceHtml(data: ProformaInvoiceData): string {
 </head>
 <body>
 
-${cfg.headerVariant === "wave" ? `
+${cfg.headerImage ? `
+<!-- ── FULL-WIDTH IMAGE HEADER (Ghana / etc.) ── -->
+<img src="${cfg.headerImage}" alt="${cfg.companyName}" style="display:block;width:calc(100% + 72px);margin:-20px -36px 0;height:auto;" />
+<div style="text-align:center;margin-top:18px;">
+  <span style="font-size:17px;font-weight:900;letter-spacing:3px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:3px;">PROFORMA INVOICE</span>
+</div>
+<div style="text-align:center;font-size:11px;font-weight:600;margin-top:8px;letter-spacing:0.5px;margin-bottom:14px;">${invoiceNo}</div>
+` : cfg.headerVariant === "wave" ? `
 <!-- ── BANNER LETTERHEAD (Tunisia / North Africa) ── -->
 <img src="${tnHeaderBanner}" alt="Star North Africa" class="wave-banner-img" />
 <div class="devis-ref" style="text-align:center;margin-top:10px">${invoiceNo}</div>

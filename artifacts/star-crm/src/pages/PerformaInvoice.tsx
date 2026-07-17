@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { generateProformaInvoiceHtml, openProformaInvoice } from "@/utils/proformaInvoice";
 import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import starLogoKSA from "@assets/image_1782548029206.png";
+import ghanaHeader from "@assets/image_1784287814585.png";
 
 interface CompanyEntry {
   name: string;
@@ -103,11 +104,11 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
   ],
   Ghana: [
     {
-      name: "STAR GLOBAL MACHINERY",
-      displayName: "Star Global Machinery",
+      name: "STAR WEST AFRICA MACHINERY LTD.",
+      displayName: "Star West Africa Machinery Ltd.",
       region: "Ghana",
       bankDetails: "GHA-GHS",
-      logo: starLogo,
+      logo: ghanaHeader,
     },
   ],
   Egypt: [],
