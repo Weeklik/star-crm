@@ -170,6 +170,8 @@ export const CreateDealBody = zod.object({
   customerPhone: zod.string().nullish(),
   customerEmail: zod.string().nullish(),
   customerTrn: zod.string().nullish(),
+  fromLead: zod.boolean().optional(),
+  leadSource: zod.string().nullish(),
 });
 
 /**
@@ -325,6 +327,8 @@ export const UpdateDealBody = zod.object({
   customerPhone: zod.string().nullish(),
   customerEmail: zod.string().nullish(),
   customerTrn: zod.string().nullish(),
+  fromLead: zod.boolean().optional(),
+  leadSource: zod.string().nullish(),
 });
 
 export const updateDealResponseProgressMin = 0;
