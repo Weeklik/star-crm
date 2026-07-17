@@ -322,7 +322,11 @@ function fmtDate(dateStr?: string | null): string {
 }
 
 export function generateProformaInvoiceHtml(data: ProformaInvoiceData): string {
-  const cfg = getRegionConfig(data.region);
+  const cfg = { ...getRegionConfig(data.region) };
+  // Tunisia and Star Global Tech FZCO are VAT-exempt
+  if (data.region === "TN" || data.companySelection === "STAR GLOBAL TECH FZCO") {
+    cfg.vatRate = 0;
+  }
   // Derive currency from bankDetails first (most explicit), then stored currency, then region default
   function _bankDetailsCurrency(bankKey: string): string {
     const parts = bankKey.split("-");

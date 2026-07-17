@@ -184,9 +184,10 @@ export default function PerformaInvoice() {
       return;
     }
     const vatPct =
-      selectedCompany.region === "UAE" ? 5
+      selectedCompany.companySelection === "STAR GLOBAL TECH FZCO" ? 0
+      : selectedCompany.region === "TN"  ? 0
+      : selectedCompany.region === "UAE" ? 5
       : selectedCompany.region === "KSA" ? 15
-      : selectedCompany.region === "TN"  ? 19
       : selectedCompany.region === "NG"  ? 7.5
       : selectedCompany.region === "KE"  ? 16
       : 0;
@@ -228,9 +229,10 @@ export default function PerformaInvoice() {
   function handleDownload() {
     if (!selectedCompany) return;
     const vatPct =
-      selectedCompany.region === "UAE" ? 5
+      selectedCompany.companySelection === "STAR GLOBAL TECH FZCO" ? 0
+      : selectedCompany.region === "TN"  ? 0
+      : selectedCompany.region === "UAE" ? 5
       : selectedCompany.region === "KSA" ? 15
-      : selectedCompany.region === "TN"  ? 19
       : selectedCompany.region === "NG"  ? 7.5
       : selectedCompany.region === "KE"  ? 16
       : 0;
