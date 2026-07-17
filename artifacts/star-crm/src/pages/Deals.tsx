@@ -774,9 +774,9 @@ export default function Deals() {
     "KSA": "SAR",
     "KE":  "KES",
     "NG":  "NGN",
-    "TN":  "TND",
+    "TN":  "EUR",
   };
-  const receivedCurrency = (me?.country === "TN" || selectedRegion === "TN" || REGION_CURRENCY_MAP[selectedRegion] === "TND") ? "EUR" : (REGION_CURRENCY_MAP[selectedRegion] ?? "AED");
+  const receivedCurrency = REGION_CURRENCY_MAP[selectedRegion] ?? (me?.country === "TN" ? "EUR" : "AED");
   const fmtReceived = (n: number) => {
     try {
       return new Intl.NumberFormat("en-US", { style: "currency", currency: receivedCurrency, maximumFractionDigits: 0 }).format(n);
@@ -791,7 +791,7 @@ export default function Deals() {
     "KSA": "SAR",
     "KE":  "KES",
     "NG":  "NGN",
-    "TN":  "TND",
+    "TN":  "EUR",
   };
 
   // Format an amount using the deal's own stored currency for table rows.

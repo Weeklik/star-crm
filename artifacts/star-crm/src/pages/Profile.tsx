@@ -14,7 +14,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
   { code: "KSA",      name: "Saudi Arabia (SAR)",      currency: "SAR" },
   { code: "UAE",      name: "United Arab Emirates (AED)", currency: "AED" },
   { code: "Nigeria",  name: "Nigeria (NGN)",   currency: "NGN" },
-  { code: "TN",       name: "Tunisia (TND)",   currency: "TND" },
+  { code: "TN",       name: "Tunisia (EUR)",   currency: "EUR" },
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },
   { code: "Kenya",    name: "Kenya (KES)",     currency: "KES" },
   { code: "Ethiopia", name: "Ethiopia (ETB)",  currency: "ETB" },
@@ -28,7 +28,7 @@ const CURRENCIES = [
   { code: "SAR", label: "SAR — Saudi Riyal" },
   { code: "KES", label: "KES — Kenyan Shilling" },
   { code: "NGN", label: "NGN — Nigerian Naira" },
-  { code: "TND", label: "TND — Tunisian Dinar" },
+  { code: "EUR", label: "EUR — Euro" },
 ];
 
 const selectClass =

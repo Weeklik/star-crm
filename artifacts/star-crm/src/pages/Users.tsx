@@ -22,7 +22,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
   { code: "KSA",      name: "Saudi Arabia (SAR)",      currency: "SAR" },
   { code: "UAE",      name: "United Arab Emirates (AED)", currency: "AED" },
   { code: "Nigeria",  name: "Nigeria (NGN)",   currency: "NGN" },
-  { code: "TN",       name: "Tunisia (TND)",   currency: "TND" },
+  { code: "TN",       name: "Tunisia (EUR)",   currency: "EUR" },
   { code: "Egypt",    name: "Egypt (EGP)",     currency: "EGP" },
   { code: "Kenya",    name: "Kenya (KES)",     currency: "KES" },
   { code: "Ethiopia", name: "Ethiopia (ETB)",  currency: "ETB" },
@@ -30,7 +30,7 @@ const COUNTRIES: { code: string; name: string; currency: string }[] = [
 ];
 
 const CURRENCIES = [
-  "USD","EUR","JPY","AED","SAR","KES","NGN","TND","EGP","ETB","GHS",
+  "USD","EUR","JPY","AED","SAR","KES","NGN","EGP","ETB","GHS",
 ];
 
 const selectClass =
@@ -306,7 +306,7 @@ export default function Users() {
                       <span>{countryName(user.country)}</span>
                       {user.currency && (
                         <span className="ml-1 px-1.5 py-0.5 bg-secondary rounded text-xs font-mono">
-                          {user.currency === "TND" ? "€" : user.currency}
+                          {user.currency}
                         </span>
                       )}
                     </div>
