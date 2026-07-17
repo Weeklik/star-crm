@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { usePersistedState } from "@/hooks/usePersistedState";
-import { Plus, Pencil, Trash2, Loader2, Search, ChevronDown, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Search, ChevronDown, X, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -227,6 +228,26 @@ function ModelCombobox({
 export default function Leads() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  const connectToOrder = (lead: Lead) => {
+    const leadStatusToOrderType: Record<string, string> = {
+      "New Lead": "New",
+      "Dealer Lead": "Dealer",
+      "Existing Lead": "Existing",
+    };
+    const params = new URLSearchParams();
+    params.set("fromLead", "1");
+    if (lead.customerName) params.set("customerName", lead.customerName);
+    if (lead.companyName)  params.set("companyName", lead.companyName);
+    const phone = [lead.mobileCountryCode, lead.mobileNumber].filter(Boolean).join(" ");
+    if (phone) params.set("phone", phone);
+    if (lead.email)  params.set("email", lead.email);
+    if (lead.region) params.set("region", lead.region);
+    const orderType = leadStatusToOrderType[lead.leadStatus] ?? "";
+    if (orderType) params.set("orderType", orderType);
+    navigate(`/orders/new?${params.toString()}`);
+  };
 
   const [leads, setLeads]         = useState<Lead[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -532,13 +553,22 @@ export default function Leads() {
                     <button
                       onClick={() => openEdit(lead)}
                       className="p-1.5 rounded hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                      title="Edit lead"
                     >
                       <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => connectToOrder(lead)}
+                      className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                      title="Connect to order"
+                    >
+                      <Link2 className="w-3.5 h-3.5" />
                     </button>
                     {user?.role === "owner" && (
                       <button
                         onClick={() => setDeleteId(lead.id)}
                         className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Delete lead"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

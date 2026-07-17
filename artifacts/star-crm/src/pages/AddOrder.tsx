@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ChevronLeft, ClipboardList, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -368,6 +368,11 @@ export default function AddOrder() {
   const [, navigate] = useLocation();
   const [matchEdit, paramsEdit] = useRoute("/orders/:id/edit");
   const editId = matchEdit && paramsEdit?.id ? parseInt(paramsEdit.id) : null;
+  const searchString = useSearch();
+  const leadParams = editId ? null : (() => {
+    const p = new URLSearchParams(searchString);
+    return p.get("fromLead") === "1" ? p : null;
+  })();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -418,6 +423,22 @@ export default function AddOrder() {
   const [loaded, setLoaded] = useState(false);
   // Ref: skip bankDetails reset when loading an existing deal
   const editLoadedRef = useRef(false);
+
+  // Pre-fill form from lead params (only once on mount)
+  const leadPrefillApplied = useRef(false);
+  useEffect(() => {
+    if (!leadParams || leadPrefillApplied.current) return;
+    leadPrefillApplied.current = true;
+    const v = (k: string) => leadParams.get(k) ?? "";
+    if (v("customerName")) setCustomerName(v("customerName"));
+    if (v("companyName"))  setCompanyName(v("companyName"));
+    if (v("phone"))        setCustomerPhone(v("phone"));
+    if (v("email"))        setCustomerEmail(v("email"));
+    if (v("region"))       setRegion(v("region"));
+    if (v("orderType"))    setOrderType(v("orderType"));
+    setLoaded(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Enforce VAT on all items — 0 if company is STAR GLOBAL TECH FZCO or salesperson is from Tunisia
   useEffect(() => {
