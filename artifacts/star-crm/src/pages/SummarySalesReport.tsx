@@ -23,7 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useCurrency } from "@/contexts/CurrencyContext";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -75,6 +74,7 @@ interface DealDetail {
   receivedAmount: string | null;
   outstandingAmount: string | null;
   dealStartDate: string;
+  currency: string | null;
 }
 
 interface DrillDownState {
@@ -83,6 +83,21 @@ interface DrillDownState {
   salespersonId: number | null;
   label: string;
   stage?: string;
+}
+
+function fmtDealAmt(value: string | null | undefined, currency: string | null | undefined): string {
+  const n = parseFloat(value ?? "0") || 0;
+  if (!n) return "—";
+  const curr = (currency === "TND" ? "EUR" : currency) ?? "AED";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: curr,
+      maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `${curr} ${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  }
 }
 
 function MonthDrillDownModal({
@@ -94,12 +109,11 @@ function MonthDrillDownModal({
 }) {
   const [deals, setDeals] = useState<DealDetail[]>([]);
   const [loading, setLoading] = useState(false);
-  const { formatAmount } = useCurrency();
 
-  const fmtAmt = (s: string | null | undefined) => {
-    const n = parseFloat(s ?? "0") || 0;
-    return n ? formatAmount(n) : "—";
-  };
+  // Detect whether all deals share the same currency (for the totals row)
+  const sharedCurrency = deals.length > 0 && deals.every((d) => (d.currency ?? "AED") === (deals[0].currency ?? "AED"))
+    ? deals[0].currency ?? "AED"
+    : null;
 
   useEffect(() => {
     if (!drillDown) return;
@@ -120,6 +134,7 @@ function MonthDrillDownModal({
   const totalAgreed      = deals.reduce((s, d) => s + (parseFloat(d.agreedAmount ?? "0") || 0), 0);
   const totalReceived    = deals.reduce((s, d) => s + (parseFloat(d.receivedAmount ?? "0") || 0), 0);
   const totalOutstanding = deals.reduce((s, d) => s + (parseFloat(d.outstandingAmount ?? "0") || 0), 0);
+  const fmtTotal = (n: number) => fmtDealAmt(String(n), sharedCurrency);
 
   return (
     <Dialog open={!!drillDown} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -170,9 +185,9 @@ function MonthDrillDownModal({
                         "bg-red-500/20 text-red-700 dark:text-red-400"
                       }`}>{deal.stage}</span>
                     </td>
-                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.agreedAmount)}</td>
-                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.receivedAmount)}</td>
-                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtAmt(deal.outstandingAmount)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtDealAmt(deal.agreedAmount, deal.currency)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtDealAmt(deal.receivedAmount, deal.currency)}</td>
+                    <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtDealAmt(deal.outstandingAmount, deal.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -181,9 +196,9 @@ function MonthDrillDownModal({
                   <td className="border border-border px-3 py-2 text-xs text-muted-foreground" colSpan={6}>
                     Total ({deals.length} order{deals.length !== 1 ? "s" : ""})
                   </td>
-                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{formatAmount(totalAgreed)}</td>
-                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{formatAmount(totalReceived)}</td>
-                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{formatAmount(totalOutstanding)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtTotal(totalAgreed)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtTotal(totalReceived)}</td>
+                  <td className="border border-border px-3 py-2 text-xs text-right tabular-nums">{fmtTotal(totalOutstanding)}</td>
                 </tr>
               </tfoot>
             </table>
