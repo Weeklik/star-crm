@@ -361,6 +361,9 @@ export default function AddOrder() {
   const [deliveryTerms, setDeliveryTerms] = useState("");
   const [deliveryTermsCustom, setDeliveryTermsCustom] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
+  const [deliveryTimeCustom, setDeliveryTimeCustom] = useState("");
+  const [paymentTermsCustom, setPaymentTermsCustom] = useState("");
+  const [warrantyCustom, setWarrantyCustom] = useState("");
   const [notes, setNotes] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -428,8 +431,20 @@ export default function AddOrder() {
     setTransportationFee(deal.transportationFee ?? 0);
     setReceivedAmount(deal.receivedAmount ?? 0);
     setOrderType((deal as any).orderType ?? "");
-    setPaymentTerms(deal.paymentTerms ?? "");
-    setWarranty(deal.warranty ?? "");
+    const storedPt = deal.paymentTerms ?? "";
+    if (storedPt && !PAYMENT_TERMS.includes(storedPt)) {
+      setPaymentTerms("Other");
+      setPaymentTermsCustom(storedPt);
+    } else {
+      setPaymentTerms(storedPt);
+    }
+    const storedW = deal.warranty ?? "";
+    if (storedW && !WARRANTY_OPTIONS.includes(storedW)) {
+      setWarranty("Other");
+      setWarrantyCustom(storedW);
+    } else {
+      setWarranty(storedW);
+    }
     setPdc((deal as any).pdc ?? "");
     // Delivery terms — detect if stored value was a free-text "Other"
     const storedDt = deal.deliveryTerms ?? "";
@@ -439,7 +454,13 @@ export default function AddOrder() {
     } else {
       setDeliveryTerms(storedDt);
     }
-    setDeliveryTime((deal as any).deliveryTime ?? "");
+    const storedTime = (deal as any).deliveryTime ?? "";
+    if (storedTime && !DELIVERY_TIME_OPTIONS.includes(storedTime)) {
+      setDeliveryTime("Other");
+      setDeliveryTimeCustom(storedTime);
+    } else {
+      setDeliveryTime(storedTime);
+    }
     // Mark that the next companySelection change comes from this load, not user action
     editLoadedRef.current = true;
     setCompanySelection((deal as any).companySelection ?? "");
@@ -595,11 +616,11 @@ export default function AddOrder() {
         })),
         transportationFee,
         orderType: orderType || null,
-        paymentTerms: paymentTerms || null,
-        warranty: warranty || null,
+        paymentTerms: paymentTerms === "Other" ? (paymentTermsCustom.trim() || null) : (paymentTerms || null),
+        warranty: warranty === "Other" ? (warrantyCustom.trim() || null) : (warranty || null),
         pdc: pdc || null,
         deliveryTerms: deliveryTerms === "Other" ? (deliveryTermsCustom.trim() || null) : (deliveryTerms || null),
-        deliveryTime: deliveryTime || null,
+        deliveryTime: deliveryTime === "Other" ? (deliveryTimeCustom.trim() || null) : (deliveryTime || null),
         companySelection: companySelection || null,
         bankDetails: bankDetails || null,
         currency: getCurrencyCode(bankDetails),
@@ -1156,26 +1177,46 @@ export default function AddOrder() {
                     })()}
                   </div>
                 )}
+                {paymentTerms === "Other" && (
+                  <Input
+                    value={paymentTermsCustom}
+                    onChange={(e) => setPaymentTermsCustom(e.target.value.slice(0, 50))}
+                    placeholder="Specify payment terms (max 50 chars)"
+                    className="w-full"
+                    maxLength={50}
+                  />
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground w-32 shrink-0">Warranty</label>
-              <Select
-                value={warranty || "__none__"}
-                onValueChange={(v) => setWarranty(v === "__none__" ? "" : v)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Select —</SelectItem>
-                  {WARRANTY_OPTIONS.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-start gap-3">
+              <label className="text-sm text-muted-foreground w-32 shrink-0 pt-2">Warranty</label>
+              <div className="flex-1 flex flex-col gap-1">
+                <Select
+                  value={warranty || "__none__"}
+                  onValueChange={(v) => setWarranty(v === "__none__" ? "" : v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Select —</SelectItem>
+                    {WARRANTY_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {warranty === "Other" && (
+                  <Input
+                    value={warrantyCustom}
+                    onChange={(e) => setWarrantyCustom(e.target.value.slice(0, 50))}
+                    placeholder="Specify warranty (max 50 chars)"
+                    className="w-full"
+                    maxLength={50}
+                  />
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Terms</label>
@@ -1209,15 +1250,16 @@ export default function AddOrder() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-muted-foreground w-32 shrink-0">Delivery Time</label>
+            <div className="flex items-start gap-3">
+              <label className="text-sm text-muted-foreground w-32 shrink-0 pt-2">Delivery Time</label>
+              <div className="flex-1 flex flex-col gap-1">
               <Select
                 value={deliveryTime || "__none__"}
                 onValueChange={(v) =>
                   setDeliveryTime(v === "__none__" ? "" : v)
                 }
               >
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -1229,6 +1271,16 @@ export default function AddOrder() {
                   ))}
                 </SelectContent>
               </Select>
+              {deliveryTime === "Other" && (
+                <Input
+                  value={deliveryTimeCustom}
+                  onChange={(e) => setDeliveryTimeCustom(e.target.value.slice(0, 50))}
+                  placeholder="Specify delivery time (max 50 chars)"
+                  className="w-full"
+                  maxLength={50}
+                />
+              )}
+              </div>
             </div>
             {me?.country === "UAE" && (
               <div className="flex items-center gap-3 sm:col-span-2">
