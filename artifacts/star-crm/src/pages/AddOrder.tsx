@@ -275,6 +275,30 @@ function getEffectiveVat(
   return getCountryVat(country);
 }
 
+// ── Bank options for non-UAE country salespersons ──────────────────────────
+// Keys are prefixed (e.g. "TN-EUR-ATB") to avoid clashes between countries.
+const COUNTRY_BANK_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  "Tunisia": [
+    { value: "TN-EUR-ATB", label: "EUR (ARAB TUNISIAN BANK)" },
+    { value: "TN-EUR-UIB", label: "EUR (UNION INTERNATIONALE DE BANQUES)" },
+    { value: "TN-EUR-TIB", label: "EUR (TUNIS INTERNATIONAL BANK)" },
+  ],
+  "Kenya": [
+    { value: "KEN-KES", label: "KES" },
+    { value: "KEN-USD", label: "USD" },
+  ],
+  "Nigeria": [
+    { value: "NIG-NGN", label: "NGN" },
+    { value: "NIG-USD", label: "USD" },
+  ],
+  "Saudi Arabia": [
+    { value: "KSA-SAR", label: "SAR" },
+  ],
+  "Ghana": [
+    { value: "GHA-GHS", label: "GHS" },
+  ],
+};
+
 const BANK_OPTIONS: Record<string, { value: string; label: string }[]> = {
   "STAR SEWING MACHINES TRADING L.L.C": [
     { value: "AED",     label: "AED (National Bank of Fujairah)" },
@@ -320,7 +344,14 @@ function fmt(n: number) {
 }
 
 function getCurrencyCode(bankKey: string): string {
-  const base = bankKey.split("-")[0];
+  const parts = bankKey.split("-");
+  // Country-prefixed keys: TN-EUR-ATB → EUR, KEN-KES → KES, NIG-USD → USD, etc.
+  const COUNTRY_PREFIXES = ["TN", "KEN", "NIG", "GHA", "KSA"];
+  if (COUNTRY_PREFIXES.includes(parts[0]) && parts.length >= 2) {
+    return parts[1] === "EURO" ? "EUR" : parts[1];
+  }
+  // UAE keys: EURO → EUR, AED-NBF → AED, etc.
+  const base = parts[0];
   return base === "EURO" ? "EUR" : (base || "AED");
 }
 
@@ -386,16 +417,25 @@ export default function AddOrder() {
     setItems((prev) => prev.map((it) => ({ ...it, vatPct: vat })));
   }, [effectiveCountry, companySelection, loaded]);
 
-  // Reset bankDetails to AED when the user switches company (not on initial load)
+  // Reset bankDetails when the user switches company (not on initial load, UAE only)
   useEffect(() => {
     if (!loaded) return;
-    // Skip reset when this change came from loading an existing deal
     if (editLoadedRef.current) {
       editLoadedRef.current = false;
       return;
     }
     setBankDetails("AED");
   }, [companySelection]);
+
+  // For non-UAE countries, set default bankDetails to the first option once me loads (new orders only)
+  useEffect(() => {
+    if (editId || !me?.country) return;
+    const countryOpts = COUNTRY_BANK_OPTIONS[me.country];
+    if (countryOpts?.length) {
+      setBankDetails(countryOpts[0].value);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.country]);
 
   // Catalog state: brand → products
   const [catalogByBrand, setCatalogByBrand] = useState<
@@ -537,8 +577,9 @@ export default function AddOrder() {
     return base * (1 + it.vatPct / 100);
   }
 
-  // Display currency: derive from bank details selection for UAE, or user's native currency
-  const displayCurrency = me?.country === "UAE"
+  // Display currency: derive from bank details for UAE and other countries with bank options
+  const _hasCountryBanks = !!(effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry]);
+  const displayCurrency = (effectiveCountry === "UAE" || _hasCountryBanks)
     ? getCurrencyCode(bankDetails)
     : (me?.currency ?? "");
 
@@ -1282,7 +1323,7 @@ export default function AddOrder() {
               )}
               </div>
             </div>
-            {me?.country === "UAE" && (
+            {effectiveCountry === "UAE" && (
               <div className="flex items-center gap-3 sm:col-span-2">
                 <label className="text-sm text-muted-foreground w-32 shrink-0">Bank Details</label>
                 <Select value={bankDetails} onValueChange={setBankDetails}>
@@ -1291,6 +1332,21 @@ export default function AddOrder() {
                   </SelectTrigger>
                   <SelectContent>
                     {(BANK_OPTIONS[companySelection] ?? BANK_OPTIONS["STAR SEWING MACHINES TRADING L.L.C"]).map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {effectiveCountry && COUNTRY_BANK_OPTIONS[effectiveCountry] && (
+              <div className="flex items-center gap-3 sm:col-span-2">
+                <label className="text-sm text-muted-foreground w-32 shrink-0">Bank Details</label>
+                <Select value={bankDetails} onValueChange={setBankDetails}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRY_BANK_OPTIONS[effectiveCountry].map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
                   </SelectContent>

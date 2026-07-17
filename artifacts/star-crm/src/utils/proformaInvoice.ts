@@ -296,7 +296,12 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
   const cfg = getRegionConfig(data.region);
   // Derive currency from bankDetails first (most explicit), then stored currency, then region default
   function _bankDetailsCurrency(bankKey: string): string {
-    const base = bankKey.split("-")[0];
+    const parts = bankKey.split("-");
+    const COUNTRY_PREFIXES = ["TN", "KEN", "NIG", "GHA", "KSA"];
+    if (COUNTRY_PREFIXES.includes(parts[0]) && parts.length >= 2) {
+      return parts[1] === "EURO" ? "EUR" : parts[1];
+    }
+    const base = parts[0];
     return base === "EURO" ? "EUR" : (base || "AED");
   }
   const _bankCurr = data.bankDetails ? _bankDetailsCurrency(data.bankDetails) : null;
@@ -471,6 +476,86 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
     { key: "Swift:", value: "EBILAEAD" },
   ];
 
+  // ── Country-specific banks (non-UAE salespersons) ─────────────────────────
+  const COUNTRY_SPECIFIC_BANKS: Record<string, BankRow[]> = {
+    "TN-EUR-ATB": [
+      { key: "Reference:",       value: "TUNISIA ATB EUR" },
+      { key: "Bank Name:",       value: "ARAB TUNISIAN BANK" },
+      { key: "Bank Address:",    value: "AGENCE SAADI - TUNIS - TUNISIA" },
+      { key: "Account Title:",   value: "STAR NORTH AFRICA" },
+      { key: "Account Number:",  value: "01 097 1311121009234 85" },
+      { key: "IBAN:",            value: "TN59 0109 7131 1121 0092 3485" },
+      { key: "SWIFT Code:",      value: "ATBKTNTTXXX" },
+    ],
+    "TN-EUR-UIB": [
+      { key: "Reference:",       value: "TUNISIA UIB EUR" },
+      { key: "Bank Name:",       value: "UNION INTERNATIONALE DE BANQUES" },
+      { key: "Bank Address:",    value: "TUNIS - TUNISIA" },
+      { key: "Account Title:",   value: "STAR NORTH AFRICA" },
+      { key: "Account Number:",  value: "12 103 000 0055001980 04" },
+      { key: "IBAN:",            value: "TN59 1210 3000 0055 0019 8004" },
+      { key: "SWIFT Code:",      value: "UIBKTNTTXXX" },
+    ],
+    "TN-EUR-TIB": [
+      { key: "Reference:",       value: "TUNISIA TIB EUR" },
+      { key: "Bank Name:",       value: "TUNIS INTERNATIONAL BANK" },
+      { key: "Bank Address:",    value: "0202 MAIN BRANCH - TUNIS - TUNISIA" },
+      { key: "Account Title:",   value: "STAR NORTH AFRICA" },
+      { key: "Account Number:",  value: "0202/0435347/003/4410/000" },
+      { key: "IBAN:",            value: "TN59 7300 0043 5347 0340 0028" },
+      { key: "SWIFT Code:",      value: "TUIBTNTTXXX" },
+    ],
+    "KEN-KES": [
+      { key: "Reference:",       value: "KENYA KCB KSH" },
+      { key: "Bank Name:",       value: "KCB BANK" },
+      { key: "Bank Address:",    value: "RIVER ROAD BRANCH - NAIROBI - KENYA" },
+      { key: "Account Title:",   value: "STAR SEWING MACHINES (K) LIMITED" },
+      { key: "Account Number:",  value: "11474799421" },
+      { key: "SWIFT Code:",      value: "KCBLKENXXXX" },
+    ],
+    "KEN-USD": [
+      { key: "Reference:",       value: "KENYA KCB USD" },
+      { key: "Bank Name:",       value: "KCB BANK" },
+      { key: "Bank Address:",    value: "RIVER ROAD BRANCH - NAIROBI - KENYA" },
+      { key: "Account Title:",   value: "STAR SEWING MACHINES (K) LIMITED" },
+      { key: "Account Number:",  value: "1147480222" },
+      { key: "SWIFT Code:",      value: "KCBLKENXXXX" },
+    ],
+    "NIG-NGN": [
+      { key: "Reference:",       value: "NIGERIA ZENITH NGN" },
+      { key: "Bank Name:",       value: "ZENITH BANK PLC" },
+      { key: "Bank Address:",    value: "CREEK ROAD BRANCH - LAGOS - NIGERIA" },
+      { key: "Account Title:",   value: "STAR SEWING MACHINES LIMITED" },
+      { key: "Account Number:",  value: "1014350646" },
+      { key: "SWIFT Code:",      value: "ZEIBNGLAXXX" },
+    ],
+    "NIG-USD": [
+      { key: "Reference:",       value: "NIGERIA ZENITH USD" },
+      { key: "Bank Name:",       value: "ZENITH BANK PLC" },
+      { key: "Bank Address:",    value: "CREEK ROAD BRANCH - LAGOS - NIGERIA" },
+      { key: "Account Title:",   value: "STAR SEWING MACHINES LIMITED" },
+      { key: "Account Number:",  value: "5070480886" },
+      { key: "SWIFT Code:",      value: "ZEIBNGLAXXX" },
+    ],
+    "KSA-SAR": [
+      { key: "Reference:",       value: "KSA RIYAD BANK SAR" },
+      { key: "Bank Name:",       value: "RIYAD BANK" },
+      { key: "Bank Address:",    value: "186 HERAA BRANCH - JEDDAH - KSA" },
+      { key: "Account Title:",   value: "YOUSEF AMER BAQURAYN ALHADHRAMI TRADING EST" },
+      { key: "Account Number:",  value: "1861423539940" },
+      { key: "IBAN:",            value: "SA6520000001861423539940" },
+      { key: "SWIFT Code:",      value: "RIBLSARIXXX" },
+    ],
+    "GHA-GHS": [
+      { key: "Reference:",       value: "GHANA ZENITH GHC" },
+      { key: "Bank Name:",       value: "ZENITH BANK" },
+      { key: "Bank Address:",    value: "KOJO THOMAS BRANCH - ACCRA - GHANA" },
+      { key: "Account Title:",   value: "STAR GLOBAL MACHINERY" },
+      { key: "Account Number:",  value: "6010625726" },
+      { key: "SWIFT Code:",      value: "ZEBLGHAC" },
+    ],
+  };
+
   // ── Resolve the bank rows to display ──────────────────────────────────────
   const _company = data.companySelection ?? "";
   const _bank    = data.bankDetails ?? "AED";
@@ -485,7 +570,8 @@ export function openProformaInvoice(data: ProformaInvoiceData): void {
       ? DUBAI_SEWING_BANK
       : _company === "STAR SEWING MACHINES TRADING L.L.C"
       ? (SSMT_BANKS[_bank] ?? SSMT_BANKS["AED"])
-      : cfg.bank;
+      : COUNTRY_SPECIFIC_BANKS[_bank]   // non-UAE country-specific bank
+      ?? cfg.bank;
 
   const bankRowsHtml = resolvedBank
     .map((r) => `<span class="bank-key">${r.key}</span><span>${r.value}</span>`)

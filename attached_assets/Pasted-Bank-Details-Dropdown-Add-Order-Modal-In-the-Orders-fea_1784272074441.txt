@@ -1,0 +1,122 @@
+Bank Details Dropdown - Add Order Modal
+
+In the Orders feature, inside the Add Order modal:
+
+Add a Bank Details dropdown.
+Remove the Company dropdown.
+The available bank options should depend on the selected country.
+Tunisia
+
+The Bank Details dropdown should contain the following options:
+
+EUR (ARAB TUNISIAN BANK)
+EUR (UNION INTERNATIONALE DE BANQUES)
+EUR (TUNIS INTERNATIONAL BANK)
+Option 1 - EUR (ARAB TUNISIAN BANK)
+Country: Tunisia
+Currency: EUR
+Reference: TUNISIA ATB EUR
+Bank Name: ARAB TUNISIAN BANK
+Bank Address: AGENCE SAADI - TUNIS - TUNISIA
+Account Title: STAR NORTH AFRICA
+Account Number: 01 097 1311121009234 85
+IBAN: TN59 0109 7131 1121 0092 3485
+SWIFT Code: ATBKTNTTXXX
+Option 2 - EUR (UNION INTERNATIONALE DE BANQUES)
+Country: Tunisia
+Currency: EUR
+Reference: TUNISIA UIB EUR
+Bank Name: UNION INTERNATIONALE DE BANQUES
+Bank Address: TUNIS - TUNISIA
+Account Title: STAR NORTH AFRICA
+Account Number: 12 103 000 0055001980 04
+IBAN: TN59 1210 3000 0055 0019 8004
+SWIFT Code: UIBKTNTTXXX
+Option 3 - EUR (TUNIS INTERNATIONAL BANK)
+Country: Tunisia
+Currency: EUR
+Reference: TUNISIA TIB EUR
+Bank Name: TUNIS INTERNATIONAL BANK
+Bank Address: 0202 MAIN BRANCH - TUNIS - TUNISIA
+Account Title: STAR NORTH AFRICA
+Account Number: 0202/0435347/003/4410/000
+IBAN: TN59 7300 0043 5347 0340 0028
+SWIFT Code: TUIBTNTTXXX
+Kenya
+
+The Bank Details dropdown should contain:
+
+KES
+USD
+KES
+Country: Kenya
+Currency: KES
+Reference: KENYA KCB KSH
+Bank Name: KCB BANK
+Bank Address: RIVER ROAD BRANCH - NAIROBI - KENYA
+Account Title: STAR SEWING MACHINES (K) LIMITED
+Account Number: 11474799421
+IBAN: —
+SWIFT Code: KCBLKENXXXX
+USD
+Country: Kenya
+Currency: USD
+Reference: KENYA KCB USD
+Bank Name: KCB BANK
+Bank Address: RIVER ROAD BRANCH - NAIROBI - KENYA
+Account Title: STAR SEWING MACHINES (K) LIMITED
+Account Number: 1147480222
+IBAN: —
+SWIFT Code: KCBLKENXXXX
+Nigeria
+
+The Bank Details dropdown should contain:
+
+NGN
+USD
+NGN
+Currency: NGN
+Reference: NIGERIA ZENITH NGN
+Bank Name: ZENITH BANK PLC
+Bank Address: CREEK ROAD BRANCH - LAGOS - NIGERIA
+Account Title: STAR SEWING MACHINES LIMITED
+Account Number: 1014350646
+IBAN: —
+SWIFT Code: ZEIBNGLAXXX
+USD
+Currency: USD
+Reference: NIGERIA ZENITH USD
+Bank Name: ZENITH BANK PLC
+Bank Address: CREEK ROAD BRANCH - LAGOS - NIGERIA
+Account Title: STAR SEWING MACHINES LIMITED
+Account Number: 5070480886
+IBAN: —
+SWIFT Code: ZEIBNGLAXXX
+Saudi Arabia (KSA)
+
+The Bank Details dropdown should contain only:
+
+SAR
+SAR
+Currency: SAR
+Reference: KSA RIYAD BANK SAR
+Bank Name: RIYAD BANK
+Bank Address: 186 HERAA BRANCH - JEDDAH - KSA
+Account Title: YOUSEF AMER BAQURAYN ALHADHRAMI TRADING EST
+Account Number: 1861423539940
+IBAN: SA6520000001861423539940
+SWIFT Code: RIBLSARIXXX
+Ghana
+
+The Bank Details dropdown should contain only:
+
+GHS
+GHS
+Currency: GHS
+Reference: GHANA ZENITH GHC
+Bank Name: ZENITH BANK
+Bank Address: KOJO THOMAS BRANCH - ACCRA - GHANA
+Account Title: STAR GLOBAL MACHINERY
+Account Number: 6010625726
+IBAN: —
+SWIFT Code: ZEBLGHAC
