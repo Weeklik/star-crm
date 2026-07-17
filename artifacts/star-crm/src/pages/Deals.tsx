@@ -622,6 +622,7 @@ export default function Deals() {
     return (p.get("stage") as Stage) ?? "";
   }, hasIncomingFilters ? ((incomingParams.get("stage") as Stage) ?? "") : undefined);
   const [dealTypeFilter, setDealTypeFilter] = usePersistedState<string>("deals:dealTypeFilter", "");
+  const [viewMode, setViewMode] = useState<"all" | "leads">("all");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<DealFormState>(emptyForm());
@@ -746,10 +747,12 @@ export default function Deals() {
 
   const showKpi = !isOwner || selectedRegion !== "all";
 
-  const totalDeals = filteredDeals?.length ?? 0;
+  const leadFilteredDeals = (deals ?? []).filter((d) => (d as any).fromLead);
+  const activeDeals = viewMode === "leads" ? leadFilteredDeals : (filteredDeals ?? []);
+  const totalDeals = activeDeals.length;
   const totalPages = Math.max(1, Math.ceil(totalDeals / pageSize));
   const safePage   = Math.min(page, totalPages);
-  const pagedDeals = filteredDeals?.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pagedDeals = activeDeals.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const { formatAmount, currency: userCurrency } = useCurrency();
   const formatCurrency = formatAmount;
@@ -1175,8 +1178,25 @@ export default function Deals() {
         </div>
       </div>
 
-      {/* ── Filters ── */}
-      <div className="flex flex-wrap items-center gap-3 bg-card border border-border rounded-xl p-4">
+      {/* ── View tabs ── */}
+      <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setViewMode("all")}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === "all" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          All Orders
+        </button>
+        <button
+          onClick={() => setViewMode("leads")}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${viewMode === "leads" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Lead Orders
+          {deals && (() => { const c = deals.filter((d) => (d as any).fromLead).length; return c > 0 ? <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${viewMode === "leads" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"}`}>{c}</span> : null; })()}
+        </button>
+      </div>
+
+      {/* ── Filters + stats + table (hidden in Lead Orders view) ── */}
+      {viewMode === "all" && <div className="flex flex-wrap items-center gap-3 bg-card border border-border rounded-xl p-4">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -1295,10 +1315,21 @@ export default function Deals() {
             ))}
           </select>
         )}
-      </div>
+      </div>}
+
+      {/* ── Lead Orders info bar ── */}
+      {viewMode === "leads" && (
+        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl p-4">
+          <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{leadFilteredDeals.length}</span> order{leadFilteredDeals.length !== 1 ? "s" : ""} created from leads.
+            {leadFilteredDeals.length === 0 && ' Use the \u201cConnect to order\u201d button on a lead to create one.'}
+          </p>
+        </div>
+      )}
 
       {/* ── Stat boxes ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {viewMode === "all" && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 
         {/* Quotation Sent */}
         <div
@@ -1365,7 +1396,7 @@ export default function Deals() {
           </p>
         </div>
 
-      </div>
+      </div>}
 
       <div className="border border-border rounded-lg bg-card overflow-hidden">
         <Table>

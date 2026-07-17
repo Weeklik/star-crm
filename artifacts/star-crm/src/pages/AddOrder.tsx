@@ -700,6 +700,7 @@ export default function AddOrder() {
         customerPhone: customerPhone || null,
         customerEmail: customerEmail || null,
         customerTrn: customerTrn || null,
+        fromLead: leadParams !== null && editId === null,
       } as any;
 
       if (editId !== null) {
