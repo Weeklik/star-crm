@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { generateProformaInvoiceHtml, openProformaInvoice } from "@/utils/proformaInvoice";
 import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import starLogoKSA from "@assets/image_1782548029206.png";
-import ghanaHeader from "@assets/image_1784287814585.png";
+import ghanaHeader from "@assets/image_1784288251350.png";
 
 interface CompanyEntry {
   name: string;

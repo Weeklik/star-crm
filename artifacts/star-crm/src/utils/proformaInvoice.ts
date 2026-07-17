@@ -4,7 +4,7 @@ import starGlobalTechHeader from "@assets/AC76EED3-C9E5-4086-805F-F4CA7179A00C_4
 import starGlobalTechFooter from "@assets/image_1783078365006.png";
 import modernSewingHeader from "@assets/image_1783680408784.png";
 import modernSewingFooter from "@assets/image_1783680434799.png";
-import ghanaHeader from "@assets/image_1784287814585.png";
+import ghanaHeader from "@assets/image_1784288251350.png";
 
 export interface ProformaInvoiceItem {
   brand: string;
