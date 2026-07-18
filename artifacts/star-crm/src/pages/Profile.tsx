@@ -42,8 +42,8 @@ export default function Profile() {
 
   const [name, setName] = useState(user?.name ?? "");
   const [dateOfJoining, setDateOfJoining] = useState(user?.dateOfJoining ?? "");
-  const [country, setCountry] = useState(user?.country ?? "");
-  const [currency, setCurrency] = useState(user?.currency ?? "USD");
+  const [country, setCountry] = useState(user?.country ?? "UAE");
+  const [currency, setCurrency] = useState(user?.currency ?? "AED");
   const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture ?? null);
   const [saving, setSaving] = useState(false);
 
@@ -51,8 +51,8 @@ export default function Profile() {
     if (user) {
       setName(user.name ?? "");
       setDateOfJoining(user.dateOfJoining ?? "");
-      setCountry(user.country ?? "");
-      setCurrency(user.currency ?? "USD");
+      setCountry(user.country ?? "UAE");
+      setCurrency(user.currency ?? "AED");
       setProfilePicture(user.profilePicture ?? null);
     }
   }, [user]);

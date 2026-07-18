@@ -392,7 +392,7 @@ export default function AddOrder() {
   // Form state
   const [customerName, setCustomerName] = useState("");
   const [companyName, setCompanyName] = useState("");
-  const [region, setRegion] = useState("");
+  const [region, setRegion] = useState("UAE");
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
   const [closingDate, setClosingDate] = useState("");
   const [stage, setStage] = useState<string>("Quotation Sent");

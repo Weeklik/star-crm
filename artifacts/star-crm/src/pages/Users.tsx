@@ -62,8 +62,8 @@ export default function Users() {
   const [addEmail, setAddEmail] = useState("");
   const [addPassword, setAddPassword] = useState("");
   const [addShowPw, setAddShowPw] = useState(false);
-  const [addCountry, setAddCountry] = useState("");
-  const [addCurrency, setAddCurrency] = useState("USD");
+  const [addCountry, setAddCountry] = useState("UAE");
+  const [addCurrency, setAddCurrency] = useState("AED");
   const [addSaving, setAddSaving] = useState(false);
 
   function resetAdd() {
@@ -153,7 +153,7 @@ export default function Users() {
 
   useEffect(() => {
     if (editTarget) {
-      setEditCountry(editTarget.country ?? "");
+      setEditCountry(editTarget.country ?? "UAE");
       setEditCurrency(editTarget.currency ?? "USD");
     }
   }, [editTarget]);

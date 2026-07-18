@@ -91,7 +91,7 @@ const emptyForm = (): LeadForm => ({
   mobileCountryCode: "+971",
   mobileNumber: "",
   email: "",
-  region: "",
+  region: "UAE",
   brand: "",
   model: "",
   closure: "",
