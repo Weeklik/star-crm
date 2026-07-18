@@ -26,13 +26,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const isOwner = user?.role === "owner";
+
   const topItems = [
     { href: "/dashboard",  label: t("nav.dashboard"),   icon: LayoutDashboard },
     { href: "/deals",      label: t("nav.orders"),      icon: Briefcase },
     { href: "/planner",    label: t("nav.planner"),     icon: CalendarDays },
     { href: "/activities", label: "My Activities",      icon: MapPin },
     { href: "/leads",             label: t("nav.leads"),             icon: Target },
-    { href: "/performa-invoice",  label: "Performa Invoice",         icon: FileText },
+    ...(isOwner ? [{ href: "/performa-invoice", label: "Performa Invoice", icon: FileText }] : []),
   ];
 
   const reportsChildren = [

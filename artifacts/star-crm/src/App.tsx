@@ -107,7 +107,7 @@ function AppRoutes() {
           <ProtectedRoute component={Leads} />
         </Route>
         <Route path="/performa-invoice">
-          <ProtectedRoute component={PerformaInvoice} />
+          <ProtectedRoute component={PerformaInvoice} ownerOnly />
         </Route>
         <Route path="/profile">
           <ProtectedRoute component={Profile} />
