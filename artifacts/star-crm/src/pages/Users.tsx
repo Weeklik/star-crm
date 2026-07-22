@@ -68,7 +68,7 @@ export default function Users() {
 
   function resetAdd() {
     setAddName(""); setAddEmail(""); setAddPassword("");
-    setAddShowPw(false); setAddCountry(""); setAddCurrency("USD");
+    setAddShowPw(false); setAddCountry("UAE"); setAddCurrency("AED");
   }
 
   function handleAddCountryChange(code: string) {
@@ -108,7 +108,7 @@ export default function Users() {
 
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [editCountry, setEditCountry] = useState("");
-  const [editCurrency, setEditCurrency] = useState("USD");
+  const [editCurrency, setEditCurrency] = useState("AED");
   const [editSaving, setEditSaving] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
@@ -154,7 +154,7 @@ export default function Users() {
   useEffect(() => {
     if (editTarget) {
       setEditCountry(editTarget.country ?? "UAE");
-      setEditCurrency(editTarget.currency ?? "USD");
+      setEditCurrency(editTarget.currency ?? "AED");
     }
   }, [editTarget]);
 

@@ -5,6 +5,9 @@ import { generateProformaInvoiceHtml, openProformaInvoice } from "@/utils/profor
 import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import starLogoKSA from "@assets/image_1782548029206.png";
 import ghanaHeader from "@assets/image_1784288251350.png";
+import starGlobalLogo from "@assets/image_1784716711469.png";
+import modrenLogo from "@assets/image_1784716876719.png";
+import starNorthAfricaLogo from "@assets/image_1784717055364.png";
 
 interface CompanyEntry {
   name: string;
@@ -31,7 +34,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       region: "UAE",
       companySelection: "STAR GLOBAL TECH FZCO",
       bankDetails: "AED",
-      logo: starLogo,
+      logo: starGlobalLogo,
     },
     {
       name: "STAR SEWING MACHINES TRADING L.L.C BR",
@@ -47,15 +50,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       region: "UAE",
       companySelection: "MODREN SEWING MACHINE TRADING",
       bankDetails: "AED",
-      logo: starLogo,
-    },
-    {
-      name: "STAR MODERN SWING MACHIENE",
-      displayName: "Star Modern Swing Machiene",
-      region: "UAE",
-      companySelection: "STAR MODERN SWING MACHIENE",
-      bankDetails: "AED",
-      logo: starLogo,
+      logo: modrenLogo,
     },
     {
       name: "DUBAI SEWING MACHINE",
@@ -99,7 +94,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       displayName: "Star North Africa",
       region: "TN",
       bankDetails: "TN-EUR-ATB",
-      logo: starLogo,
+      logo: starNorthAfricaLogo,
     },
   ],
   Ghana: [

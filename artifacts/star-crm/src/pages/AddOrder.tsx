@@ -287,6 +287,10 @@ const COUNTRY_BANK_OPTIONS: Record<string, { value: string; label: string }[]> =
     { value: "KEN-KES", label: "KES" },
     { value: "KEN-USD", label: "USD" },
   ],
+  "KE": [
+    { value: "KEN-KES", label: "KES" },
+    { value: "KEN-USD", label: "USD" },
+  ],
   "Nigeria": [
     { value: "NIG-NGN", label: "NGN" },
     { value: "NIG-USD", label: "USD" },
