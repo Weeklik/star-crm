@@ -50,14 +50,6 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       logo: starLogo,
     },
     {
-      name: "STAR MODERN SWING MACHIENE",
-      displayName: "Star Modern Swing Machiene",
-      region: "UAE",
-      companySelection: "STAR MODERN SWING MACHIENE",
-      bankDetails: "AED",
-      logo: starLogo,
-    },
-    {
       name: "DUBAI SEWING MACHINE",
       displayName: "Dubai Sewing Machine",
       region: "UAE",
