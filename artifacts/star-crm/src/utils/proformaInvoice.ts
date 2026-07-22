@@ -596,11 +596,13 @@ export function generateProformaInvoiceHtml(data: ProformaInvoiceData): string {
   // For older orders with no explicit bankDetails, infer a default bank key
   // from the salesperson's country (data.region = spCountry).
   const REGION_DEFAULT_BANK: Record<string, string> = {
-    "TN":      "TN-EUR-ATB",
-    "Kenya":   "KEN-KES",
-    "Nigeria": "NIG-NGN",
-    "KSA":     "KSA-SAR",
-    "Ghana":   "GHA-GHS",
+    "TN":       "TN-EUR-ATB",
+    "Kenya":    "KEN-KES",
+    "KE":       "KEN-KES",
+    "Nigeria":  "NIG-NGN",
+    "NG":       "NIG-NGN",
+    "KSA":      "KSA-SAR",
+    "Ghana":    "GHA-GHS",
   };
   const _bank =
     data.bankDetails ??
