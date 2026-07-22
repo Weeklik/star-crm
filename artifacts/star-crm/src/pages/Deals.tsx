@@ -1300,7 +1300,7 @@ export default function Deals() {
             onChange={(e) => { setSelectedRegion(e.target.value); setPage(1); }}
             className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
           >
-            {regions.map((r) => (
+            {regions.filter((r) => r.country !== "Nigeria" && r.country !== "NG").map((r) => (
               <option key={r.country} value={r.country}>{countryLabel(r.country)}</option>
             ))}
           </select>
