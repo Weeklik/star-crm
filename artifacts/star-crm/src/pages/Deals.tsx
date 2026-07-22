@@ -769,12 +769,17 @@ export default function Deals() {
 
   // Region → native currency code for the Received Amount label
   const REGION_CURRENCY_MAP: Record<string, string> = {
-    "all": "USD",
-    "UAE": "AED",
-    "KSA": "SAR",
-    "KE":  "KES",
-    "NG":  "NGN",
-    "TN":  "EUR",
+    "all":      "AED",
+    "UAE":      "AED",
+    "KSA":      "SAR",
+    "KE":       "KES",
+    "Kenya":    "KES",
+    "NG":       "NGN",
+    "Nigeria":  "NGN",
+    "TN":       "EUR",
+    "Egypt":    "EGP",
+    "Ethiopia": "ETB",
+    "Ghana":    "GHS",
   };
   const receivedCurrency = REGION_CURRENCY_MAP[selectedRegion] ?? (me?.country === "TN" ? "EUR" : "AED");
   const fmtReceived = (n: number) => {
@@ -787,11 +792,16 @@ export default function Deals() {
 
   // Country → native currency (used to fix deals stored with USD default)
   const COUNTRY_CURRENCY: Record<string, string> = {
-    "UAE": "AED",
-    "KSA": "SAR",
-    "KE":  "KES",
-    "NG":  "NGN",
-    "TN":  "EUR",
+    "UAE":      "AED",
+    "KSA":      "SAR",
+    "KE":       "KES",
+    "Kenya":    "KES",
+    "NG":       "NGN",
+    "Nigeria":  "NGN",
+    "TN":       "EUR",
+    "Egypt":    "EGP",
+    "Ethiopia": "ETB",
+    "Ghana":    "GHS",
   };
 
   // Format an amount using the deal's own stored currency for table rows.

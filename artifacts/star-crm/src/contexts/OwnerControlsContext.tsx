@@ -27,19 +27,21 @@ export function getDateBounds(range: DateRange, year: number): { startDate: stri
  * Used to auto-select the display currency when a region is chosen.
  */
 export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
-  "KSA": "SAR", "UAE": "AED", "Nigeria": "NGN",
-  "TN": "EUR", "Egypt": "EGP", "Kenya": "KES", "Ethiopia": "ETB",
+  "UAE": "AED", "KSA": "SAR", "Nigeria": "NGN", "NG": "NGN",
+  "TN": "EUR", "Egypt": "EGP", "Kenya": "KES", "KE": "KES",
+  "Ethiopia": "ETB", "Ghana": "GHS",
 };
 
 export const CURRENCIES: { code: string; name: string }[] = [
-  { code: "USD", name: "US Dollar" },
-  { code: "EUR", name: "Euro" },
-  { code: "JPY", name: "Japanese Yen" },
   { code: "AED", name: "UAE Dirham" },
-  { code: "SAR", name: "Saudi Riyal" },
+  { code: "EGP", name: "Egyptian Pound" },
+  { code: "ETB", name: "Ethiopian Birr" },
+  { code: "GHS", name: "Ghanaian Cedi" },
   { code: "KES", name: "Kenyan Shilling" },
+  { code: "SAR", name: "Saudi Riyal" },
   { code: "NGN", name: "Nigerian Naira" },
-  { code: "EUR", name: "Euro" },
+  { code: "EUR", name: "Euro (Tunisia)" },
+  { code: "USD", name: "US Dollar" },
 ];
 
 export interface RegionOption {
