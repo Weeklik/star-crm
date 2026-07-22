@@ -6,6 +6,7 @@ import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import starLogoKSA from "@assets/image_1782548029206.png";
 import ghanaHeader from "@assets/image_1784288251350.png";
 import starGlobalLogo from "@assets/image_1784716711469.png";
+import modrenLogo from "@assets/image_1784716876719.png";
 
 interface CompanyEntry {
   name: string;
@@ -48,7 +49,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       region: "UAE",
       companySelection: "MODREN SEWING MACHINE TRADING",
       bankDetails: "AED",
-      logo: starLogo,
+      logo: modrenLogo,
     },
     {
       name: "DUBAI SEWING MACHINE",
