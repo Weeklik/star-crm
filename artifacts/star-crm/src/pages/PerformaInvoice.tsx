@@ -7,6 +7,7 @@ import starLogoKSA from "@assets/image_1782548029206.png";
 import ghanaHeader from "@assets/image_1784288251350.png";
 import starGlobalLogo from "@assets/image_1784716711469.png";
 import modrenLogo from "@assets/image_1784716876719.png";
+import starNorthAfricaLogo from "@assets/image_1784717055364.png";
 
 interface CompanyEntry {
   name: string;
@@ -93,7 +94,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       displayName: "Star North Africa",
       region: "TN",
       bankDetails: "TN-EUR-ATB",
-      logo: starLogo,
+      logo: starNorthAfricaLogo,
     },
   ],
   Ghana: [
