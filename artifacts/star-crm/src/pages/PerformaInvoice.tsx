@@ -5,6 +5,7 @@ import { generateProformaInvoiceHtml, openProformaInvoice } from "@/utils/profor
 import starLogo from "@assets/Star-Logo_1782471527362.webp";
 import starLogoKSA from "@assets/image_1782548029206.png";
 import ghanaHeader from "@assets/image_1784288251350.png";
+import starGlobalLogo from "@assets/image_1784716711469.png";
 
 interface CompanyEntry {
   name: string;
@@ -31,7 +32,7 @@ const COUNTRY_COMPANIES: Record<string, CompanyEntry[]> = {
       region: "UAE",
       companySelection: "STAR GLOBAL TECH FZCO",
       bankDetails: "AED",
-      logo: starLogo,
+      logo: starGlobalLogo,
     },
     {
       name: "STAR SEWING MACHINES TRADING L.L.C BR",
