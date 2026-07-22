@@ -26,4 +26,4 @@ packages = ["inetutils", "nedit"]
 [userenv]
 
 [userenv.shared]
-NEON_DATABASE_URL = "postgresql://postgres:StarCRM2026@104.192.7.183:5432/starcrm"
+NEON_DATABASE_URL = "postgresql://starcrmdb:96cTz9bUFxqfgHd@starcrmdb.cgfq24ieuwap.us-east-1.rds.amazonaws.com:5432/starcrmdb?sslmode=require&uselibpqcompat=true"
